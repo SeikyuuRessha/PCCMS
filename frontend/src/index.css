@@ -1,68 +1,59 @@
-:root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-    font-weight: 400;
+@import "tailwindcss";
 
-    color-scheme: light dark;
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
+@theme {
+  /* Colors */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6; /* Default Primary - Blue */
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
 
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
 
-a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
-}
-a:hover {
-    color: #535bf2;
-}
+  --color-warning-50: #fffbeb;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
 
-body {
-    margin: 0;
-    display: flex;
-    place-items: center;
-    min-width: 320px;
-    min-height: 100vh;
-}
+  --color-error-50: #fef2f2;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
 
-h1 {
-    font-size: 3.2em;
-    line-height: 1.1;
-}
+  --color-info-50: #ecfeff;
+  --color-info-500: #06b6d4;
+  --color-info-600: #0891b2;
 
-button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    background-color: #1a1a1a;
-    cursor: pointer;
-    transition: border-color 0.25s;
-}
-button:hover {
-    border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
+  --color-surface: #f8fafc;
+  --color-text-main: #0f172a;
+  --color-text-muted: #475569;
+  --color-border-main: #e2e8f0;
+
+  /* Typography Scale */
+  --text-h1: 2rem;       /* 32px */
+  --text-h2: 1.5rem;     /* 24px */
+  --text-h3: 1.25rem;    /* 20px */
+  --text-h4: 1.125rem;   /* 18px */
+  --text-body: 0.9375rem;/* 15px */
+  --text-caption: 0.8125rem; /* 13px */
+
+  /* Radius Scale */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Shadow Scale */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08); /* Clean modern shadow */
+  --shadow-lg: 0 12px 24px rgba(0,0,0,0.12);
 }
 
-@media (prefers-color-scheme: light) {
-    :root {
-        color: #213547;
-        background-color: #ffffff;
-    }
-    a:hover {
-        color: #747bff;
-    }
-    button {
-        background-color: #f9f9f9;
-    }
+/* Base resets & utilities */
+@layer base {
+  body {
+    @apply bg-surface text-text-main antialiased selection:bg-primary-500/30;
+    font-size: var(--text-body);
+    line-height: 1.6;
+  }
 }
