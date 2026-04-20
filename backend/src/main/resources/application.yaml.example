@@ -1,0 +1,69 @@
+server:
+    port: 8080
+
+spring:
+    application:
+        name: pccms
+    datasource:
+        url: jdbc:sqlserver://localhost:17288;database=CodeTrials;encrypt=true;trustServerCertificate=true
+        username: sa
+        password: 1234567890
+        driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    jpa:
+        hibernate:
+            ddl-auto: validate
+            naming:
+                physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        show-sql: true
+        properties:
+            hibernate:
+                format_sql: true
+    data:
+        redis:
+            host: localhost
+            port: 6379
+            password: redis-password
+            ssl:
+                enabled: true
+    mail:
+        host: smtp.gmail.com
+        port: 587
+        username: youremail@gmail.com
+        password: your_password
+        properties:
+            mail:
+                smtp:
+                    auth: true
+                    starttls:
+                        enable: true
+                        required: true
+
+jwt:
+    secret: your-own-secret-key
+    expiration: 600000
+    refresh-expiration: 604800000
+
+security:
+    pepper: your-pepper
+
+app:
+    cors:
+        allowed-origins: http://localhost:5173
+
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,info,metrics
+    endpoint:
+        health:
+            show-details: when_authorized
+    health:
+        mail:
+            enabled: false
+
+logging:
+    level:
+        root: INFO
+        com.astral.express: DEBUG
+        org.springframework.security: INFO

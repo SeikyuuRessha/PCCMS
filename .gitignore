@@ -1,0 +1,7 @@
+/reports
+/analysis_docs
+
+/frontend/.env
+/frontend/node_modules
+
+/backend/src/main/resources/application.yml
