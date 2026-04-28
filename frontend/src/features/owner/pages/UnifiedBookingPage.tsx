@@ -4,7 +4,6 @@ import {
     Building2,
     CheckCircle2,
     Clock3,
-    HeartPulse,
     PawPrint,
     Scissors,
     Stethoscope,
