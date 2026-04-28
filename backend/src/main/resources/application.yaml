@@ -1,0 +1,69 @@
+server:
+    port: 8080
+
+spring:
+    application:
+        name: pccms
+    datasource:
+        url: jdbc:sqlserver://localhost:17288;database=CodeTrials;encrypt=true;trustServerCertificate=true
+        username: sa
+        password: Pccms@Admin2026!
+        driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    jpa:
+        hibernate:
+            ddl-auto: update
+            naming:
+                physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        show-sql: true
+        properties:
+            hibernate:
+                format_sql: true
+    data:
+        redis:
+            host: localhost
+            port: 6379
+            password: 1234567890
+            ssl:
+                enabled: true
+    mail:
+        host: smtp.gmail.com
+        port: 587
+        username: hoangvanthang.work@gmail.com
+        password: cwos oxxe gvny cbgb
+        properties:
+            mail:
+                smtp:
+                    auth: true
+                    starttls:
+                        enable: true
+                        required: true
+
+jwt:
+    secret: OVd/hpagkR9E/qN0l5yCJo44tV5yrB8Np7EX8kbWRks=
+    expiration: 600000
+    refresh-expiration: 604800000
+
+security:
+    pepper: vszMkmNfc+afe13gauv69BKX0aiL6nrW5QR+Ft1AWRM=
+
+app:
+    cors:
+        allowed-origins: http://localhost:5173
+
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,info,metrics
+    endpoint:
+        health:
+            show-details: when_authorized
+    health:
+        mail:
+            enabled: false
+
+logging:
+    level:
+        root: INFO
+        com.astral.express: DEBUG
+        org.springframework.security: INFO

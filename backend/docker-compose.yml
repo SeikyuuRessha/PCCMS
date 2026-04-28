@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: pccms-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Pccms@Admin2026!
+      - MSSQL_PID=Developer
+    ports:
+      - "17288:1433"
+
+  redis:
+    image: redis:latest
+    container_name: pccms-redis
+    command: redis-server --requirepass 1234567890
+    ports:
+      - "6379:6379"
