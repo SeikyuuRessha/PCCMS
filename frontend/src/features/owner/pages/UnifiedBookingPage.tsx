@@ -649,17 +649,6 @@ export function UnifiedBookingPage() {
                             <SummaryRow label="Tạm tính" value={formatCurrency(estimatedTotal)} />
                         </div>
                     </Card>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                            <HeartPulse className="h-4 w-4 text-primary-600" />
-                            Lưu ý chăm sóc
-                        </div>
-                        <p className="mt-2 text-sm leading-6 text-slate-500">
-                            Dữ liệu đang là mock data. Khi nối API, phần kiểm tra lịch trống, bác sĩ trực và chuồng
-                            trống sẽ lấy từ hệ thống vận hành.
-                        </p>
-                    </div>
                 </aside>
             </div>
         </div>
