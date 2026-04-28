@@ -293,7 +293,7 @@ export function UnifiedBookingPage() {
                         <Stepper steps={bookingSteps} currentStep={step} />
                     </div>
 
-                    <Card className="min-h-[400px]">
+                    <Card className="min-h-100">
                         {step === 0 && (
                             <div className="space-y-6">
                                 <SectionHeader
@@ -335,7 +335,6 @@ export function UnifiedBookingPage() {
                                                     >
                                                         <Icon className="h-5 w-5" />
                                                     </span>
-                                                    <Tag tone={isSelected ? "green" : "default"}>{item.uc}</Tag>
                                                 </div>
                                                 <h2 className="mt-4 text-base font-semibold text-slate-950">
                                                     {item.title}
@@ -486,7 +485,7 @@ export function UnifiedBookingPage() {
 
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between gap-3">
-                                                <p className="text-[13px] font-medium text-slate-700">
+                                                <p className="text-caption font-medium text-slate-700">
                                                     Loại chuồng còn trống <span className="text-error-500">*</span>
                                                 </p>
                                                 <span className="text-xs text-slate-500">
@@ -565,7 +564,7 @@ export function UnifiedBookingPage() {
                                 />
 
                                 <div className="grid gap-4 md:grid-cols-2">
-                                    <ReviewItem label="Use case" value={`${selectedType.uc} - ${selectedType.title}`} />
+                                    <ReviewItem label="Yêu cầu" value={`${selectedType.title}`} />
                                     <ReviewItem label="Thú cưng" value={form.pet || "---"} />
                                     <ReviewItem label="Ngày sử dụng" value={serviceDate} />
                                     <ReviewItem label="Thời gian" value={serviceTime} />
@@ -704,7 +703,7 @@ function SlotPicker({
 }) {
     return (
         <div className="space-y-2">
-            <p className="text-[13px] font-medium text-slate-700">
+            <p className="text-caption font-medium text-slate-700">
                 {label} <span className="text-error-500">*</span>
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
