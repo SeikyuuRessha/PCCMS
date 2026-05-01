@@ -19,10 +19,12 @@ export type ScreenKey =
     | "appointmentReception"
     | "groomingBoard"
     | "boardingLog"
+    | "receptionMySchedule"
     // Doctor
     | "doctorDashboard"
     | "doctorQueue"
     | "medicalRecord"
+    | "doctorMySchedule"
     // Admin
     | "adminDashboard"
     | "accounts"

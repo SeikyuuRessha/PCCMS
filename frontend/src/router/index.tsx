@@ -24,7 +24,9 @@ import {
     GroomingBoardPage,
     BoardingLogPage,
 } from "~/features/reception";
+import { MySchedulePage as ReceptionMySchedulePage } from "~/features/reception/pages/MySchedulePage";
 import { DoctorDashboard, DoctorQueuePage, MedicalRecordPage } from "~/features/doctor";
+import { MySchedulePage as DoctorMySchedulePage } from "~/features/doctor/pages/MySchedulePage";
 import {
     AdminDashboard,
     AccountsPage,
@@ -100,6 +102,7 @@ export const router = createBrowserRouter([
             { path: "appointments", element: <AppointmentReceptionPage /> },
             { path: "grooming-board", element: <GroomingBoardPage /> },
             { path: "boarding-log", element: <BoardingLogPage /> },
+            { path: "my-schedule", element: <ReceptionMySchedulePage /> },
         ],
     },
     {
@@ -113,6 +116,7 @@ export const router = createBrowserRouter([
             { index: true, element: <DoctorDashboard /> },
             { path: "queue", element: <DoctorQueuePage /> },
             { path: "medical-record", element: <MedicalRecordPage /> },
+            { path: "my-schedule", element: <DoctorMySchedulePage /> },
         ],
     },
     {
