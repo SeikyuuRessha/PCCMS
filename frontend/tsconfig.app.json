@@ -28,7 +28,9 @@
         "baseUrl": ".",
         "paths": {
             "~/*": ["./src/*"]
-        }
+        },
+        /* CI Fix: silence TS5101 — baseUrl deprecated warning (TypeScript ≥ 5.0) */
+        "ignoreDeprecations": "5.0"
     },
     "include": ["src"]
 }
