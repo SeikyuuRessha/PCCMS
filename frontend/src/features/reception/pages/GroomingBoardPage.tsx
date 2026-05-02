@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Scissors, Bell, Clock, PawPrint, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Tag } from "~/components/atoms";
-import { Card, SectionTitle } from "~/components/molecules";
+import { SectionTitle } from "~/components/molecules";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Status = "Chờ làm" | "Đang dùng dịch vụ" | "Hoàn thành";
@@ -235,7 +235,6 @@ export function GroomingBoardPage() {
             <div className="grid gap-4 lg:grid-cols-3">
                 {COLUMNS.map((col) => {
                     const colTickets = tickets.filter((t) => t.status === col);
-                    const cfg = columnConfig[col];
                     return (
                         <div key={col}>
                             {/* Cards */}

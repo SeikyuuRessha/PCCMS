@@ -14,7 +14,7 @@ import {
     Banknote,
 } from "lucide-react";
 import { Button, Tag } from "~/components/atoms";
-import { Card, MiniGridStats, SummaryRow } from "~/components/molecules";
+import { MiniGridStats, SummaryRow } from "~/components/molecules";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type InvoiceStatus = "Chờ thanh toán" | "Đã thanh toán" | "Đã hủy";
