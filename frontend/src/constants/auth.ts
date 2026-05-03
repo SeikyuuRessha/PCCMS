@@ -5,7 +5,7 @@ export const mockAuth = {
      * Đổi giá trị này để Test các luồng khác nhau.
      * Giá trị hợp lệ: "public" | "owner" | "reception" | "doctor" | "admin"
      */
-    currentRole: "owner" as RoleKey,
+    currentRole: "doctor" as RoleKey,
 
     isAuthenticated: true,
 };
