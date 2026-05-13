@@ -8,7 +8,6 @@ import com.astral.express.pccms.identity.dto.response.AuthResponse;
 import com.astral.express.pccms.identity.entity.RefreshToken;
 import com.astral.express.pccms.identity.repository.RefreshTokenRepository;
 import com.astral.express.pccms.identity.security.JwtUtil;
-import com.astral.express.pccms.user.dto.response.UserResponse;
 import com.astral.express.pccms.user.entity.Roles;
 import com.astral.express.pccms.user.entity.Users;
 import com.astral.express.pccms.user.mapper.UserMapper;
