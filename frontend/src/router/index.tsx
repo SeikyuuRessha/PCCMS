@@ -24,6 +24,7 @@ import {
     GroomingBoardPage,
     BoardingLogPage,
 } from "~/features/reception";
+import { ReceptionMockProvider } from "~/features/reception/mockReceptionData";
 import { DoctorDashboard, DoctorQueuePage, MedicalRecordPage } from "~/features/doctor";
 import {
     AdminDashboard,
@@ -92,7 +93,9 @@ export const router = createBrowserRouter([
         path: "/reception",
         element: (
             <AuthGuard requiredRole="reception">
-                <DashboardLayout />
+                <ReceptionMockProvider>
+                    <DashboardLayout />
+                </ReceptionMockProvider>
             </AuthGuard>
         ),
         children: [

@@ -11,7 +11,7 @@ export function AuthLayout() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
                             <PawPrint className="h-6 w-6 text-white" />
                         </div>
-                        <span className="text-xl font-bold tracking-tight">Pawluna</span>
+                        <span className="text-xl font-bold tracking-tight">PCCMS</span>
                     </div>
                     <div className="max-w-md">
                         <h2 className="text-3xl font-bold tracking-tight">
@@ -22,7 +22,7 @@ export function AuthLayout() {
                             nhở tiêm phòng tự động.
                         </p>
                     </div>
-                    <div className="text-sm font-medium text-slate-400">© 2026 Astral Team.</div>
+                    <div className="text-sm font-medium text-slate-400">© 2026 PCCMS Team.</div>
                 </div>
             </div>
 
@@ -33,7 +33,7 @@ export function AuthLayout() {
                             <PawPrint className="h-6 w-6 text-white" />
                         </div>
                         <span className="text-xl font-bold tracking-tight text-slate-900">
-                            Pawluna
+                            PCCMS
                         </span>
                     </div>
 
