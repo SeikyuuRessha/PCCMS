@@ -1,7 +1,7 @@
 import { Button, Input, Textarea } from "~/components/atoms";
 import { Card } from "~/components/molecules";
 import { roleLabels, shiftLabels, statusLabels, staffMembers, workScheduleRoles, workScheduleShifts, workScheduleStatuses } from "../mockWorkSchedules";
-import type { StaffMember, WorkSchedule, WorkScheduleFormValues } from "../types";
+import type { WorkSchedule, WorkScheduleFormValues } from "../types";
 
 interface WorkScheduleFormDialogProps {
     open: boolean;
@@ -73,6 +73,24 @@ export function WorkScheduleFormDialog({
                                 ))}
                             </select>
                         </div>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[13px] font-medium text-slate-700">Phòng làm việc</label>
+                            <input
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] text-slate-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                                value={value.room}
+                                onChange={(e) => onChange({ ...value, room: e.target.value })}
+                                placeholder="Nhập phòng làm việc"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[13px] font-medium text-slate-700">Vị trí làm việc</label>
+                            <input
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] text-slate-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                                value={value.position}
+                                onChange={(e) => onChange({ ...value, position: e.target.value })}
+                                placeholder="Nhập vị trí làm việc"
+                            />
+                        </div>
                         <Input
                             label="Ngày làm việc"
                             value={value.workDate}
@@ -122,6 +140,10 @@ export function WorkScheduleFormDialog({
 
                     {selectedStaff && currentSchedule && selectedStaff.id !== currentSchedule.staffId && (
                         <p className="mt-3 text-sm text-slate-500">Nhân sự được chọn: {selectedStaff.name}</p>
+                    )}
+
+                    {(!value.room.trim() || !value.position.trim()) && (
+                        <p className="mt-3 text-sm text-slate-500">Vui lòng nhập phòng làm việc và vị trí làm việc.</p>
                     )}
 
                     {error && <p className="mt-3 text-sm font-medium text-error-600">{error}</p>}

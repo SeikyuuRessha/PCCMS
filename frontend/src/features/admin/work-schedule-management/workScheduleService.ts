@@ -8,7 +8,7 @@ let schedulesStore: WorkSchedule[] = mockWorkSchedules.map((schedule) => ({ ...s
 const cloneSchedule = (schedule: WorkSchedule): WorkSchedule => ({ ...schedule });
 
 const validateRequired = (payload: WorkScheduleFormValues) => {
-    if (!payload.staffId || !payload.role || !payload.workDate || !payload.shift || !payload.status) {
+    if (!payload.staffId || !payload.role || !payload.room || !payload.position || !payload.workDate || !payload.shift || !payload.status) {
         throw new Error("Vui lòng nhập đầy đủ thông tin bắt buộc");
     }
 };
@@ -42,10 +42,12 @@ export const searchWorkSchedules = async (params: WorkScheduleSearchParams) => {
                 schedule.scheduleCode.toLowerCase().includes(keyword) ||
                 schedule.staffName.toLowerCase().includes(keyword);
             const matchesRole = !params.role || schedule.role === params.role;
+            const matchesRoom = !params.room || schedule.room.toLowerCase().includes(params.room.trim().toLowerCase());
+            const matchesPosition = !params.position || schedule.position.toLowerCase().includes(params.position.trim().toLowerCase());
             const matchesDate = !params.workDate || schedule.workDate === params.workDate;
             const matchesShift = !params.shift || schedule.shift === params.shift;
             const matchesStatus = !params.status || schedule.status === params.status;
-            return matchesKeyword && matchesRole && matchesDate && matchesShift && matchesStatus;
+            return matchesKeyword && matchesRole && matchesRoom && matchesPosition && matchesDate && matchesShift && matchesStatus;
         })
         .map((schedule) => cloneSchedule(schedule));
 };
@@ -73,6 +75,8 @@ export const createWorkSchedule = async (payload: WorkScheduleFormValues) => {
         staffId: staff.id,
         staffName: staff.name,
         role: staff.role,
+        room: payload.room.trim(),
+        position: payload.position.trim(),
         workDate: payload.workDate,
         shift: payload.shift as WorkScheduleShift,
         status: payload.status as WorkScheduleStatus,
@@ -111,6 +115,8 @@ export const updateWorkSchedule = async (id: string, payload: WorkScheduleFormVa
         staffId: staff.id,
         staffName: staff.name,
         role: staff.role,
+        room: payload.room.trim(),
+        position: payload.position.trim(),
         workDate: payload.workDate,
         shift: payload.shift as WorkScheduleShift,
         status: payload.status as WorkScheduleStatus,

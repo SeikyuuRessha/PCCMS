@@ -14,6 +14,8 @@ export interface WorkSchedule {
     staffId: string;
     staffName: string;
     role: WorkScheduleRole;
+    room: string;
+    position: string;
     workDate: string;
     shift: WorkScheduleShift;
     status: WorkScheduleStatus;
@@ -23,6 +25,8 @@ export interface WorkSchedule {
 export interface WorkScheduleSearchParams {
     keyword: string;
     role: WorkScheduleRole | "";
+    room: string;
+    position: string;
     workDate: string;
     shift: WorkScheduleShift | "";
     status: WorkScheduleStatus | "";
@@ -31,6 +35,8 @@ export interface WorkScheduleSearchParams {
 export interface WorkScheduleFormValues {
     staffId: string;
     role: WorkScheduleRole | "";
+    room: string;
+    position: string;
     workDate: string;
     shift: WorkScheduleShift | "";
     status: WorkScheduleStatus | "";

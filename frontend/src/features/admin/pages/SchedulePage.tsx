@@ -19,6 +19,8 @@ import type {
 const emptyFilters: WorkScheduleSearchParams = {
     keyword: "",
     role: "",
+    room: "",
+    position: "",
     workDate: "",
     shift: "",
     status: "",
@@ -27,6 +29,8 @@ const emptyFilters: WorkScheduleSearchParams = {
 const emptyForm: WorkScheduleFormValues = {
     staffId: "",
     role: "",
+    room: "",
+    position: "",
     workDate: "",
     shift: "",
     status: "",
@@ -43,14 +47,47 @@ const shiftOptions = ["Ca sáng", "Ca chiều", "Ca tối"];
 
 const statusOptions = ["Đã phân công", "Đã hủy"];
 
+const defaultWeekDate = new Date("2026-04-12T00:00:00");
+
 const buildFormValues = (schedule: WorkSchedule): WorkScheduleFormValues => ({
     staffId: schedule.staffId,
     role: schedule.role,
+    room: schedule.room,
+    position: schedule.position,
     workDate: schedule.workDate,
     shift: schedule.shift,
     status: schedule.status,
     note: schedule.note,
 });
+
+const getTextValue = (record: Record<string, unknown>, keys: string[]) => {
+    for (const key of keys) {
+        const value = record[key];
+
+        if (typeof value === "string" && value.trim()) {
+            return value.trim();
+        }
+    }
+
+    return "";
+};
+
+const getScheduleDetails = (schedule: WorkSchedule) => {
+    const record = schedule as unknown as Record<string, unknown>;
+
+    const room =
+        getTextValue(record, ["room", "roomName", "roomCode", "department", "location", "workRoom"]) ||
+        "Chưa có phòng";
+
+    const position =
+        getTextValue(record, ["position", "positionName", "jobPosition", "workPosition", "dutyPosition"]) ||
+        "Chưa có vị trí";
+
+    return {
+        room,
+        position,
+    };
+};
 
 const normalizeDateValue = (value?: string) => {
     if (!value) return "";
@@ -151,7 +188,12 @@ export function SchedulePage() {
     const [cancelLoading, setCancelLoading] = useState(false);
     const [cancelError, setCancelError] = useState("");
 
-    const [weekAnchor, setWeekAnchor] = useState(() => getStartOfWeek(new Date("2026-04-12T00:00:00")));
+    const [weekAnchor, setWeekAnchor] = useState(() => getStartOfWeek(defaultWeekDate));
+    const [detailSlot, setDetailSlot] = useState<{
+        date: Date;
+        shift: WorkSchedule["shift"];
+    } | null>(null);
+    const [detailSearch, setDetailSearch] = useState("");
 
     const loadSchedules = async () => {
         setLoading(true);
@@ -192,6 +234,29 @@ export function SchedulePage() {
         });
     }, [filteredSchedules, visibleWeekDates]);
 
+    const detailSlotItems = useMemo(() => {
+        if (!detailSlot) return [];
+
+        const dateKey = formatISODate(detailSlot.date);
+        const keyword = detailSearch.trim().toLowerCase();
+
+        return filteredSchedules.filter((schedule) => {
+            const matchesSlot = normalizeDateValue(schedule.workDate) === dateKey && schedule.shift === detailSlot.shift;
+
+            if (!matchesSlot) {
+                return false;
+            }
+
+            if (!keyword) {
+                return true;
+            }
+
+            return [schedule.staffName, schedule.role, schedule.room, schedule.position, schedule.note]
+                .filter(Boolean)
+                .some((value) => value.toLowerCase().includes(keyword));
+        });
+    }, [detailSearch, detailSlot, filteredSchedules]);
+
     const updateFilter = (name: keyof WorkScheduleSearchParams, value: string) => {
         setFilters((current) => ({
             ...current,
@@ -203,6 +268,8 @@ export function SchedulePage() {
         const hasCriteria =
             filters.keyword.trim() ||
             filters.role ||
+            filters.room.trim() ||
+            filters.position.trim() ||
             filters.workDate.trim() ||
             filters.shift ||
             filters.status;
@@ -239,7 +306,8 @@ export function SchedulePage() {
         setFilters(emptyFilters);
         setSearchError("");
         setFeedback("");
-        setWeekAnchor(getStartOfWeek(new Date("2026-04-12T00:00:00")));
+        setDetailSlot(null);
+        setWeekAnchor(getStartOfWeek(defaultWeekDate));
 
         await loadSchedules();
     };
@@ -266,6 +334,7 @@ export function SchedulePage() {
     };
 
     const openEdit = (schedule: WorkSchedule) => {
+        setDetailSlot(null);
         setFormMode("edit");
         setEditingSchedule(schedule);
         setFormValue(buildFormValues(schedule));
@@ -310,15 +379,29 @@ export function SchedulePage() {
     };
 
     const goToPreviousWeek = () => {
+        setDetailSlot(null);
         setWeekAnchor((current) => addDays(current, -7));
     };
 
     const goToNextWeek = () => {
+        setDetailSlot(null);
         setWeekAnchor((current) => addDays(current, 7));
     };
 
     const goToCurrentWeek = () => {
-        setWeekAnchor(getStartOfWeek(new Date("2026-04-12T00:00:00")));
+        setDetailSlot(null);
+        setWeekAnchor(getStartOfWeek(defaultWeekDate));
+    };
+
+    const goToSelectedWeek = (value: string) => {
+        if (!value) return;
+
+        const selectedDate = new Date(`${value}T00:00:00`);
+
+        if (Number.isNaN(selectedDate.getTime())) return;
+
+        setDetailSlot(null);
+        setWeekAnchor(getStartOfWeek(selectedDate));
     };
 
     const confirmCancel = async () => {
@@ -340,12 +423,100 @@ export function SchedulePage() {
         }
     };
 
+    const renderSchedulePreview = (schedule: WorkSchedule) => {
+        const scheduleDetails = getScheduleDetails(schedule);
+
+        return (
+            <div
+                key={schedule.id}
+                className={`rounded-2xl border px-3 py-2 text-xs ${
+                    schedule.status === "Đã hủy"
+                        ? "border-amber-200 bg-amber-50/80"
+                        : "border-emerald-200 bg-emerald-50/80"
+                }`}
+            >
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <p className="break-words font-semibold text-slate-900">{schedule.staffName}</p>
+                        <p className="mt-0.5 break-words text-[11px] text-slate-500">{schedule.role}</p>
+                    </div>
+
+                    {schedule.status === "Đã hủy" && (
+                        <span className="shrink-0 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-medium text-amber-700">
+                            Đã hủy
+                        </span>
+                    )}
+                </div>
+
+                <p className="mt-1 break-words text-[11px] text-slate-600">Phòng: {scheduleDetails.room}</p>
+            </div>
+        );
+    };
+
+    const renderDetailStatusBadge = (status: WorkSchedule["status"]) =>
+        status === "Đã hủy" ? (
+            <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-[11px] font-medium text-amber-700">
+                Đã hủy
+            </span>
+        ) : (
+            <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-medium text-emerald-700">
+                Đã phân công
+            </span>
+        );
+
+    const renderDetailTableRow = (schedule: WorkSchedule, index: number) => {
+        const scheduleDetails = getScheduleDetails(schedule);
+
+        return (
+            <tr key={schedule.id} className="border-b border-slate-100 last:border-b-0">
+                <td className="whitespace-nowrap px-3 py-3 text-xs text-slate-600">{index + 1}</td>
+                <td className="px-3 py-3 text-xs font-medium text-slate-900">
+                    <div className="max-w-[220px] whitespace-normal break-words">{schedule.staffName}</div>
+                </td>
+                <td className="px-3 py-3 text-xs text-slate-700">
+                    <div className="max-w-[160px] whitespace-normal break-words">{schedule.role}</div>
+                </td>
+                <td className="px-3 py-3 text-xs text-slate-700">
+                    <div className="max-w-[160px] whitespace-normal break-words">{scheduleDetails.room}</div>
+                </td>
+                <td className="px-3 py-3 text-xs text-slate-700">
+                    <div className="max-w-[180px] whitespace-normal break-words">{scheduleDetails.position}</div>
+                </td>
+                <td className="px-3 py-3 text-xs text-slate-600">
+                    <div className="max-w-[220px] whitespace-normal break-words line-clamp-2">{schedule.note || "-"}</div>
+                </td>
+                <td className="px-3 py-3 text-xs">{renderDetailStatusBadge(schedule.status)}</td>
+                <td className="px-3 py-3 text-xs">
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => openEdit(schedule)}
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                            Sửa
+                        </button>
+
+                        {schedule.status !== "Đã hủy" && (
+                            <button
+                                type="button"
+                                onClick={() => openCancel(schedule)}
+                                className="rounded-xl border border-rose-200 bg-white px-3 py-1.5 font-semibold text-rose-700 transition hover:bg-rose-50"
+                            >
+                                Hủy
+                            </button>
+                        )}
+                    </div>
+                </td>
+            </tr>
+        );
+    };
+
     return (
         <div className="w-full min-w-0 max-w-full space-y-6 overflow-x-hidden">
             <div className="min-w-0">
                 <h1 className="text-2xl font-semibold text-slate-900">Quản lý lịch làm việc nhân sự</h1>
                 <p className="mt-1 text-sm text-slate-500">
-                    Phân công, theo dõi và điều chỉnh ca làm việc của nhân sự trong trung tâm.
+                    Phân công, theo dõi phòng làm việc, vị trí trực và ca làm việc của nhân sự trong trung tâm.
                 </p>
             </div>
 
@@ -371,8 +542,11 @@ export function SchedulePage() {
                 </div>
             </div>
 
-            <Card title="Bộ lọc tìm kiếm" subtitle="Tìm theo mã lịch, tên nhân sự, vai trò, ngày làm việc, ca và trạng thái">
-                <div className="grid w-full min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+            <Card
+                title="Bộ lọc tìm kiếm"
+                subtitle="Tìm theo mã lịch, tên nhân sự, vai trò, phòng làm việc, vị trí làm việc, ngày làm việc, ca và trạng thái"
+            >
+                <div className="grid w-full min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     <div className="min-w-0">
                         <label className="mb-2 block text-sm font-semibold text-slate-700">Mã lịch / nhân sự</label>
                         <input
@@ -402,6 +576,36 @@ export function SchedulePage() {
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="min-w-0">
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">Phòng làm việc</label>
+                        <input
+                            value={filters.room}
+                            onChange={(event) => updateFilter("room", event.target.value)}
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                    void runSearch();
+                                }
+                            }}
+                            className={inputClassName}
+                            placeholder="Nhập phòng làm việc"
+                        />
+                    </div>
+
+                    <div className="min-w-0">
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">Vị trí làm việc</label>
+                        <input
+                            value={filters.position}
+                            onChange={(event) => updateFilter("position", event.target.value)}
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                    void runSearch();
+                                }
+                            }}
+                            className={inputClassName}
+                            placeholder="Nhập vị trí làm việc"
+                        />
                     </div>
 
                     <div className="min-w-0">
@@ -469,7 +673,7 @@ export function SchedulePage() {
 
             <Card
                 title="Lịch chăm sóc thú cưng theo tuần"
-                subtitle="Theo dõi nhân sự trực theo từng ngày, từng ca và thêm lịch nhanh cho các ca còn trống."
+                subtitle="Mỗi ca chỉ hiển thị tóm tắt. Bấm Chi tiết để xem toàn bộ nhân sự trong ca."
             >
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                     <div className="flex flex-wrap items-center gap-2">
@@ -487,6 +691,16 @@ export function SchedulePage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
+                        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                            Chọn tuần
+                            <input
+                                type="date"
+                                value={formatISODate(weekAnchor)}
+                                onChange={(event) => goToSelectedWeek(event.target.value)}
+                                className="h-9 rounded-2xl border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                            />
+                        </label>
+
                         <div className="text-sm font-medium text-slate-700">{formatWeekRange(weekAnchor)}</div>
 
                         <Button className="px-4 py-2 text-xs" onClick={openCreate}>
@@ -498,32 +712,30 @@ export function SchedulePage() {
                 {loading ? (
                     <div className="py-10 text-center text-sm text-slate-500">Đang tải dữ liệu lịch làm việc...</div>
                 ) : (
-                    <div className="w-full min-w-0 max-w-full overflow-hidden">
-                        <div className="grid w-full min-w-0 grid-cols-7 gap-3">
-                            {groupedByDate.map((day) => (
-                                <div
-                                    key={formatISODate(day.date)}
-                                    className="min-w-0 rounded-3xl border border-slate-200 bg-slate-50/70 p-2"
-                                >
-                                    <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
-                                        <p className="min-w-0 truncate text-sm font-semibold text-slate-900">
-                                            {formatDayHeading(day.date)}
-                                        </p>
+                    <div className="grid w-full min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-7">
+                        {groupedByDate.map((day) => (
+                            <div
+                                key={formatISODate(day.date)}
+                                className="min-w-0 rounded-3xl border border-slate-200 bg-slate-50/80 p-3"
+                            >
+                                <div className="mb-3 rounded-2xl bg-white px-3 py-3 shadow-sm">
+                                    <p className="text-sm font-semibold text-slate-900">{formatDayHeading(day.date)}</p>
+                                    <p className="mt-1 text-xs text-slate-500">{formatFullDate(day.date)}</p>
+                                </div>
 
-                                        <div className="shrink-0 rounded-full bg-white px-2 py-1 text-xs font-medium text-slate-600 shadow-sm">
-                                            {day.shifts.reduce((acc, item) => acc + item.items.length, 0)} lịch
-                                        </div>
-                                    </div>
+                                <div className="space-y-3">
+                                    {day.shifts.map((shiftBlock) => {
+                                        const previewItems = shiftBlock.items.slice(0, 2);
+                                        const hiddenCount = shiftBlock.items.length - previewItems.length;
 
-                                    <div className="space-y-2">
-                                        {day.shifts.map((shiftBlock) => (
+                                        return (
                                             <div
                                                 key={`${formatISODate(day.date)}-${shiftBlock.shift}`}
-                                                className="min-w-0 rounded-2xl bg-white p-2 shadow-sm"
+                                                className="rounded-3xl bg-white p-3 shadow-sm"
                                             >
-                                                <div className="flex min-w-0 items-center justify-between gap-2">
-                                                    <div className="min-w-0">
-                                                        <p className="truncate text-xs font-semibold text-slate-900">
+                                                <div className="mb-3 flex items-center justify-between gap-2">
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-slate-900">
                                                             {shiftBlock.shift}
                                                         </p>
                                                         <p className="text-[11px] text-slate-500">
@@ -532,107 +744,148 @@ export function SchedulePage() {
                                                     </div>
 
                                                     {shiftBlock.items.length > 0 ? (
-                                                        <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700">
+                                                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700">
                                                             Có lịch
                                                         </span>
                                                     ) : (
-                                                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-500">
+                                                        <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-500">
                                                             Trống
                                                         </span>
                                                     )}
                                                 </div>
 
-                                                <div className="mt-2 space-y-2">
-                                                    {shiftBlock.items.length === 0 ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openCreateForSlot(day.date, shiftBlock.shift)}
-                                                            className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 px-2 py-4 text-center text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50"
-                                                        >
-                                                            + Thêm lịch
-                                                        </button>
-                                                    ) : (
-                                                        <>
-                                                            {shiftBlock.items.map((schedule) => (
-                                                                <div
-                                                                    key={schedule.id}
-                                                                    className={`min-w-0 rounded-2xl border p-2 shadow-sm ${
-                                                                        schedule.status === "Đã hủy"
-                                                                            ? "border-amber-200 bg-amber-50/60"
-                                                                            : "border-emerald-200 bg-emerald-50/70"
-                                                                    }`}
-                                                                >
-                                                                    <div className="space-y-1">
-                                                                        <p className="break-words text-xs font-semibold leading-snug text-slate-900">
-                                                                            {schedule.staffName}
-                                                                        </p>
+                                                {shiftBlock.items.length === 0 ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openCreateForSlot(day.date, shiftBlock.shift)}
+                                                        className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 px-3 py-4 text-center text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50"
+                                                    >
+                                                        + Thêm lịch
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        <div className="space-y-2">
+                                                            {previewItems.map((schedule) => renderSchedulePreview(schedule))}
+                                                        </div>
 
-                                                                        <div className="flex flex-wrap items-center gap-1">
-                                                                            <p className="text-[11px] text-slate-500">
-                                                                                {schedule.scheduleCode}
-                                                                            </p>
+                                                        {hiddenCount > 0 && (
+                                                            <div className="mt-2 rounded-2xl bg-slate-50 px-3 py-2 text-center text-xs font-semibold text-slate-600">
+                                                                +{hiddenCount} lịch khác
+                                                            </div>
+                                                        )}
 
-                                                                            {schedule.status === "Đã hủy" && (
-                                                                                <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-medium text-amber-700">
-                                                                                    Đã hủy
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
+<div className="mt-3 grid grid-cols-2 gap-2">
+    <button
+        type="button"
+        onClick={() =>
+            setDetailSlot({
+                date: day.date,
+                shift: shiftBlock.shift,
+            })
+        }
+        className="min-w-0 rounded-xl border border-blue-200 bg-blue-50 px-2 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+    >
+        Chi tiết
+    </button>
 
-                                                                    <div className="mt-2 flex min-w-0 flex-wrap gap-1 text-[11px]">
-                                                                        <span className="max-w-full break-words rounded-full bg-white px-2 py-1 text-slate-700">
-                                                                            {schedule.role}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    {schedule.note && (
-                                                                        <p className="mt-2 line-clamp-2 text-[11px] text-slate-600">
-                                                                            {schedule.note}
-                                                                        </p>
-                                                                    )}
-
-                                                                    <div className="mt-2 flex flex-wrap gap-1">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => openEdit(schedule)}
-                                                                            className="rounded-xl border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
-                                                                        >
-                                                                            Sửa
-                                                                        </button>
-
-                                                                        {schedule.status !== "Đã hủy" && (
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => openCancel(schedule)}
-                                                                                className="rounded-xl border border-rose-200 px-2 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-50"
-                                                                            >
-                                                                                Hủy
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openCreateForSlot(day.date, shiftBlock.shift)}
-                                                                className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 px-2 py-3 text-center text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50"
-                                                            >
-                                                                + Thêm lịch
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
+    <button
+        type="button"
+        onClick={() => openCreateForSlot(day.date, shiftBlock.shift)}
+        className="min-w-0 rounded-xl border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+    >
+        Thêm
+    </button>
+</div>
+                                                    </>
+                                                )}
                                             </div>
-                                        ))}
-                                    </div>
+                                        );
+                                    })}
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </Card>
+
+            {detailSlot && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
+                    <div className="flex max-h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+                        <div className="border-b border-slate-200 px-6 py-5">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-xl font-semibold text-slate-900">Chi tiết lịch làm việc</h2>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        {formatDayHeading(detailSlot.date)} - {detailSlot.shift}
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        Tổng số lịch: {detailSlotItems.length}
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setDetailSlot(null)}
+                                    className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                >
+                                    Đóng
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="border-b border-slate-200 px-6 py-4">
+                            <input
+                                value={detailSearch}
+                                onChange={(event) => setDetailSearch(event.target.value)}
+                                className={inputClassName}
+                                placeholder="Tìm theo tên, vai trò, phòng, vị trí..."
+                            />
+                        </div>
+
+                        <div className="flex-1 overflow-hidden px-6 py-5">
+                            {detailSlotItems.length === 0 ? (
+                                <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500">
+                                    Chưa có lịch làm việc trong ca này.
+                                </div>
+                            ) : (
+                                <div className="max-h-[55vh] overflow-y-auto rounded-3xl border border-slate-200">
+                                    <table className="min-w-full table-fixed border-collapse text-left text-sm">
+                                        <thead className="sticky top-0 z-10 bg-slate-50">
+                                            <tr className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                                <th className="w-14 px-3 py-3">STT</th>
+                                                <th className="px-3 py-3">Nhân sự</th>
+                                                <th className="px-3 py-3">Vai trò</th>
+                                                <th className="px-3 py-3">Phòng</th>
+                                                <th className="px-3 py-3">Vị trí</th>
+                                                <th className="px-3 py-3">Ghi chú</th>
+                                                <th className="w-32 px-3 py-3">Trạng thái</th>
+                                                <th className="w-40 px-3 py-3">Thao tác</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody className="bg-white">
+                                            {detailSlotItems.map((schedule, index) => renderDetailTableRow(schedule, index))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 px-6 py-4">
+                            <Button
+                                variant="outline"
+                                onClick={() => openCreateForSlot(detailSlot.date, detailSlot.shift)}
+                            >
+                                + Thêm lịch trong ca này
+                            </Button>
+
+                            <Button variant="outline" onClick={() => setDetailSlot(null)}>
+                                Đóng
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <WorkScheduleFormDialog
                 open={formOpen}
