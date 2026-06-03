@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { mockAuth } from "~/constants/auth";
+import { useAuth } from "~/features/auth/context/AuthContext";
 import type { RoleKey } from "~/types/navigation";
 
 // Layouts
@@ -35,28 +35,32 @@ import {
 } from "~/features/admin";
 
 function AuthGuard({ children, requiredRole }: { children: ReactNode; requiredRole: RoleKey }) {
-    if (!mockAuth.isAuthenticated) {
+    const { user } = useAuth();
+      
+    if (!user) {
         return <Navigate to="/login" replace />;
     }
 
-    if (mockAuth.currentRole !== requiredRole) {
-        const fallbackPath =
-            mockAuth.currentRole === "public" ? "/login" : `/${mockAuth.currentRole}`;
+    const currentRole = user?.roleCode?.toLowerCase() || "public";
+    
+    if (currentRole !== requiredRole) {
+        const fallbackPath = currentRole === "public" ? "/login" : `/${currentRole}`;
         return <Navigate to={fallbackPath} replace />;
     }
 
     return <>{children}</>;
 }
 
+function RootRedirect() {
+    const { user } = useAuth();
+    const currentRole = user?.roleCode?.toLowerCase() || "public";
+    return <Navigate to={currentRole === "public" ? "/login" : `/${currentRole}`} replace />;
+}
+
 export const router = createBrowserRouter([
     {
         path: "/",
-        element: (
-            <Navigate
-                to={mockAuth.currentRole === "public" ? "/login" : `/${mockAuth.currentRole}`}
-                replace
-            />
-        ),
+        element: <RootRedirect />,
     },
 
     // Auth routes
@@ -89,9 +93,9 @@ export const router = createBrowserRouter([
 
     // STAFF ROUTES
     {
-        path: "/reception",
+        path: "/staff",
         element: (
-            <AuthGuard requiredRole="reception">
+            <AuthGuard requiredRole="staff">
                 <DashboardLayout />
             </AuthGuard>
         ),
@@ -103,9 +107,9 @@ export const router = createBrowserRouter([
         ],
     },
     {
-        path: "/doctor",
+        path: "/veterinarian",
         element: (
-            <AuthGuard requiredRole="doctor">
+            <AuthGuard requiredRole="veterinarian">
                 <DashboardLayout />
             </AuthGuard>
         ),

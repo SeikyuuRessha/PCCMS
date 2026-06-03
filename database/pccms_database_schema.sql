@@ -21,21 +21,6 @@ CREATE TYPE file_visibility_enum AS ENUM ('PRIVATE', 'OWNER_VISIBLE', 'STAFF_ONL
 -- =========================================================
 -- 1. IDENTITY, ACCESS, ACCOUNT ADMINISTRATION
 -- =========================================================
-CREATE TABLE users (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email            VARCHAR(255) NOT NULL UNIQUE,
-    phone            VARCHAR(30) UNIQUE,
-    password_hash    TEXT NOT NULL,
-    full_name        VARCHAR(150) NOT NULL,
-    status_code      user_status_enum NOT NULL DEFAULT 'UNVERIFIED',
-    email_verified_at TIMESTAMPTZ,
-    phone_verified_at TIMESTAMPTZ,
-    last_login_at    TIMESTAMPTZ,
-    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at       TIMESTAMPTZ
-);
-
 CREATE TABLE roles (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code        VARCHAR(60) NOT NULL UNIQUE,
@@ -51,19 +36,27 @@ INSERT INTO roles (code, name) VALUES
 ('ADMIN','Quản trị viên hệ thống')
 ON CONFLICT DO NOTHING;
 
+CREATE TABLE users (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email            VARCHAR(255) NOT NULL UNIQUE,
+    phone            VARCHAR(30) UNIQUE,
+    password_hash    TEXT NOT NULL,
+    full_name        VARCHAR(150) NOT NULL,
+    role_id          UUID NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
+    status_code      user_status_enum NOT NULL DEFAULT 'UNVERIFIED',
+    email_verified_at TIMESTAMPTZ,
+    phone_verified_at TIMESTAMPTZ,
+    last_login_at    TIMESTAMPTZ,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at       TIMESTAMPTZ
+);
+
 CREATE TABLE permissions (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code        VARCHAR(120) NOT NULL UNIQUE,
     name        VARCHAR(150) NOT NULL,
     description TEXT
-);
-
-CREATE TABLE user_roles (
-    user_id    UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    role_id    UUID NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
-    assigned_by UUID REFERENCES users(id),
-    assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (user_id, role_id)
 );
 
 CREATE TABLE role_permissions (
@@ -149,18 +142,15 @@ WHERE r.code = 'ADMIN'
 ON CONFLICT DO NOTHING;
 
 -- 3. Seed Default Admin Account (admin@pccms.vn / admin123)
-INSERT INTO users (id, email, password_hash, full_name, status_code)
+INSERT INTO users (id, email, password_hash, full_name, role_id, status_code)
 VALUES (
     '00000000-0000-0000-0000-000000000000',
     'admin@pccms.vn',
     crypt('admin123', gen_salt('bf')),
     'System Admin',
+    (SELECT id FROM roles WHERE code = 'ADMIN'),
     'ACTIVE'
 ) ON CONFLICT DO NOTHING;
-
-INSERT INTO user_roles (user_id, role_id)
-SELECT '00000000-0000-0000-0000-000000000000', id FROM roles WHERE code = 'ADMIN'
-ON CONFLICT DO NOTHING;
 
 CREATE TABLE staff_profiles (
     user_id             UUID PRIMARY KEY REFERENCES users(id) ON DELETE RESTRICT,
@@ -768,7 +758,6 @@ JOIN service_catalog sc ON sc.id = so.service_id;
 -- =========================================================
 CREATE INDEX idx_users_email_lower ON users (LOWER(email));
 CREATE INDEX idx_users_status ON users (status_code);
-CREATE INDEX idx_user_roles_role ON user_roles (role_id);
 
 CREATE INDEX idx_pets_owner ON pets (owner_id, is_active);
 CREATE INDEX idx_pets_species ON pets (species_id, breed_id);

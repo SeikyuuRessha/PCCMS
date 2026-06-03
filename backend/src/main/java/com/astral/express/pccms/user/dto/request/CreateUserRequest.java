@@ -15,6 +15,6 @@ public record CreateUserRequest(
     String email,
 
     @NotBlank(message = "Role is required")
-    @Pattern(regexp = "CUSTOMER|VETERINARIAN|RECEPTIONIST|ADMIN")
-    String roleName
+    @Pattern(regexp = "OWNER|STAFF|VETERINARIAN|ADMIN")
+    String roleCode
 ) {}

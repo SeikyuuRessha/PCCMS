@@ -10,14 +10,14 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
-    @Mapping(source = "role.roleName", target = "roleName")
+    @Mapping(source = "role.code", target = "roleCode")
     UserResponse toUserResponse(Users user);
 
-    @Mapping(source = "roleName", target = "role.roleName")
+    @Mapping(source = "roleCode", target = "role.code")
     Users toUser(CreateUserRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(source = "roleName", target = "role.roleName")
+    @Mapping(source = "roleCode", target = "role.code")
     void updateFromAdmin(AdminUpdateUserRequest request, @MappingTarget Users user);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

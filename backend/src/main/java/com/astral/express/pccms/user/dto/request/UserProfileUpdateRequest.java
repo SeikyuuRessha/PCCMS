@@ -5,6 +5,5 @@ import lombok.Builder;
 @Builder
 public record UserProfileUpdateRequest(
     String fullName,
-    String avatarUrl,
-    String bio
+    String phone
 ) {}

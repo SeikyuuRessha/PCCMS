@@ -47,7 +47,7 @@ public class UserService {
         Users user = userMapper.toUser(request);
 
         String plainPassword = PasswordGenerator.generate(8);
-        user.setHashPassword(passwordEncoder.encode(plainPassword));
+        user.setPasswordHash(passwordEncoder.encode(plainPassword));
 
         Users savedUser = userRepository.save(user);
         emailService.sendAccountCreatedEmail(request.email(), plainPassword);
@@ -144,11 +144,11 @@ public class UserService {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
 
-        if (!passwordEncoder.matches(request.currentPassword(), user.getHashPassword())) {
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
             throw new BusinessException(ErrorCode.ERR_IAM_001_INVALID_CREDENTIALS);
         }
 
-        user.setHashPassword(passwordEncoder.encode(request.newPassword()));
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
 
         log.info("User changed password: {}", user.getEmail());

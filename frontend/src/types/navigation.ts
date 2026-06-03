@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 
-export type RoleKey = "public" | "owner" | "reception" | "doctor" | "admin";
+export type RoleKey = "public" | "owner" | "staff" | "veterinarian" | "admin";
 
 export type ScreenKey =
     // Auth

@@ -17,22 +17,20 @@ import java.util.stream.Collectors;
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CustomUserDetails implements UserDetails {
-    UUID userId;
+    UUID id;
     String email;
     String password;
     boolean active;
-    OffsetDateTime lockUntil;
     Set<GrantedAuthority> authorities;
 
     public CustomUserDetails(Users user) {
-        this.userId = user.getUserId();
+        this.id = user.getId();
         this.email = user.getEmail();
-        this.password = user.getHashPassword();
+        this.password = user.getPasswordHash();
         this.active = user.getStatusCode() == com.astral.express.pccms.user.entity.UserStatus.ACTIVE;
-        this.lockUntil = user.getLockUntil();
         this.authorities = user.getRole().getPermissions()
                 .stream()
-                .map(p -> new SimpleGrantedAuthority(p.getPermissionName()))
+                .map(p -> new SimpleGrantedAuthority(p.getCode()))
                 .collect(Collectors.toSet());
     }
 
@@ -41,7 +39,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return lockUntil == null || lockUntil.isBefore(OffsetDateTime.now());
+        return true;
     }
 
     @Override public boolean isEnabled() { return active; }

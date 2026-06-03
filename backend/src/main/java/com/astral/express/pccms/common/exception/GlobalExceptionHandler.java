@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = AuthorizationDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAuthorizationDeniedException(AuthorizationDeniedException exception) {
-        log.error("Authorization Denied: ", exception);
+        log.error("Authorization Denied: {}", exception.getMessage());
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code(ErrorCode.ERR_403_FORBIDDEN.getHttpStatus())
@@ -69,7 +69,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(Exception exception) {
-        log.error("Unhandled Exception: ", exception);
+        log.error("Unhandled Exception: {}", exception.getMessage());
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code(ErrorCode.ERR_500_INTERNAL_SERVER.getHttpStatus())

@@ -42,7 +42,7 @@ public class AuthService {
     private final UserMapper userMapper;
     private final TokenBlacklistService tokenBlacklistService;
 
-    private static final String DEFAULT_ROLE = "STUDENT";
+    private static final String DEFAULT_ROLE = "OWNER";
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -52,14 +52,14 @@ public class AuthService {
         }
 
         // Get default role
-        Roles role = roleRepository.findByRoleName(DEFAULT_ROLE)
+        Roles role = roleRepository.findByCode(DEFAULT_ROLE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_005_DEFAULT_ROLE_NOT_FOUND));
 
         // Create new user
         Users user = Users.builder()
                 .fullName(request.fullName())
                 .email(request.email())
-                .hashPassword(passwordEncoder.encode(request.hashPassword()))
+                .passwordHash(passwordEncoder.encode(request.password()))
                 .role(role)
                 .statusCode(UserStatus.ACTIVE)
                 .build();
@@ -73,10 +73,15 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.hashPassword())
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
         } catch (BadCredentialsException e) {
             throw new BusinessException(ErrorCode.ERR_IAM_001_INVALID_CREDENTIALS);
+        } catch (org.springframework.security.authentication.InternalAuthenticationServiceException e) {
+            if (e.getCause() instanceof BusinessException businessException) {
+                throw businessException;
+            }
+            throw new BusinessException(ErrorCode.ERR_500_INTERNAL_SERVER);
         }
 
         Users user = userRepository.findByEmail(request.email())

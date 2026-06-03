@@ -30,7 +30,7 @@ public class JwtUtil {
     private Long refreshExpiration;
 
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        byte[] keyBytes = Decoders.BASE64URL.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -68,15 +68,19 @@ public class JwtUtil {
     public String generateToken(Users user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("jti", UUID.randomUUID().toString());
-        claims.put("userId", user.getUserId().toString());
-        claims.put("role", user.getRole().getRoleName());
-
-        return createToken(claims, user.getEmail(), expiration);
+        return Jwts.builder()
+                .subject(user.getId().toString())
+                .claim("role", user.getRole().getCode())
+                .claim("email", user.getEmail())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSigningKey(), Jwts.SIG.HS512)
+                .compact();
     }
 
     public String generateRefreshToken(Users user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", user.getUserId().toString());
+        claims.put("userId", user.getId().toString());
         claims.put("jti", UUID.randomUUID().toString());
         claims.put("tokenType", "REFRESH");
 

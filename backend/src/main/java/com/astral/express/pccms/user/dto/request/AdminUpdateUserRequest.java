@@ -6,7 +6,7 @@ import lombok.Builder;
 
 @Builder
 public record AdminUpdateUserRequest(
-    @Pattern(regexp = "CUSTOMER|VETERINARIAN|RECEPTIONIST|ADMIN")
-    String roleName,
+    @Pattern(regexp = "OWNER|STAFF|VETERINARIAN|ADMIN")
+    String roleCode,
     UserStatus statusCode
 ) {}

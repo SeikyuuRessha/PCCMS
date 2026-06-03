@@ -62,7 +62,7 @@ public class PetServiceImpl implements PetService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_PET_001_NOT_FOUND));
 
         java.util.UUID currentUserId = securityHelper.getCurrentUserId();
-        if (!pet.getOwner().getUserId().equals(currentUserId) && !securityHelper.isAdminOrStaff()) {
+        if (!pet.getOwner().getId().equals(currentUserId) && !securityHelper.isAdminOrStaff()) {
             throw new BusinessException(ErrorCode.ERR_403_FORBIDDEN);
         }
 
@@ -91,7 +91,7 @@ public class PetServiceImpl implements PetService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_PET_001_NOT_FOUND));
 
         java.util.UUID currentUserId = securityHelper.getCurrentUserId();
-        if (!pet.getOwner().getUserId().equals(currentUserId) && !securityHelper.isAdminOrStaff()) {
+        if (!pet.getOwner().getId().equals(currentUserId) && !securityHelper.isAdminOrStaff()) {
             throw new BusinessException(ErrorCode.ERR_403_FORBIDDEN);
         }
 
@@ -105,7 +105,7 @@ public class PetServiceImpl implements PetService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_PET_001_NOT_FOUND));
 
         java.util.UUID currentUserId = securityHelper.getCurrentUserId();
-        if (!pet.getOwner().getUserId().equals(currentUserId) && !securityHelper.isAdminOrStaff()) {
+        if (!pet.getOwner().getId().equals(currentUserId) && !securityHelper.isAdminOrStaff()) {
             throw new BusinessException(ErrorCode.ERR_403_FORBIDDEN);
         }
 
@@ -113,6 +113,6 @@ public class PetServiceImpl implements PetService {
         petRepository.save(pet);
         log.info("Deactivated pet with id: {}", pet.getId());
 
-        eventPublisher.publishEvent(new PetDeactivatedEvent(petId, pet.getOwner().getUserId()));
+        eventPublisher.publishEvent(new PetDeactivatedEvent(petId, pet.getOwner().getId()));
     }
 }

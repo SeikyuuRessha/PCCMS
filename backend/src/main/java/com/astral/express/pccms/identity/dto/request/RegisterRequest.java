@@ -16,8 +16,8 @@ public record RegisterRequest(
 
     @NotBlank(message = "Password is required")
     @Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-        message = "Password must have at least 8 characters, including uppercase, lowercase, digit and special character"
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$",
+        message = "Password must have at least 8 characters, including uppercase, lowercase, and digit"
     )
-    String hashPassword
+    String password
 ) {}

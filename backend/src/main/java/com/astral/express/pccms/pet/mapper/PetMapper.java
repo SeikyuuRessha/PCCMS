@@ -12,7 +12,7 @@ public interface PetMapper {
 
     @Mapping(target = "speciesId", source = "pet.species.id")
     @Mapping(target = "breedId", source = "pet.breed.id")
-    @Mapping(target = "ownerId", source = "pet.owner.userId")
+    @Mapping(target = "ownerId", source = "pet.owner.id")
     PetResponse toResponse(Pets pet, java.util.List<com.astral.express.pccms.medicalrecord.dto.response.HealthAlertResponse> healthAlerts);
 
     @Mapping(target = "species", ignore = true)
