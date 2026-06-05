@@ -1,7 +1,8 @@
 import { type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { mockAuth } from "~/constants/auth";
+import { useAuth } from "~/features/auth/context/AuthContext";
 import type { RoleKey } from "~/types/navigation";
+import type { UserResponse } from "~/types";
 
 // Layouts
 import { DashboardLayout } from "~/components/layouts";
@@ -24,6 +25,7 @@ import {
     GroomingBoardPage,
     BoardingLogPage,
 } from "~/features/reception";
+import { ReceptionMockProvider } from "~/features/reception/mockReceptionData";
 import { DoctorDashboard, DoctorQueuePage, MedicalRecordPage } from "~/features/doctor";
 import {
     AdminDashboard,
@@ -34,29 +36,44 @@ import {
     ReportsPage,
 } from "~/features/admin";
 
+function getStoredUser(): UserResponse | null {
+    try {
+        const storedUser = localStorage.getItem("user");
+        return storedUser ? (JSON.parse(storedUser) as UserResponse) : null;
+    } catch {
+        return null;
+    }
+}
+
 function AuthGuard({ children, requiredRole }: { children: ReactNode; requiredRole: RoleKey }) {
-    if (!mockAuth.isAuthenticated) {
+    const { user } = useAuth();
+    const effectiveUser = user ?? getStoredUser();
+      
+    if (!effectiveUser) {
         return <Navigate to="/login" replace />;
     }
 
-    if (mockAuth.currentRole !== requiredRole) {
-        const fallbackPath =
-            mockAuth.currentRole === "public" ? "/login" : `/${mockAuth.currentRole}`;
+    const currentRole = effectiveUser?.roleCode?.toLowerCase() || "public";
+    
+    if (currentRole !== requiredRole) {
+        const fallbackPath = currentRole === "public" ? "/login" : `/${currentRole}`;
         return <Navigate to={fallbackPath} replace />;
     }
 
     return <>{children}</>;
 }
 
+function RootRedirect() {
+    const { user } = useAuth();
+    const effectiveUser = user ?? getStoredUser();
+    const currentRole = effectiveUser?.roleCode?.toLowerCase() || "public";
+    return <Navigate to={currentRole === "public" ? "/login" : `/${currentRole}`} replace />;
+}
+
 export const router = createBrowserRouter([
     {
         path: "/",
-        element: (
-            <Navigate
-                to={mockAuth.currentRole === "public" ? "/login" : `/${mockAuth.currentRole}`}
-                replace
-            />
-        ),
+        element: <RootRedirect />,
     },
 
     // Auth routes
@@ -89,10 +106,12 @@ export const router = createBrowserRouter([
 
     // STAFF ROUTES
     {
-        path: "/reception",
+        path: "/staff",
         element: (
-            <AuthGuard requiredRole="reception">
-                <DashboardLayout />
+            <AuthGuard requiredRole="staff">
+                <ReceptionMockProvider>
+                    <DashboardLayout />
+                </ReceptionMockProvider>
             </AuthGuard>
         ),
         children: [
@@ -103,9 +122,9 @@ export const router = createBrowserRouter([
         ],
     },
     {
-        path: "/doctor",
+        path: "/veterinarian",
         element: (
-            <AuthGuard requiredRole="doctor">
+            <AuthGuard requiredRole="veterinarian">
                 <DashboardLayout />
             </AuthGuard>
         ),

@@ -33,23 +33,23 @@ export const screenMeta: Record<ScreenKey, ScreenMetaItem> = {
     profile: { label: "Thông tin cá nhân", icon: User, path: "/owner/profile" },
 
     // Reception
-    receptionDashboard: { label: "Dashboard nhân viên", icon: Home, path: "/reception" },
+    receptionDashboard: { label: "Dashboard nhân viên", icon: Home, path: "/staff" },
     appointmentReception: {
         label: "Tiếp nhận hẹn khám",
         icon: ClipboardList,
-        path: "/reception/appointments",
+        path: "/staff/appointments",
     },
     groomingBoard: {
         label: "Kanban dịch vụ spa",
         icon: Sparkles,
-        path: "/reception/grooming-board",
+        path: "/staff/grooming-board",
     },
-    boardingLog: { label: "Nhật ký lưu trú", icon: FileText, path: "/reception/boarding-log" },
+    boardingLog: { label: "Nhật ký lưu trú", icon: FileText, path: "/staff/boarding-log" },
 
     // Doctor
-    doctorDashboard: { label: "Dashboard bác sĩ", icon: Home, path: "/doctor" },
-    doctorQueue: { label: "Danh sách chờ khám", icon: HeartPulse, path: "/doctor/queue" },
-    medicalRecord: { label: "Bệnh án & kê đơn", icon: FileText, path: "/doctor/medical-record" },
+    doctorDashboard: { label: "Dashboard bác sĩ", icon: Home, path: "/veterinarian" },
+    doctorQueue: { label: "Danh sách chờ khám", icon: HeartPulse, path: "/veterinarian/queue" },
+    medicalRecord: { label: "Bệnh án & kê đơn", icon: FileText, path: "/veterinarian/medical-record" },
 
     // Admin
     adminDashboard: { label: "Dashboard quản trị", icon: Home, path: "/admin" },
