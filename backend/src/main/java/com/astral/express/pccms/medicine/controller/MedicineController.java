@@ -21,24 +21,25 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/medicines")
+@RequestMapping("/admin/medicines")
 @RequiredArgsConstructor
 public class MedicineController {
 
     private final MedicineService medicineService;
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('MEDICINE_MANAGE')")
     @PostMapping
     public ApiResponse<MedicineResponse> createMedicine(@Valid @RequestBody MedicineCreateRequest request) {
         return ApiResponse.success(medicineService.createMedicine(request));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('MEDICINE_MANAGE')")
     @PutMapping("/{id}")
     public ApiResponse<MedicineResponse> updateMedicine(
             @PathVariable UUID id,
@@ -46,20 +47,23 @@ public class MedicineController {
         return ApiResponse.success(medicineService.updateMedicine(id, request));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('VETERINARIAN')")
+    @PreAuthorize("hasAuthority('MEDICINE_MANAGE')")
     @GetMapping("/{id}")
     public ApiResponse<MedicineResponse> getMedicine(@PathVariable UUID id) {
         return ApiResponse.success(medicineService.getMedicine(id));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('VETERINARIAN')")
+    @PreAuthorize("hasAuthority('MEDICINE_MANAGE')")
     @GetMapping
     public ApiResponse<PageResponse<MedicineResponse>> getAllMedicines(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) UUID categoryId,
+            @RequestParam(required = false) Boolean isActive,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ApiResponse.success(medicineService.getAllMedicines(pageable));
+        return ApiResponse.success(medicineService.searchMedicines(keyword, categoryId, isActive, pageable));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('MEDICINE_MANAGE')")
     @PatchMapping("/{id}/stock")
     public ApiResponse<MedicineResponse> addStock(
             @PathVariable UUID id,
@@ -67,7 +71,7 @@ public class MedicineController {
         return ApiResponse.success(medicineService.addStock(id, request));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('MEDICINE_MANAGE')")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteMedicine(@PathVariable UUID id) {
         medicineService.deleteMedicine(id);

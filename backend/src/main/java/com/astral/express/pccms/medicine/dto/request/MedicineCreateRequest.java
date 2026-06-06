@@ -31,6 +31,18 @@ public record MedicineCreateRequest(
 
         @NotNull(message = "Unit price is required")
         @Min(value = 0, message = "Unit price must be greater than or equal to 0")
-        BigDecimal unitPriceVnd
+        BigDecimal unitPriceVnd,
+
+        Boolean isActive
 ) {
+    public MedicineCreateRequest(
+            String medicineCode,
+            String name,
+            UUID categoryId,
+            String unit,
+            String defaultInstruction,
+            Integer currentStock,
+            BigDecimal unitPriceVnd) {
+        this(medicineCode, name, categoryId, unit, defaultInstruction, currentStock, unitPriceVnd, true);
+    }
 }

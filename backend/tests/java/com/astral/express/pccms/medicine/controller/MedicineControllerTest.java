@@ -1,6 +1,7 @@
 package com.astral.express.pccms.medicine.controller;
 
 import com.astral.express.pccms.common.dto.PageResponse;
+import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.common.exception.GlobalExceptionHandler;
 import com.astral.express.pccms.medicine.dto.request.AddStockRequest;
 import com.astral.express.pccms.medicine.dto.request.MedicineCreateRequest;
@@ -64,7 +65,7 @@ class MedicineControllerTest {
 
         given(medicineService.createMedicine(any(MedicineCreateRequest.class))).willReturn(response);
 
-        mockMvc.perform(post("/api/v1/medicines")
+        mockMvc.perform(post("/admin/medicines")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -74,10 +75,9 @@ class MedicineControllerTest {
 
     @Test
     void should_ReturnBadRequest_when_CreateWithInvalidData() throws Exception {
-        // Missing name and unit
         MedicineCreateRequest request = new MedicineCreateRequest("CODE1", "", null, "", null, -10, BigDecimal.valueOf(-100));
 
-        mockMvc.perform(post("/api/v1/medicines")
+        mockMvc.perform(post("/admin/medicines")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -85,18 +85,40 @@ class MedicineControllerTest {
     }
 
     @Test
+    void should_ReturnValidationFailed_when_TC_MED_MGMT_008_missingRequiredFields() throws Exception {
+        String request = """
+                {
+                  "medicineCode": "",
+                  "name": "",
+                  "categoryId": null,
+                  "unit": "",
+                  "currentStock": null,
+                  "unitPriceVnd": null
+                }
+                """;
+
+        mockMvc.perform(post("/admin/medicines")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+    }
+
+    @Test
     void should_ReturnUpdatedMedicine_when_ValidRequest() throws Exception {
         UUID id = UUID.randomUUID();
-        MedicineUpdateRequest request = new MedicineUpdateRequest("Medicine Updated", null, "Box", null, 10, BigDecimal.valueOf(100));
-        MedicineResponse response = new MedicineResponse(id, "CODE1", "Medicine Updated", null, null, "Box", null, 10, BigDecimal.valueOf(100), true);
+        MedicineUpdateRequest request = new MedicineUpdateRequest("CODE2", "Medicine Updated", null, "Box", null, 10, BigDecimal.valueOf(100));
+        MedicineResponse response = new MedicineResponse(id, "CODE2", "Medicine Updated", null, null, "Box", null, 10, BigDecimal.valueOf(100), true);
 
         given(medicineService.updateMedicine(eq(id), any(MedicineUpdateRequest.class))).willReturn(response);
 
-        mockMvc.perform(put("/api/v1/medicines/{id}", id)
+        mockMvc.perform(put("/admin/medicines/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.medicineCode").value("CODE2"))
                 .andExpect(jsonPath("$.data.name").value("Medicine Updated"));
     }
 
@@ -107,7 +129,7 @@ class MedicineControllerTest {
 
         given(medicineService.getMedicine(id)).willReturn(response);
 
-        mockMvc.perform(get("/api/v1/medicines/{id}", id))
+        mockMvc.perform(get("/admin/medicines/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(id.toString()));
@@ -119,9 +141,9 @@ class MedicineControllerTest {
         MedicineResponse response = new MedicineResponse(id, "CODE1", "Medicine 1", null, null, "Box", null, 10, BigDecimal.valueOf(100), true);
         PageResponse<MedicineResponse> pageResponse = PageResponse.of(new org.springframework.data.domain.PageImpl<>(List.of(response)));
 
-        given(medicineService.getAllMedicines(any(Pageable.class))).willReturn(pageResponse);
+        given(medicineService.searchMedicines(eq(null), eq(null), eq(null), any(Pageable.class))).willReturn(pageResponse);
 
-        mockMvc.perform(get("/api/v1/medicines"))
+        mockMvc.perform(get("/admin/medicines"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }
@@ -134,7 +156,7 @@ class MedicineControllerTest {
 
         given(medicineService.addStock(eq(id), any(AddStockRequest.class))).willReturn(response);
 
-        mockMvc.perform(patch("/api/v1/medicines/{id}/stock", id)
+        mockMvc.perform(patch("/admin/medicines/{id}/stock", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -146,7 +168,7 @@ class MedicineControllerTest {
     void should_ReturnSuccess_when_DeleteMedicine() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/v1/medicines/{id}", id))
+        mockMvc.perform(delete("/admin/medicines/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }

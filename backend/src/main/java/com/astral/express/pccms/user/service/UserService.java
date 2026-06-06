@@ -10,18 +10,27 @@ import com.astral.express.pccms.user.dto.request.AdminUpdateUserRequest;
 import com.astral.express.pccms.user.dto.request.ChangePasswordRequest;
 import com.astral.express.pccms.user.dto.request.CreateUserRequest;
 import com.astral.express.pccms.user.dto.request.UserProfileUpdateRequest;
+import com.astral.express.pccms.user.dto.response.AccountResponse;
 import com.astral.express.pccms.user.dto.response.UserResponse;
+import com.astral.express.pccms.user.entity.Roles;
+import com.astral.express.pccms.user.entity.UserStatus;
 import com.astral.express.pccms.user.entity.Users;
 import com.astral.express.pccms.user.mapper.UserMapper;
+import com.astral.express.pccms.user.repository.RoleRepository;
 import com.astral.express.pccms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Slf4j
@@ -29,6 +38,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -36,6 +46,52 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     // ==================== ADMIN OPERATIONS ====================
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
+    public com.astral.express.pccms.common.dto.PageResponse<AccountResponse> searchAccounts(
+            String keyword,
+            String role,
+            UserStatus status,
+            Pageable pageable) {
+        if (!hasSearchCriteria(keyword, role, status)) {
+            throw new BusinessException(ErrorCode.ERR_ACC_007_SEARCH_CRITERIA_REQUIRED);
+        }
+        Page<Users> users = userRepository.findAll(accountSearchSpecification(keyword, role, status), pageable);
+        return com.astral.express.pccms.common.dto.PageResponse.of(users.map(this::toAccountResponse));
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
+    public AccountResponse updateAccountStatus(UUID accountId, UserStatus statusCode) {
+        Users user = findActiveAccount(accountId);
+        user.setStatusCode(statusCode);
+        Users savedUser = userRepository.save(user);
+
+        if (statusCode == UserStatus.LOCKED || statusCode == UserStatus.DISABLED) {
+            refreshTokenRepository.revokeAllUserTokens(accountId);
+        }
+
+        log.info("Updated account status: {} -> {}", accountId, statusCode);
+        return toAccountResponse(savedUser);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
+    public AccountResponse assignAccountRole(UUID accountId, String roleCode) {
+        Users user = findActiveAccount(accountId);
+        Roles role = roleRepository.findByCodeIgnoreCase(roleCode)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_006_ROLE_NOT_FOUND));
+
+        if (!Boolean.TRUE.equals(role.getIsActive())) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
+
+        user.setRole(role);
+        Users savedUser = userRepository.save(user);
+        log.info("Assigned account role: {} -> {}", accountId, role.getCode());
+        return toAccountResponse(savedUser);
+    }
 
     @Transactional
     @PreAuthorize("hasAuthority('USER_MANAGE')")
@@ -112,6 +168,105 @@ public class UserService {
         return userRepository.findAll()
                 .stream().map(userMapper::toUserResponse)
                 .toList();
+    }
+
+    private Users findActiveAccount(UUID accountId) {
+        Users user = userRepository.findById(accountId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
+        if (user.getDeletedAt() != null) {
+            throw new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND);
+        }
+        return user;
+    }
+
+    private AccountResponse toAccountResponse(Users user) {
+        Roles role = user.getRole();
+        String roleCode = role == null ? null : role.getCode();
+        return new AccountResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getFullName(),
+                roleCode,
+                role == null ? null : role.getName(),
+                roleCode == null ? List.of() : List.of(roleCode),
+                user.getStatusCode(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private boolean hasSearchCriteria(String keyword, String role, UserStatus status) {
+        return status != null || hasText(keyword) || hasText(role);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private Specification<Users> accountSearchSpecification(String keyword, String role, UserStatus status) {
+        return combine(
+                notDeleted(),
+                accountKeywordContains(keyword),
+                accountRoleEquals(role),
+                accountStatusEquals(status)
+        );
+    }
+
+    private Specification<Users> notDeleted() {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("deletedAt"));
+    }
+
+    private Specification<Users> accountKeywordContains(String keyword) {
+        String normalizedKeyword = normalize(keyword);
+        if (normalizedKeyword == null) {
+            return null;
+        }
+        String keywordLike = "%" + normalizedKeyword.toLowerCase(Locale.ROOT) + "%";
+        return (root, query, criteriaBuilder) -> criteriaBuilder.or(
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("fullName")), keywordLike),
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), keywordLike),
+                criteriaBuilder.like(root.get("phone"), "%" + normalizedKeyword + "%")
+        );
+    }
+
+    private Specification<Users> accountRoleEquals(String role) {
+        String normalizedRole = normalize(role);
+        if (normalizedRole == null) {
+            return null;
+        }
+        String roleCode = normalizedRole.toLowerCase(Locale.ROOT);
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(criteriaBuilder.lower(root.join("role").get("code")), roleCode);
+    }
+
+    private Specification<Users> accountStatusEquals(UserStatus status) {
+        if (status == null) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("statusCode"), status);
+    }
+
+    @SafeVarargs
+    private final Specification<Users> combine(Specification<Users>... specifications) {
+        List<Specification<Users>> activeSpecifications = new ArrayList<>();
+        for (Specification<Users> specification : specifications) {
+            if (specification != null) {
+                activeSpecifications.add(specification);
+            }
+        }
+        Specification<Users> combined = activeSpecifications.getFirst();
+        for (int index = 1; index < activeSpecifications.size(); index++) {
+            combined = combined.and(activeSpecifications.get(index));
+        }
+        return combined;
     }
 
     // ==================== USER SELF OPERATIONS ====================

@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { useAuth } from "~/features/auth/context/AuthContext";
+import { getStoredRole, isAuthenticated } from "~/constants/auth";
 import type { RoleKey } from "~/types/navigation";
 
 // Layouts
@@ -24,7 +24,9 @@ import {
     GroomingBoardPage,
     BoardingLogPage,
 } from "~/features/reception";
+import { MySchedulePage as ReceptionMySchedulePage } from "~/features/reception/pages/MySchedulePage";
 import { DoctorDashboard, DoctorQueuePage, MedicalRecordPage } from "~/features/doctor";
+import { MySchedulePage as DoctorMySchedulePage } from "~/features/doctor/pages/MySchedulePage";
 import {
     AdminDashboard,
     AccountsPage,
@@ -34,33 +36,31 @@ import {
     ReportsPage,
 } from "~/features/admin";
 
+// eslint-disable-next-line react-refresh/only-export-components
 function AuthGuard({ children, requiredRole }: { children: ReactNode; requiredRole: RoleKey }) {
-    const { user } = useAuth();
-      
-    if (!user) {
+    if (!isAuthenticated()) {
         return <Navigate to="/login" replace />;
     }
 
-    const currentRole = user?.roleCode?.toLowerCase() || "public";
-    
+    const currentRole = getStoredRole();
     if (currentRole !== requiredRole) {
-        const fallbackPath = currentRole === "public" ? "/login" : `/${currentRole}`;
+        const fallbackPath =
+            currentRole === "public" ? "/login" : `/${currentRole}`;
         return <Navigate to={fallbackPath} replace />;
     }
 
     return <>{children}</>;
 }
 
-function RootRedirect() {
-    const { user } = useAuth();
-    const currentRole = user?.roleCode?.toLowerCase() || "public";
-    return <Navigate to={currentRole === "public" ? "/login" : `/${currentRole}`} replace />;
-}
-
 export const router = createBrowserRouter([
     {
         path: "/",
-        element: <RootRedirect />,
+        element: (
+            <Navigate
+                to={!isAuthenticated() ? "/login" : `/${getStoredRole()}`}
+                replace
+            />
+        ),
     },
 
     // Auth routes
@@ -93,9 +93,9 @@ export const router = createBrowserRouter([
 
     // STAFF ROUTES
     {
-        path: "/staff",
+        path: "/reception",
         element: (
-            <AuthGuard requiredRole="staff">
+            <AuthGuard requiredRole="reception">
                 <DashboardLayout />
             </AuthGuard>
         ),
@@ -104,12 +104,13 @@ export const router = createBrowserRouter([
             { path: "appointments", element: <AppointmentReceptionPage /> },
             { path: "grooming-board", element: <GroomingBoardPage /> },
             { path: "boarding-log", element: <BoardingLogPage /> },
+            { path: "my-schedule", element: <ReceptionMySchedulePage /> },
         ],
     },
     {
-        path: "/veterinarian",
+        path: "/doctor",
         element: (
-            <AuthGuard requiredRole="veterinarian">
+            <AuthGuard requiredRole="doctor">
                 <DashboardLayout />
             </AuthGuard>
         ),
@@ -117,6 +118,7 @@ export const router = createBrowserRouter([
             { index: true, element: <DoctorDashboard /> },
             { path: "queue", element: <DoctorQueuePage /> },
             { path: "medical-record", element: <MedicalRecordPage /> },
+            { path: "my-schedule", element: <DoctorMySchedulePage /> },
         ],
     },
     {

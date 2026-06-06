@@ -1,134 +1,204 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-import { userAdminApi } from '../api/userAdminApi';
-import { Card } from '~/components/molecules/Card';
-import { DataTable } from '~/components/molecules/DataTable';
-import { Tag } from '~/components/atoms/Tag';
-import { Button } from '~/components/atoms/Button';
-import { EmptyState } from '~/components/molecules/EmptyState';
-import type { UserRole } from '~/types/user';
+import { useMemo, useState } from "react";
+import { AccountFilters } from "../account-management/components/AccountFilters";
+import { AccountRolesDialog } from "../account-management/components/AccountRolesDialog";
+import { AccountStatusDialog } from "../account-management/components/AccountStatusDialog";
+import { AccountSummaryCards } from "../account-management/components/AccountSummaryCards";
+import { AccountTable } from "../account-management/components/AccountTable";
+import { searchAccounts, updateAccountRoles, updateAccountStatus } from "../account-management/accountService";
+import type { Account, AccountRole, AccountSearchParams, AccountStatus } from "../account-management/types";
 
-const ROLE_OPTIONS = [
-  { value: '', label: 'Tất cả vai trò' },
-  { value: 'ADMIN', label: 'Admin' },
-  { value: 'VETERINARIAN', label: 'Bác sĩ thú y' },
-  { value: 'STAFF', label: 'Lễ tân' },
-  { value: 'OWNER', label: 'Khách hàng' },
-];
+const initialFilters: AccountSearchParams = {
+    fullName: "",
+    email: "",
+    phone: "",
+    role: "",
+    status: "",
+};
 
 export function AccountsPage() {
-  const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [role, setRole] = useState<UserRole | ''>('');
+    const [filters, setFilters] = useState<AccountSearchParams>(initialFilters);
+    const [accounts, setAccounts] = useState<Account[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [pageError, setPageError] = useState("");
+    const [statusError, setStatusError] = useState("");
+    const [roleError, setRoleError] = useState("");
+    const [selectedStatusAccount, setSelectedStatusAccount] = useState<Account | null>(null);
+    const [selectedRoleAccount, setSelectedRoleAccount] = useState<Account | null>(null);
+    const [statusValue, setStatusValue] = useState<AccountStatus>("active");
+    const [roleValues, setRoleValues] = useState<AccountRole[]>([]);
+    const [statusDialogLoading, setStatusDialogLoading] = useState(false);
+    const [roleDialogLoading, setRoleDialogLoading] = useState(false);
+    const [feedback, setFeedback] = useState("");
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['admin', 'users', page, role],
-    queryFn: () => userAdminApi.getUsers({ page, limit: 10, role: role || undefined }),
-  });
+    const summary = useMemo(() => {
+        const byRole = {
+            admin: 0,
+            staff: 0,
+            doctor: 0,
+            owner: 0,
+        };
 
-  const lockMutation = useMutation({
-    mutationFn: userAdminApi.lockUser,
-    onSuccess: () => {
-      toast.success('Đã khóa tài khoản');
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-    },
-    onError: () => toast.error('Không thể khóa tài khoản'),
-  });
+        accounts.forEach((account) => {
+            account.roles.forEach((role) => {
+                byRole[role] += 1;
+            });
+        });
 
-  const disableMutation = useMutation({
-    mutationFn: userAdminApi.disableUser,
-    onSuccess: () => {
-      toast.success('Đã vô hiệu hóa tài khoản');
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-    },
-    onError: () => toast.error('Không thể vô hiệu hóa tài khoản'),
-  });
+        return {
+            total: accounts.length,
+            active: accounts.filter((account) => account.status === "active").length,
+            locked: accounts.filter((account) => account.status === "locked").length,
+            byRole,
+        };
+    }, [accounts]);
 
-  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRole(e.target.value as UserRole | '');
-    setPage(1);
-  };
+    const handleSearch = async () => {
+        const hasCriteria = [filters.fullName, filters.email, filters.phone, filters.role, filters.status].some(
+            (value) => Boolean(String(value ?? "").trim())
+        );
 
-  const renderStatusBadge = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return <Tag tone="green">ACTIVE</Tag>;
-      case 'LOCKED':
-        return <Tag tone="red">LOCKED</Tag>;
-      case 'INACTIVE':
-        return <Tag tone="amber">INACTIVE</Tag>;
-      default:
-        return <Tag tone="default">{status}</Tag>;
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  if (isError) return <EmptyState title="Lỗi" description="Lỗi tải danh sách tài khoản" />;
-
-  const users = data?.content || [];
-
-  return (
-    <div className="grid gap-6">
-      <Card
-        title="Quản lý Tài khoản"
-        right={
-          <select
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-            value={role}
-            onChange={handleRoleChange}
-          >
-            {ROLE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+        if (!hasCriteria) {
+            setPageError("Cần nhập ít nhất một tiêu chí tìm kiếm");
+            setFeedback("");
+            return;
         }
-      >
-        {users.length === 0 ? (
-          <EmptyState title="Trống" description="Không có tài khoản nào" />
-        ) : (
-          <DataTable
-            columns={['Họ tên', 'Email', 'Vai trò', 'Trạng thái', 'Hành động']}
-            rows={users.map((user) => [
-              user.fullName,
-              user.email,
-              user.roleCode,
-              renderStatusBadge(user.statusCode),
-              <div key={user.id} className="flex gap-2">
-                {user.statusCode !== 'LOCKED' && (
-                  <Button
-                    variant="outline"
-                    className="px-2 py-1 h-auto text-xs"
-                    onClick={() => lockMutation.mutate(user.id)}
-                    disabled={lockMutation.isPending}
-                  >
-                    Khóa
-                  </Button>
-                )}
-                {user.statusCode !== 'INACTIVE' && (
-                  <Button
-                    variant="outline"
-                    className="px-2 py-1 h-auto text-xs"
-                    onClick={() => disableMutation.mutate(user.id)}
-                    disabled={disableMutation.isPending}
-                  >
-                    Vô hiệu hóa
-                  </Button>
-                )}
-              </div>,
-            ])}
-          />
-        )}
-      </Card>
-    </div>
-  );
+
+        setPageError("");
+        setLoading(true);
+        setFeedback("");
+        try {
+            const result = await searchAccounts(filters);
+            setAccounts(result);
+            if (result.length === 0) {
+                setFeedback("Không tìm thấy thông tin người dùng nào thoả mãn tiêu chí tìm kiếm");
+            }
+        } catch {
+            setPageError("Tìm kiếm tài khoản thất bại");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReset = () => {
+        setFilters(initialFilters);
+        setPageError("");
+        setFeedback("");
+        setAccounts([]);
+    };
+
+    const openStatusDialog = (account: Account) => {
+        setSelectedStatusAccount(account);
+        setStatusValue(account.status);
+        setStatusError("");
+    };
+
+    const openRoleDialog = (account: Account) => {
+        setSelectedRoleAccount(account);
+        setRoleValues(account.roles);
+        setRoleError("");
+    };
+
+    const confirmStatusChange = async () => {
+        if (!selectedStatusAccount) {
+            setStatusError("Không tìm thấy tài khoản cần cập nhật trạng thái");
+            return;
+        }
+
+        setStatusDialogLoading(true);
+        setStatusError("");
+        try {
+            const updated = await updateAccountStatus(selectedStatusAccount.accountId, statusValue);
+            setAccounts((current) => current.map((item) => (item.accountId === updated.accountId ? updated : item)));
+            setSelectedStatusAccount(null);
+            setFeedback("Cập nhật trạng thái tài khoản thành công");
+        } catch (error) {
+            setStatusError(error instanceof Error ? error.message : "Cập nhật trạng thái thất bại");
+        } finally {
+            setStatusDialogLoading(false);
+        }
+    };
+
+    const toggleRole = (role: AccountRole) => {
+        setRoleValues([role]);
+    };
+
+    const confirmRoleChange = async () => {
+        if (!selectedRoleAccount) {
+            setRoleError("Không tìm thấy tài khoản cần cập nhật vai trò");
+            return;
+        }
+
+        if (roleValues.length === 0) {
+            setRoleError("Vai trò không hợp lệ");
+            return;
+        }
+
+        setRoleDialogLoading(true);
+        setRoleError("");
+        try {
+            const updated = await updateAccountRoles(selectedRoleAccount.accountId, roleValues);
+            setAccounts((current) => current.map((item) => (item.accountId === updated.accountId ? updated : item)));
+            setSelectedRoleAccount(null);
+            setFeedback("Cập nhật vai trò người dùng thành công");
+        } catch (error) {
+            setRoleError(error instanceof Error ? error.message : "Cập nhật vai trò thất bại");
+        } finally {
+            setRoleDialogLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Quản lý tài khoản</h2>
+                <p className="text-sm text-slate-500">Tìm kiếm, cập nhật trạng thái và phân vai trò người dùng trong hệ thống.</p>
+            </div>
+
+            <AccountSummaryCards {...summary} />
+
+            <AccountFilters
+                value={filters}
+                onChange={setFilters}
+                onSearch={handleSearch}
+                onReset={handleReset}
+                loading={loading}
+                error={pageError}
+            />
+
+            {feedback && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                    {feedback}
+                </div>
+            )}
+
+            <AccountTable
+                accounts={accounts}
+                loading={loading}
+                onChangeStatus={openStatusDialog}
+                onChangeRoles={openRoleDialog}
+            />
+
+            <AccountStatusDialog
+                account={selectedStatusAccount}
+                value={statusValue}
+                open={Boolean(selectedStatusAccount)}
+                loading={statusDialogLoading}
+                error={statusError}
+                onClose={() => setSelectedStatusAccount(null)}
+                onChange={setStatusValue}
+                onConfirm={confirmStatusChange}
+            />
+
+            <AccountRolesDialog
+                account={selectedRoleAccount}
+                value={roleValues}
+                open={Boolean(selectedRoleAccount)}
+                loading={roleDialogLoading}
+                error={roleError}
+                onClose={() => setSelectedRoleAccount(null)}
+                onToggleRole={toggleRole}
+                onConfirm={confirmRoleChange}
+            />
+        </div>
+    );
 }

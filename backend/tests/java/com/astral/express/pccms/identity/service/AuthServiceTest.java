@@ -129,28 +129,28 @@ class AuthServiceTest {
                 
             case "REFRESH":
                 if ("VALID".equals(mockState)) {
-                    RefreshToken rt = RefreshToken.builder().user(mockUser).isRevoked(false).expiresAt(OffsetDateTime.now().plusDays(1)).build();
-                    given(refreshTokenRepository.findByHashedToken(anyString())).willReturn(Optional.of(rt));
+                    RefreshToken rt = RefreshToken.builder().user(mockUser).expiresAt(OffsetDateTime.now().plusDays(1)).build();
+                    given(refreshTokenRepository.findByTokenHash(anyString())).willReturn(Optional.of(rt));
                     given(jwtUtil.generateToken(mockUser)).willReturn(dummyToken);
                     given(jwtUtil.generateRefreshToken(mockUser)).willReturn(dummyRefresh);
                     given(jwtUtil.getRefreshExpiration()).willReturn(86400000L);
                     given(userMapper.toUserResponse(mockUser)).willReturn(mockUserResp);
                 } else if ("TOKEN_NOT_FOUND".equals(mockState)) {
-                    given(refreshTokenRepository.findByHashedToken(anyString())).willReturn(Optional.empty());
+                    given(refreshTokenRepository.findByTokenHash(anyString())).willReturn(Optional.empty());
                 } else if ("TOKEN_REVOKED".equals(mockState)) {
-                    RefreshToken rt = RefreshToken.builder().user(mockUser).isRevoked(true).expiresAt(OffsetDateTime.now().plusDays(1)).build();
-                    given(refreshTokenRepository.findByHashedToken(anyString())).willReturn(Optional.of(rt));
+                    RefreshToken rt = RefreshToken.builder().user(mockUser).revokedAt(OffsetDateTime.now()).expiresAt(OffsetDateTime.now().plusDays(1)).build();
+                    given(refreshTokenRepository.findByTokenHash(anyString())).willReturn(Optional.of(rt));
                 } else if ("TOKEN_EXPIRED".equals(mockState)) {
-                    RefreshToken rt = RefreshToken.builder().user(mockUser).isRevoked(false).expiresAt(OffsetDateTime.now().minusDays(1)).build();
-                    given(refreshTokenRepository.findByHashedToken(anyString())).willReturn(Optional.of(rt));
+                    RefreshToken rt = RefreshToken.builder().user(mockUser).expiresAt(OffsetDateTime.now().minusDays(1)).build();
+                    given(refreshTokenRepository.findByTokenHash(anyString())).willReturn(Optional.of(rt));
                 }
                 break;
                 
             case "LOGOUT":
                 given(jwtUtil.extractJti(dummyToken)).willReturn("jti");
                 given(jwtUtil.extractExpiration(dummyToken)).willReturn(new Date(System.currentTimeMillis() + 10000));
-                RefreshToken rt = RefreshToken.builder().user(mockUser).isRevoked(false).build();
-                given(refreshTokenRepository.findByHashedToken(anyString())).willReturn(Optional.of(rt));
+                RefreshToken rt = RefreshToken.builder().user(mockUser).build();
+                given(refreshTokenRepository.findByTokenHash(anyString())).willReturn(Optional.of(rt));
                 break;
         }
         

@@ -42,6 +42,8 @@ public enum ErrorCode {
     ERR_ACC_003_USER_ALREADY_LOCKED("ERR_ACC_003_USER_ALREADY_LOCKED", 400, "Tài khoản người dùng đã bị khóa"),
     ERR_ACC_004_USER_ALREADY_DISABLED("ERR_ACC_004_USER_ALREADY_DISABLED", 400, "Tài khoản người dùng đã bị vô hiệu hóa"),
     ERR_ACC_005_DEFAULT_ROLE_NOT_FOUND("ERR_ACC_003_DEFAULT_ROLE_NOT_FOUND", 400, "Không tìm thấy role mặc định"),
+    ERR_ACC_006_ROLE_NOT_FOUND("ERR_ACC_006_ROLE_NOT_FOUND", 404, "Không tìm thấy vai trò"),
+    ERR_ACC_007_SEARCH_CRITERIA_REQUIRED("ERR_ACC_007_SEARCH_CRITERIA_REQUIRED", 400, "Cần nhập ít nhất một tiêu chí tìm kiếm"),
     ERR_PET_001_NOT_FOUND("ERR_PET_001_NOT_FOUND", 404, "Không tìm thấy thú cưng"),
     ERR_PET_INVALID_AGE_DATA("ERR_PET_INVALID_AGE_DATA", 400, "Phải nhập ngày sinh hoặc tháng tuổi dự kiến hợp lệ"),
     ERR_PET_INVALID_WEIGHT("ERR_PET_INVALID_WEIGHT", 400, "Cân nặng thú cưng không hợp lệ");

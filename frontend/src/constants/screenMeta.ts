@@ -45,11 +45,21 @@ export const screenMeta: Record<ScreenKey, ScreenMetaItem> = {
         path: "/reception/grooming-board",
     },
     boardingLog: { label: "Nhật ký lưu trú", icon: FileText, path: "/reception/boarding-log" },
+    receptionMySchedule: {
+        label: "Lịch làm việc cá nhân",
+        icon: CalendarDays,
+        path: "/reception/my-schedule",
+    },
 
     // Doctor
     doctorDashboard: { label: "Dashboard bác sĩ", icon: Home, path: "/doctor" },
     doctorQueue: { label: "Danh sách chờ khám", icon: HeartPulse, path: "/doctor/queue" },
     medicalRecord: { label: "Bệnh án & kê đơn", icon: FileText, path: "/doctor/medical-record" },
+    doctorMySchedule: {
+        label: "Lịch làm việc cá nhân",
+        icon: CalendarDays,
+        path: "/doctor/my-schedule",
+    },
 
     // Admin
     adminDashboard: { label: "Dashboard quản trị", icon: Home, path: "/admin" },

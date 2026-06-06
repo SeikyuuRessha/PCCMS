@@ -9,6 +9,10 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record MedicineUpdateRequest(
+        @NotBlank(message = "Medicine code is required")
+        @Size(max = 60, message = "Medicine code must not exceed 60 characters")
+        String medicineCode,
+
         @NotBlank(message = "Name is required")
         @Size(max = 160, message = "Name must not exceed 160 characters")
         String name,
@@ -27,6 +31,18 @@ public record MedicineUpdateRequest(
 
         @NotNull(message = "Unit price is required")
         @Min(value = 0, message = "Unit price must be greater than or equal to 0")
-        BigDecimal unitPriceVnd
+        BigDecimal unitPriceVnd,
+
+        Boolean isActive
 ) {
+    public MedicineUpdateRequest(
+            String medicineCode,
+            String name,
+            UUID categoryId,
+            String unit,
+            String defaultInstruction,
+            Integer currentStock,
+            BigDecimal unitPriceVnd) {
+        this(medicineCode, name, categoryId, unit, defaultInstruction, currentStock, unitPriceVnd, true);
+    }
 }

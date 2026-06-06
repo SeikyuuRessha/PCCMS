@@ -17,13 +17,13 @@ export const roles: Record<RoleKey, RoleConfig> = {
             "profile",
         ],
     },
-    staff: {
+    reception: {
         label: "Nhân viên",
-        screens: ["receptionDashboard", "appointmentReception", "groomingBoard", "boardingLog"],
+        screens: ["receptionDashboard", "appointmentReception", "groomingBoard", "boardingLog", "receptionMySchedule"],
     },
-    veterinarian: {
+    doctor: {
         label: "Bác sĩ",
-        screens: ["doctorDashboard", "doctorQueue", "medicalRecord"],
+        screens: ["doctorDashboard", "doctorQueue", "medicalRecord", "doctorMySchedule"],
     },
     admin: {
         label: "Quản trị viên",

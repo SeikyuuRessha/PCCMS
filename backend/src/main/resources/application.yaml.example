@@ -39,7 +39,7 @@ spring:
                         required: true
 
 jwt:
-    secret: your-own-secret-key
+    secret: ${JWT_SECRET:replace-with-base64url-secret-at-least-64-bytes}
     expiration: 600000
     refresh-expiration: 604800000
 
@@ -69,6 +69,14 @@ logging:
         org.springframework.security: INFO
 
 pccms:
+    seed:
+        admin:
+            enabled: ${PCCMS_SEED_ADMIN_ENABLED:false}
+            reset-password: ${PCCMS_SEED_ADMIN_RESET_PASSWORD:false}
+            email: ${PCCMS_SEED_ADMIN_EMAIL:}
+            password: ${PCCMS_SEED_ADMIN_PASSWORD:}
+            full-name: ${PCCMS_SEED_ADMIN_FULL_NAME:System Admin}
+            role-code: ${PCCMS_SEED_ADMIN_ROLE_CODE:ADMIN}
     mail:
         app-name: Pawluna
         team-name: Astral Team
