@@ -136,7 +136,7 @@ class AuthServiceTest {
                     given(jwtUtil.getRefreshExpiration()).willReturn(86400000L);
                     given(userMapper.toUserResponse(mockUser)).willReturn(mockUserResp);
                 } else if ("TOKEN_NOT_FOUND".equals(mockState)) {
-                    given(refreshTokenRepository.findByHashedToken(anyString())).willReturn(Optional.empty());
+                    given(refreshTokenRepository.findByTokenHash(anyString())).willReturn(Optional.empty());
                 } else if ("TOKEN_REVOKED".equals(mockState)) {
                     RefreshToken rt = RefreshToken.builder().user(mockUser).revokedAt(OffsetDateTime.now()).expiresAt(OffsetDateTime.now().plusDays(1)).build();
                     given(refreshTokenRepository.findByHashedToken(anyString())).willReturn(Optional.of(rt));

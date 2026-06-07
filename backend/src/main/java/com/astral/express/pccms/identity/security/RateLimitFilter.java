@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
@@ -41,10 +42,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String bucketKey = RATE_LIMIT_PREFIX + clientIp + (isAuthEndpoint ? ":auth" : ":general");
         int limit = isAuthEndpoint ? AUTH_REQUESTS_PER_MINUTE : GENERAL_REQUESTS_PER_MINUTE;
 
-        Long currentCount = redisTemplate.opsForValue().increment(bucketKey);
+        Long currentCount;
+        try {
+            currentCount = redisTemplate.opsForValue().increment(bucketKey);
 
-        if (currentCount != null && currentCount == 1) {
-            redisTemplate.expire(bucketKey, WINDOW_SECONDS, TimeUnit.SECONDS);
+            if (currentCount != null && currentCount == 1) {
+                redisTemplate.expire(bucketKey, WINDOW_SECONDS, TimeUnit.SECONDS);
+            }
+        } catch (DataAccessException ex) {
+            log.warn("Rate limit backend unavailable; allowing request for IP: {} on path: {}", clientIp, path);
+            filterChain.doFilter(request, response);
+            return;
         }
 
         if (currentCount != null && currentCount > limit) {

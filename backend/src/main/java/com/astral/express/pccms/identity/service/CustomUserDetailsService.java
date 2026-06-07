@@ -7,8 +7,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 import static com.astral.express.pccms.common.exception.ErrorCode.ERR_ACC_002_USER_NOT_FOUND;
 
@@ -21,6 +22,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) {
         Users user = userRepository.findByEmailWithRoleAndPermissions(email)
+                .orElseThrow(() -> new BusinessException(ERR_ACC_002_USER_NOT_FOUND));
+        return new CustomUserDetails(user);
+    }
+
+    public UserDetails loadUserById(UUID userId) {
+        Users user = userRepository.findByIdWithRoleAndPermissions(userId)
                 .orElseThrow(() -> new BusinessException(ERR_ACC_002_USER_NOT_FOUND));
         return new CustomUserDetails(user);
     }

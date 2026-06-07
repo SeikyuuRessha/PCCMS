@@ -15,8 +15,6 @@ import com.astral.express.pccms.user.entity.Users;
 import com.astral.express.pccms.user.entity.UserStatus;
 import com.astral.express.pccms.user.repository.RoleRepository;
 import com.astral.express.pccms.user.repository.UserRepository;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class PrescriptionConcurrencyIT {
 
     @Container
@@ -79,16 +77,6 @@ class PrescriptionConcurrencyIT {
     private UUID vetId;
     private UUID medicalRecordId;
     private UUID medicineId;
-
-    @BeforeAll
-    static void beforeAll() {
-        postgres.start();
-    }
-
-    @AfterAll
-    static void afterAll() {
-        postgres.stop();
-    }
 
     @BeforeEach
     void setUp() {

@@ -1,16 +1,22 @@
 package com.astral.express.pccms.user.repository;
 
 import com.astral.express.pccms.user.entity.Users;
+import com.astral.express.pccms.user.entity.UserStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface UserRepository extends JpaRepository<Users, UUID> {
+public interface UserRepository extends JpaRepository<Users, UUID>, JpaSpecificationExecutor<Users> {
     Optional<Users> findByEmail(String email);
 
     @Query("SELECT u FROM Users u " +
@@ -18,6 +24,12 @@ public interface UserRepository extends JpaRepository<Users, UUID> {
            "LEFT JOIN FETCH r.permissions " +
            "WHERE u.email = :email")
     Optional<Users> findByEmailWithRoleAndPermissions(@Param("email") String email);
+
+    @Query("SELECT u FROM Users u " +
+           "LEFT JOIN FETCH u.role r " +
+           "LEFT JOIN FETCH r.permissions " +
+           "WHERE u.id = :id")
+    Optional<Users> findByIdWithRoleAndPermissions(@Param("id") UUID id);
 
     boolean existsByEmail(String email);
 

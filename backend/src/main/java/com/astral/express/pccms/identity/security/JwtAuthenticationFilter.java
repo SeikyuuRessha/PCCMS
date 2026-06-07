@@ -9,11 +9,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -23,9 +24,10 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
-    private final UserDetailsService userDetailsService;
+    private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
     private final UserRepository userRepository;
 
@@ -66,12 +68,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 && userIdStr != null
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
 
+            UUID userId = UUID.fromString(userIdStr);
             UserDetails userDetails =
                     this.userDetailsService.loadUserByUsername(email);
 
             if (isTokenAccepted(jwt, userDetails, userIdStr)) {
                 String jti = jwtUtil.extractJti(jwt);
-                if (tokenBlacklistService.isBlacklisted(jti)) {
+                if (isTokenBlacklisted(jti)) {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     response.getWriter().write("{\"error\": \"Token revoked\", \"message\": \"This token has been invalidated\"}");
@@ -84,8 +87,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     response.getWriter().write("{\"error\": \"Account is locked\", \"message\": \"Your account has been locked\"}");
                     return;
                 }
-
-                UUID userId = UUID.fromString(userIdStr);
 
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(

@@ -28,7 +28,9 @@ import {
     GroomingBoardPage,
     BoardingLogPage,
 } from "~/features/reception";
+import { MySchedulePage as ReceptionMySchedulePage } from "~/features/reception/pages/MySchedulePage";
 import { DoctorDashboard, DoctorQueuePage, MedicalRecordPage } from "~/features/doctor";
+import { MySchedulePage as DoctorMySchedulePage } from "~/features/doctor/pages/MySchedulePage";
 import {
     AdminDashboard,
     AccountsPage,
@@ -82,7 +84,12 @@ function RootRedirect() {
 export const router = createBrowserRouter([
     {
         path: "/",
-        element: <RootRedirect />,
+        element: (
+            <Navigate
+                to={!isAuthenticated() ? "/login" : `/${getStoredRole()}`}
+                replace
+            />
+        ),
     },
 
     // Auth routes
@@ -117,9 +124,9 @@ export const router = createBrowserRouter([
 
     // STAFF ROUTES
     {
-        path: "/staff",
+        path: "/reception",
         element: (
-            <AuthGuard requiredRole="staff">
+            <AuthGuard requiredRole="reception">
                 <DashboardLayout />
             </AuthGuard>
         ),
@@ -128,12 +135,13 @@ export const router = createBrowserRouter([
             { path: "appointments", element: <AppointmentReceptionPage /> },
             { path: "grooming-board", element: <GroomingBoardPage /> },
             { path: "boarding-log", element: <BoardingLogPage /> },
+            { path: "my-schedule", element: <ReceptionMySchedulePage /> },
         ],
     },
     {
-        path: "/veterinarian",
+        path: "/doctor",
         element: (
-            <AuthGuard requiredRole="veterinarian">
+            <AuthGuard requiredRole="doctor">
                 <DashboardLayout />
             </AuthGuard>
         ),
@@ -141,6 +149,7 @@ export const router = createBrowserRouter([
             { index: true, element: <DoctorDashboard /> },
             { path: "queue", element: <DoctorQueuePage /> },
             { path: "medical-record", element: <MedicalRecordPage /> },
+            { path: "my-schedule", element: <DoctorMySchedulePage /> },
         ],
     },
     {

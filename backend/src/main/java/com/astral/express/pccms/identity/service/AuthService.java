@@ -98,7 +98,7 @@ public class AuthService {
     public AuthResponse refreshAccessToken(String refreshToken) {
         String tokenHash = hashToken(refreshToken);
 
-        RefreshToken storedToken = refreshTokenRepository.findByHashedToken(tokenHash)
+        RefreshToken storedToken = refreshTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_401_UNAUTHORIZED));
 
         if (storedToken.getRevokedAt() != null || storedToken.getExpiresAt().isBefore(OffsetDateTime.now())) {
@@ -129,7 +129,7 @@ public class AuthService {
         }
 
         String tokenHash = hashToken(refreshToken);
-        refreshTokenRepository.findByHashedToken(tokenHash)
+        refreshTokenRepository.findByTokenHash(tokenHash)
                 .ifPresent(token -> {
                     token.setRevokedAt(OffsetDateTime.now());
                     refreshTokenRepository.save(token);
@@ -142,7 +142,7 @@ public class AuthService {
 
         // Store refresh token
         RefreshToken tokenEntity = RefreshToken.builder()
-                .hashedToken(hashToken(refreshToken))
+                .tokenHash(hashToken(refreshToken))
                 .user(user)
                 .expiresAt(OffsetDateTime.now().plusSeconds(jwtUtil.getRefreshExpiration() / 1000))
                 .revokedAt(null)

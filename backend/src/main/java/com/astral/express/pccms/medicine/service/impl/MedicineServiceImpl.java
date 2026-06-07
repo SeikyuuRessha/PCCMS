@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,22 @@ public class MedicineServiceImpl implements MedicineService {
     private final MedicineCategoryRepository categoryRepository;
     private final PrescriptionItemRepository prescriptionItemRepository;
     private final MedicineMapper medicineMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<MedicineResponse> searchMedicines(
+            String keyword,
+            UUID categoryId,
+            Boolean isActive,
+            Pageable pageable) {
+        Specification<Medicine> specification = combine(
+                keywordContains(keyword),
+                categoryEquals(categoryId),
+                activeEquals(isActive)
+        );
+        Page<Medicine> page = medicineRepository.findAll(specification, pageable);
+        return PageResponse.of(page.map(medicineMapper::toMedicineResponse));
+    }
 
     @Override
     @Transactional

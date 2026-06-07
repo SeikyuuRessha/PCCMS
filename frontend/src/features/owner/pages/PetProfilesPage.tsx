@@ -29,7 +29,7 @@ type ModalMode = 'add' | 'edit' | 'detail' | null;
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline">Bộ lọc</Button>
-                    <Button onClick={() => setIsAddModalOpen(true)}>
+                    <Button>
                         <span className="inline-flex items-center gap-2">
                             <Plus className="h-4 w-4" /> Thêm thú cưng
                         </span>
@@ -119,10 +119,18 @@ type ModalMode = 'add' | 'edit' | 'detail' | null;
                                     </Button>
                                 </div>
                             </div>
-                        </Card>
-                    ))}
-                </div>
-            )}
+                            <div className="mt-4 flex gap-2">
+                                <Button variant="outline" className="flex-1">
+                                    Xem chi tiết
+                                </Button>
+                                <Button variant="ghost" className="flex-1">
+                                    Chỉnh sửa
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+            </div>
 
             <Modal
                 isOpen={isAddModalOpen}

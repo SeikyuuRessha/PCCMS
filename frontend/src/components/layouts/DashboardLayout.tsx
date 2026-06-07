@@ -5,12 +5,11 @@ import { cx } from "~/utils/cx";
 import { roles } from "~/constants/roles";
 import { screenMeta } from "~/constants/screenMeta";
 import type { RoleKey, ScreenKey } from "~/types/navigation";
-import { useAuth } from "~/features/auth/context/AuthContext";
 
 function resolveRole(pathname: string): RoleKey {
     if (pathname.startsWith("/owner")) return "owner";
-    if (pathname.startsWith("/staff")) return "staff";
-    if (pathname.startsWith("/veterinarian")) return "veterinarian";
+    if (pathname.startsWith("/reception")) return "reception";
+    if (pathname.startsWith("/doctor")) return "doctor";
     if (pathname.startsWith("/admin")) return "admin";
     return "owner";
 }
@@ -18,9 +17,9 @@ function resolveRole(pathname: string): RoleKey {
 const roleNames: Record<RoleKey, string> = {
     public: "Khách",
     owner: "Chủ nuôi",
-    staff: "Lễ tân",
+    reception: "Lễ tân",
     admin: "Quản trị viên",
-    veterinarian: "Bác sĩ",
+    doctor: "Bác sĩ",
 };
 
 export function DashboardLayout() {
@@ -30,7 +29,6 @@ export function DashboardLayout() {
     const screens = roles[role].screens;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const { user, logout } = useAuth();
 
     const currentScreen = Object.entries(screenMeta).find(
         ([, meta]) => meta.path === pathname

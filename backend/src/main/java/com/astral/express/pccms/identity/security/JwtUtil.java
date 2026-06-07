@@ -1,5 +1,6 @@
 package com.astral.express.pccms.identity.security;
 
+import com.astral.express.pccms.identity.service.CustomUserDetails;
 import com.astral.express.pccms.user.entity.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -43,7 +44,13 @@ public class JwtUtil {
     }
 
     public String extractUserId(String token) {
-        return extractAllClaims(token).get("userId", String.class);
+        Claims claims = extractAllClaims(token);
+        String userId = claims.get("userId", String.class);
+        return userId != null ? userId : claims.getSubject();
+    }
+
+    public String extractEmail(String token) {
+        return extractAllClaims(token).get("email", String.class);
     }
 
     public Date extractExpiration(String token) {
@@ -100,7 +107,10 @@ public class JwtUtil {
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        final String subject = extractUsername(token);
+        boolean matchesUsername = subject.equals(userDetails.getUsername());
+        boolean matchesUserId = userDetails instanceof CustomUserDetails customUserDetails
+                && subject.equals(customUserDetails.getId().toString());
+        return (matchesUsername || matchesUserId) && !isTokenExpired(token);
     }
 }

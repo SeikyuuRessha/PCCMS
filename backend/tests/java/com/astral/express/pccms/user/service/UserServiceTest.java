@@ -13,6 +13,7 @@ import com.astral.express.pccms.user.dto.response.UserResponse;
 import com.astral.express.pccms.user.entity.UserStatus;
 import com.astral.express.pccms.user.entity.Users;
 import com.astral.express.pccms.user.mapper.UserMapper;
+import com.astral.express.pccms.user.repository.RoleRepository;
 import com.astral.express.pccms.user.repository.UserRepository;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,6 +38,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private RoleRepository roleRepository;
 
     @Mock
     private UserMapper userMapper;

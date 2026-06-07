@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface MedicineService {
+    PageResponse<MedicineResponse> searchMedicines(String keyword, UUID categoryId, Boolean isActive, Pageable pageable);
     MedicineResponse createMedicine(MedicineCreateRequest request);
     MedicineResponse updateMedicine(UUID id, MedicineUpdateRequest request);
     MedicineResponse getMedicine(UUID id);

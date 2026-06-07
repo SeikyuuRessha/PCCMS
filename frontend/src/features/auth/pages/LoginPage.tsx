@@ -3,12 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Button, Input } from "~/components/atoms";
-import { loginSchema, type LoginFormData } from "../schema/authSchema";
-import { authApi } from "../api/authApi";
-import { useAuth } from "../context/AuthContext";
-import toast from "react-hot-toast";
-import { parseApiError } from "~/shared/utils/errorHandlers";
-import { ROUTES } from "~/constants/routes";
+import { loginWithEmail } from "../authService";
 
 export function LoginPage() {
     const navigate = useNavigate();
@@ -51,13 +46,14 @@ export function LoginPage() {
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-slate-900">Đăng nhập</h1>
                 <p className="mt-2 text-sm text-slate-500">
-                    Truy cập đúng dashboard theo vai trò của bạn
+                    Truy cập dashboard bằng tài khoản hệ thống
                 </p>
             </div>
+
             <div className="space-y-4">
                 <div>
                     <Input
@@ -83,6 +79,9 @@ export function LoginPage() {
                     )}
                 </div>
             </div>
+
+            {error && <p className="text-sm font-medium text-error-600">{error}</p>}
+
             <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 text-slate-600">
                     <input type="checkbox" className="rounded border-slate-300" />
@@ -90,7 +89,7 @@ export function LoginPage() {
                 </label>
                 <button
                     type="button"
-                    onClick={() => navigate(ROUTES.FORGOT_PASSWORD)}
+                    onClick={() => navigate("/forgot-password")}
                     className="font-medium text-primary-700 transition hover:text-primary-800"
                 >
                     Quên mật khẩu?
@@ -109,7 +108,7 @@ export function LoginPage() {
                 Chưa có tài khoản?{" "}
                 <button
                     type="button"
-                    onClick={() => navigate(ROUTES.REGISTER)}
+                    onClick={() => navigate("/register")}
                     className="font-medium text-primary-700 hover:text-primary-800"
                 >
                     Đăng ký ngay

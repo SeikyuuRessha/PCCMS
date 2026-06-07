@@ -23,7 +23,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
 @Transactional
 class RefreshTokenRepositoryTest {
@@ -76,7 +76,7 @@ class RefreshTokenRepositoryTest {
     void should_FindToken_when_Exists() {
         // Arrange
         RefreshToken token = RefreshToken.builder()
-                .hashedToken("hashed_token")
+                .tokenHash("hashed_token")
                 .user(savedUser)
                 .expiresAt(OffsetDateTime.now().plusDays(1))
                 .revokedAt(null)
@@ -84,7 +84,7 @@ class RefreshTokenRepositoryTest {
         refreshTokenRepository.saveAndFlush(token);
 
         // Act
-        Optional<RefreshToken> foundToken = refreshTokenRepository.findByHashedToken("hashed_token");
+        Optional<RefreshToken> foundToken = refreshTokenRepository.findByTokenHash("hashed_token");
 
         // Assert
         assertThat(foundToken).isPresent();
@@ -95,13 +95,13 @@ class RefreshTokenRepositoryTest {
     void should_RevokeAllUserTokens_when_UpdateQueryExecuted() {
         // Arrange
         RefreshToken token1 = RefreshToken.builder()
-                .hashedToken("hash1")
+                .tokenHash("hash1")
                 .user(savedUser)
                 .expiresAt(OffsetDateTime.now().plusDays(1))
                 .revokedAt(null)
                 .build();
         RefreshToken token2 = RefreshToken.builder()
-                .hashedToken("hash2")
+                .tokenHash("hash2")
                 .user(savedUser)
                 .expiresAt(OffsetDateTime.now().plusDays(1))
                 .revokedAt(null)
@@ -116,8 +116,8 @@ class RefreshTokenRepositoryTest {
         // Assert
         assertThat(updated).isEqualTo(2);
         
-        Optional<RefreshToken> retrieved1 = refreshTokenRepository.findByHashedToken("hash1");
-        Optional<RefreshToken> retrieved2 = refreshTokenRepository.findByHashedToken("hash2");
+        Optional<RefreshToken> retrieved1 = refreshTokenRepository.findByTokenHash("hash1");
+        Optional<RefreshToken> retrieved2 = refreshTokenRepository.findByTokenHash("hash2");
         
         assertThat(retrieved1).isPresent();
         assertThat(retrieved1.get().getRevokedAt()).isNotNull();
