@@ -2,6 +2,7 @@ import type { HealthAlertResponse } from "./medicalRecord";
 
 export type PetSex = "MALE" | "FEMALE" | "UNKNOWN";
 
+/** Hồ sơ nền thú cưng — không gồm bản ghi y tế theo lần khám */
 export interface PetResponse {
     id: string;
     ownerId: string;

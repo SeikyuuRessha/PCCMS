@@ -1,7 +1,9 @@
 import { type ReactNode } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "~/features/auth/context/AuthContext";
 import type { RoleKey } from "~/types/navigation";
+import { recordAuthFailure } from "~/shared/auth/authSession";
+import { hasAccessToken } from "~/shared/auth/tokenStorage";
 
 // Layouts
 import { DashboardLayout } from "~/components/layouts";
@@ -36,6 +38,20 @@ import {
     ReportsPage,
 } from "~/features/admin";
 
+function normalizeRole(roleCode?: string): RoleKey {
+    if (!roleCode) return "public";
+    const key = roleCode.toLowerCase();
+    const aliases: Record<string, RoleKey> = {
+        owner: "owner",
+        customer: "owner",
+        staff: "staff",
+        receptionist: "staff",
+        veterinarian: "veterinarian",
+        admin: "admin",
+    };
+    return aliases[key] ?? "public";
+}
+
 function AuthGuard({ children, requiredRole }: { children: ReactNode; requiredRole: RoleKey }) {
     const { user } = useAuth();
 
@@ -46,6 +62,10 @@ function AuthGuard({ children, requiredRole }: { children: ReactNode; requiredRo
     const currentRole = user?.roleCode?.toLowerCase() || "public";
 
     if (currentRole !== requiredRole) {
+        recordAuthFailure({
+            source: "auth-guard",
+            message: `Role ${user.roleCode} (${currentRole}) không khớp ${requiredRole} tại ${location.pathname}`,
+        });
         const fallbackPath = currentRole === "public" ? "/login" : `/${currentRole}`;
         return <Navigate to={fallbackPath} replace />;
     }
@@ -55,7 +75,7 @@ function AuthGuard({ children, requiredRole }: { children: ReactNode; requiredRo
 
 function RootRedirect() {
     const { user } = useAuth();
-    const currentRole = user?.roleCode?.toLowerCase() || "public";
+    const currentRole = normalizeRole(user?.roleCode);
     return <Navigate to={currentRole === "public" ? "/login" : `/${currentRole}`} replace />;
 }
 
@@ -139,4 +159,13 @@ export const router = createBrowserRouter([
             { path: "reports", element: <ReportsPage /> },
         ],
     },
+
+    // Legacy path redirects
+    { path: "/reception", element: <Navigate to="/staff" replace /> },
+    { path: "/reception/appointments", element: <Navigate to="/staff/appointments" replace /> },
+    { path: "/reception/grooming-board", element: <Navigate to="/staff/grooming-board" replace /> },
+    { path: "/reception/boarding-log", element: <Navigate to="/staff/boarding-log" replace /> },
+    { path: "/doctor", element: <Navigate to="/veterinarian" replace /> },
+    { path: "/doctor/queue", element: <Navigate to="/veterinarian/queue" replace /> },
+    { path: "/doctor/medical-record", element: <Navigate to="/veterinarian/medical-record" replace /> },
 ]);

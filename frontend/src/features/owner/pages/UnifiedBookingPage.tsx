@@ -154,6 +154,18 @@ export function UnifiedBookingPage() {
     const estimatedPrice = (selectedAvailability?.baseDailyPriceVnd ?? 0) * billableDays;
     const petOptions = petsQuery.data?.content ?? [];
 
+
+
+    const handleSubmit = () => {
+
+        if (!canProceedStep1) return;
+
+        createMutation.mutate();
+
+    };
+
+
+
     return (
         <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
             <Card
@@ -341,5 +353,9 @@ export function UnifiedBookingPage() {
                 </div>
             </Card>
         </div>
+
     );
+
 }
+
+

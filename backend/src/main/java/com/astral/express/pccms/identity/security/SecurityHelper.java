@@ -34,7 +34,7 @@ public class SecurityHelper {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") 
                             || a.getAuthority().equals("ROLE_STAFF")
                             || a.getAuthority().equals("ROLE_VETERINARIAN")
-                            || a.getAuthority().equals("ROLE_RECEPTIONIST"));
+                            || a.getAuthority().equals("ROLE_STAFF"));
     }
 
     public boolean hasAnyRole(String... roleCodes) {

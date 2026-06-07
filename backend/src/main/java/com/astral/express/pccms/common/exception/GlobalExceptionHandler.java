@@ -89,9 +89,22 @@ public class GlobalExceptionHandler {
                 .body(errorResponse);
     }
 
+    @ExceptionHandler(value = NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException exception) {
+        log.warn("Resource not found: {}", exception.getMessage());
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code(HttpStatus.NOT_FOUND.value())
+                .message("Không tìm thấy tài nguyên")
+                .errorCode("ERR_404_NOT_FOUND")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(Exception exception) {
-        log.error("Unhandled Exception: {}", exception.getMessage());
+        log.error("Unhandled Exception: {}", exception.getMessage(), exception);
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code(ErrorCode.ERR_500_INTERNAL_SERVER.getHttpStatus())

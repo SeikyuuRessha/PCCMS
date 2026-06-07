@@ -6,8 +6,8 @@ import { Card, EmptyState, Modal } from "~/components/molecules";
 import { petApi } from "~/shared/api/petApi";
 import { PetForm } from "../components/PetForm";
 
-export function PetProfilesPage() {
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+type ActiveFilter = 'all' | 'active' | 'inactive';
+type ModalMode = 'add' | 'edit' | 'detail' | null;
 
     const {
         data: petsPage,

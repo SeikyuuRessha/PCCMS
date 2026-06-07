@@ -28,6 +28,10 @@ function formatDateTime(value: string) {
     return new Date(value).toLocaleString("vi-VN");
 }
 
+function formatTime(iso: string) {
+    return new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+}
+
 export function GroomingBoardPage() {
     const queryClient = useQueryClient();
     const [stationByTicket, setStationByTicket] = useState<Record<string, string>>({});

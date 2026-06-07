@@ -4,8 +4,10 @@ package com.astral.express.pccms.identity.entity;
 import com.astral.express.pccms.user.entity.Users;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;

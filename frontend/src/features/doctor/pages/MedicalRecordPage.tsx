@@ -127,6 +127,9 @@ export function MedicalRecordPage() {
                 />
 
                 <div className="space-y-6">
+                    {record.petId && (
+                        <PetProfileSummary petId={record.petId} showClinicalNotes />
+                    )}
                     <PrescriptionTable disabled={isFinalized} />
                 </div>
             </div>

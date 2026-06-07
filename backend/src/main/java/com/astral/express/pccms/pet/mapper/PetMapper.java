@@ -6,6 +6,8 @@ import com.astral.express.pccms.pet.entity.Pets;
 import java.util.HashMap;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, imports = {java.util.Map.class, java.util.HashMap.class})
@@ -23,8 +25,10 @@ public interface PetMapper {
     @Mapping(target = "species", ignore = true)
     @Mapping(target = "breed", ignore = true)
     @Mapping(target = "owner", ignore = true)
+    @Mapping(target = "isActive", ignore = true)
     Pets toEntity(CreatePetRequest request);
 
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "species", ignore = true)
     @Mapping(target = "breed", ignore = true)
     @Mapping(target = "owner", ignore = true)
