@@ -1,8 +1,22 @@
-import { CalendarDays, Sparkles, Building2, Users } from "lucide-react";
+import { Building2, CalendarDays, ClipboardCheck, Sparkles } from "lucide-react";
 import { Tag } from "~/components/atoms";
 import { Card, DataTable, MiniGridStats } from "~/components/molecules";
+import { today, useReceptionMockData } from "../mockReceptionData";
+
+const appointmentTone = (status: string) => {
+    if (status === "Đang chờ khám") return "blue" as const;
+    if (status === "Đã hủy") return "red" as const;
+    return "amber" as const;
+};
 
 export function ReceptionDashboard() {
+    const { appointments, groomingTickets, boardingPets, boardingLogs } = useReceptionMockData();
+
+    const waitingAppointments = appointments.filter((item) => item.status === "Chờ tiếp nhận").length;
+    const activeBoardingPets = boardingPets.filter((pet) => pet.status === "Đang lưu trú" || pet.status === "Sắp đón").length;
+    const todaySavedLogs = boardingLogs.filter((log) => log.date === today && log.status === "Đã lưu").length;
+    const processingGrooming = groomingTickets.filter((ticket) => ticket.status === "Đang dùng dịch vụ").length;
+
     return (
         <div className="space-y-6">
             <MiniGridStats
@@ -33,7 +47,7 @@ export function ReceptionDashboard() {
                     },
                 ]}
             />
-            <Card title="Bảng điều phối nhanh">
+            <Card title="Bảng điều phối nhanh" subtitle="Tổng hợp nhanh các ca đang có trong các màn hình nghiệp vụ của nhân viên trung tâm.">
                 <DataTable
                     columns={[
                         "Khung giờ",

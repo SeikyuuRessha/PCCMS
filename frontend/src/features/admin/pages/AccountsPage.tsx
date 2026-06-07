@@ -131,4 +131,66 @@ export function AccountsPage() {
             </Card>
         </div>
     );
+  }
+
+  if (isError) return <EmptyState title="Lỗi" description="Lỗi tải danh sách tài khoản" />;
+
+  const users = data?.content || [];
+
+  return (
+    <div className="grid gap-6">
+      <Card
+        title="Quản lý Tài khoản"
+        right={
+          <select
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+            value={role}
+            onChange={handleRoleChange}
+          >
+            {ROLE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        }
+      >
+        {users.length === 0 ? (
+          <EmptyState title="Trống" description="Không có tài khoản nào" />
+        ) : (
+          <DataTable
+            columns={['Họ tên', 'Email', 'Vai trò', 'Trạng thái', 'Hành động']}
+            rows={users.map((user) => [
+              user.fullName,
+              user.email,
+              user.roleCode,
+              renderStatusBadge(user.statusCode),
+              <div key={user.id} className="flex gap-2">
+                {user.statusCode !== 'LOCKED' && (
+                  <Button
+                    variant="outline"
+                    className="px-2 py-1 h-auto text-xs"
+                    onClick={() => lockMutation.mutate(user.id)}
+                    disabled={lockMutation.isPending}
+                  >
+                    Khóa
+                  </Button>
+                )}
+                {user.statusCode !== 'INACTIVE' && (
+                  <Button
+                    variant="outline"
+                    className="px-2 py-1 h-auto text-xs"
+                    onClick={() => disableMutation.mutate(user.id)}
+                    disabled={disableMutation.isPending}
+                  >
+                    Vô hiệu hóa
+                  </Button>
+                )}
+              </div>,
+            ])}
+          />
+        )}
+      </Card>
+    </div>
+  );
 }

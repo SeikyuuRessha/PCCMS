@@ -1,5 +1,14 @@
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { Button, Input } from "~/components/atoms";
+import { registerSchema, type RegisterFormData } from "../schema/authSchema";
+import { authApi } from "../api/authApi";
+import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
+import { parseApiError } from "~/shared/utils/errorHandlers";
+import { ROUTES } from "~/constants/routes";
 
 export function RegisterPage() {
     const navigate = useNavigate();
@@ -39,7 +48,7 @@ export function RegisterPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-slate-900">Tạo tài khoản chủ nuôi</h1>
                 <p className="mt-2 text-sm text-slate-500">
@@ -71,7 +80,6 @@ export function RegisterPage() {
                     )}
                 </div>
             </div>
-            <Input label="Email" placeholder="owner@email.com" />
             <div className="grid gap-4 md:grid-cols-2">
                 <div>
                     <Input
@@ -119,6 +127,6 @@ export function RegisterPage() {
                     Về trang đăng nhập
                 </button>
             </p>
-        </div>
+        </form>
     );
 }

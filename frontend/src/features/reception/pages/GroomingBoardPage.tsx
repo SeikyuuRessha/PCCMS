@@ -32,6 +32,20 @@ function formatTime(iso: string) {
     return new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 }
 
+const nextStatuses: Record<GroomingStatus, GroomingStatus[]> = {
+    "Chờ làm": ["Đang dùng dịch vụ"],
+    "Đang dùng dịch vụ": ["Hoàn thành"],
+    "Hoàn thành": [],
+};
+
+const emptyTicketForm = {
+    petName: "",
+    ownerName: "",
+    service: serviceOptions[0],
+    time: timeSlotOptions[0],
+    note: "",
+};
+
 export function GroomingBoardPage() {
     const queryClient = useQueryClient();
     const [stationByTicket, setStationByTicket] = useState<Record<string, string>>({});

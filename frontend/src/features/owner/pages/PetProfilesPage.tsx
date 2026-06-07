@@ -29,7 +29,7 @@ type ModalMode = 'add' | 'edit' | 'detail' | null;
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline">Bộ lọc</Button>
-                    <Button>
+                    <Button onClick={() => setIsAddModalOpen(true)}>
                         <span className="inline-flex items-center gap-2">
                             <Plus className="h-4 w-4" /> Thêm thú cưng
                         </span>
@@ -145,3 +145,4 @@ type ModalMode = 'add' | 'edit' | 'detail' | null;
         </div>
     );
 }
+

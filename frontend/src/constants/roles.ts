@@ -19,11 +19,11 @@ export const roles: Record<RoleKey, RoleConfig> = {
             "profile",
         ],
     },
-    reception: {
+    staff: {
         label: "Nhân viên",
         screens: ["receptionDashboard", "appointmentReception", "groomingBoard", "boardingLog", "receptionMySchedule"],
     },
-    doctor: {
+    veterinarian: {
         label: "Bác sĩ",
         screens: ["doctorDashboard", "doctorQueue", "medicalRecord", "doctorMySchedule"],
     },

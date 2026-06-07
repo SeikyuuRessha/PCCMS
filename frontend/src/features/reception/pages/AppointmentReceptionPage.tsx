@@ -307,7 +307,27 @@ export function AppointmentReceptionPage() {
                         Khi tiếp nhận thành công, thú cưng được đưa vào danh sách chờ khám của bác sĩ phụ trách.
                     </div>
                 </div>
-            </Card>
+            )}
+
+            {cancelTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+                    <div className="w-full max-w-md rounded-3xl border border-border-main bg-white p-5 shadow-lg">
+                        <h3 className="text-base font-semibold text-text-main">Xác nhận hủy lịch hẹn</h3>
+                        <p className="mt-2 text-sm text-text-muted">
+                            Bạn có chắc chắn muốn hủy lịch <span className="font-semibold">{cancelTarget.id}</span> của
+                            khách <span className="font-semibold">{cancelTarget.customerName}</span> không?
+                        </p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <Button variant="ghost" onClick={() => setCancelTarget(null)}>
+                                Không
+                            </Button>
+                            <Button variant="soft" onClick={confirmCancel}>
+                                Xác nhận hủy
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

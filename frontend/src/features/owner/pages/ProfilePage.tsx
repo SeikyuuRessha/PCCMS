@@ -1,7 +1,15 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Mail, Phone, ShieldCheck, Trash2, Upload, User } from "lucide-react";
 import { Button, Input } from "~/components/atoms";
 import { Card } from "~/components/molecules";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { userApi } from "~/shared/api/userApi";
+import { SkeletonLoader } from "~/shared/components/SkeletonLoader";
+import { ErrorState } from "~/shared/components/ErrorState";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import toast from "react-hot-toast";
 
 type OtpStep = "idle" | "otp-sent";
 
@@ -25,17 +33,9 @@ const passwordSchema = z
 type PasswordForm = z.infer<typeof passwordSchema>;
 
 export function ProfilePage() {
+    const queryClient = useQueryClient();
     const avatarInputRef = useRef<HTMLInputElement>(null);
-
-    const [profile, setProfile] = useState({
-        name: "Nguyễn Minh Anh",
-        email: "minhanh@email.com",
-        phone: "0912 345 678",
-        avatarFileName: "",
-    });
-
-    const [draftName, setDraftName] = useState(profile.name);
-    const [draftAvatarFileName, setDraftAvatarFileName] = useState(profile.avatarFileName);
+    const [draftAvatarFileName, setDraftAvatarFileName] = useState("");
 
     const [emailStep, setEmailStep] = useState<OtpStep>("idle");
     const [newEmail, setNewEmail] = useState("");
@@ -84,6 +84,7 @@ export function ProfilePage() {
             // Also reset avatar draft to empty or current logic
             setDraftAvatarFileName("");
         }
+    }, [profile, resetProfile]);
 
     // --- Mutations ---
     const updateProfileMutation = useMutation({
@@ -125,85 +126,50 @@ export function ProfilePage() {
 
     const handleChooseAvatar = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-
         if (!file) return;
-
         if (file.size > 20 * 1024 * 1024) {
-            alert("Ảnh đại diện không được vượt quá 20MB.");
+            toast.error("Ảnh đại diện không được vượt quá 20MB.");
             return;
         }
-
         setDraftAvatarFileName(file.name);
     };
 
+    // OTP mock handlers
     const handleSendEmailOtp = (event: React.FormEvent) => {
         event.preventDefault();
-
-        if (!newEmail.trim()) {
-            alert("Vui lòng nhập email mới.");
-            return;
-        }
-
+        if (!newEmail.trim()) return toast.error("Vui lòng nhập email mới.");
         setEmailStep("otp-sent");
-
-        // TODO: gọi API gửi OTP về email mới
     };
-
     const handleConfirmEmail = (event: React.FormEvent) => {
         event.preventDefault();
-
-        if (!emailOtp.trim()) {
-            alert("Vui lòng nhập mã OTP.");
-            return;
-        }
-
-        setProfile((current) => ({
-            ...current,
-            email: newEmail.trim(),
-        }));
-
+        if (!emailOtp.trim()) return toast.error("Vui lòng nhập mã OTP.");
         setNewEmail("");
         setEmailOtp("");
         setEmailStep("idle");
-
-        // TODO: gọi API xác nhận OTP và cập nhật email
+        toast.success("Đổi email thành công!");
     };
-
     const handleSendPhoneOtp = (event: React.FormEvent) => {
         event.preventDefault();
-
-        if (!newPhone.trim()) {
-            alert("Vui lòng nhập số điện thoại mới.");
-            return;
-        }
-
+        if (!newPhone.trim()) return toast.error("Vui lòng nhập số điện thoại mới.");
         setPhoneStep("otp-sent");
-
-        // TODO: gọi API gửi OTP về số điện thoại mới
     };
-
     const handleConfirmPhone = (event: React.FormEvent) => {
         event.preventDefault();
-
-        if (!phoneOtp.trim()) {
-            alert("Vui lòng nhập mã OTP.");
-            return;
-        }
-
-        setProfile((current) => ({
-            ...current,
-            phone: newPhone.trim(),
-        }));
-
+        if (!phoneOtp.trim()) return toast.error("Vui lòng nhập mã OTP.");
         setNewPhone("");
         setPhoneOtp("");
         setPhoneStep("idle");
-
-        // TODO: gọi API xác nhận OTP và cập nhật số điện thoại
+        toast.success("Đổi số điện thoại thành công!");
     };
 
-    const handleChangePassword = (event: React.FormEvent) => {
-        event.preventDefault();
+    // --- Render States ---
+    if (isLoading) {
+        return (
+            <div data-testid="profile-skeleton" className="p-6">
+                <SkeletonLoader className="h-[400px] w-full rounded-2xl" />
+            </div>
+        );
+    }
 
     if (isError || !profile) {
         return (
@@ -252,7 +218,6 @@ export function ProfilePage() {
                                 <Upload className="mr-2 h-4 w-4" />
                                 Đổi ảnh
                             </Button>
-
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -266,17 +231,18 @@ export function ProfilePage() {
                         <p className="mt-3 text-xs text-slate-500">Hỗ trợ ảnh dưới 20MB.</p>
                     </div>
 
-                    <Input
-                        label="Họ tên"
-                        value={draftName}
-                        onChange={(event) => setDraftName(event.target.value)}
-                    />
+                    <div>
+                        <Input
+                            label="Họ tên"
+                            {...registerProfile("fullName")}
+                            error={profileErrors.fullName?.message}
+                        />
+                    </div>
 
                     <div className="rounded-2xl border border-slate-200 p-4">
                         <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                             Thông tin liên hệ hiện tại
                         </p>
-
                         <div className="mt-3 space-y-2 text-sm">
                             <div className="flex items-center gap-2 text-slate-600">
                                 <Mail className="h-4 w-4" />
@@ -287,7 +253,6 @@ export function ProfilePage() {
                                 <span>{profile.phone}</span>
                             </div>
                         </div>
-
                         <p className="mt-3 text-xs text-slate-500">
                             Email và số điện thoại được đổi ở panel riêng bằng mã OTP.
                         </p>
@@ -301,9 +266,10 @@ export function ProfilePage() {
                             type="button"
                             variant="outline"
                             onClick={() => {
-                                setDraftName(profile.name);
-                                setDraftAvatarFileName(profile.avatarFileName);
+                                resetProfile({ fullName: profile.fullName });
+                                setDraftAvatarFileName("");
                             }}
+                            disabled={isUpdatingProfile}
                         >
                             Hủy
                         </Button>
@@ -319,7 +285,6 @@ export function ProfilePage() {
                         </p>
                         <p className="mt-1 text-sm font-medium text-slate-700">{profile.email}</p>
                     </div>
-
                     {emailStep === "idle" ? (
                         <form onSubmit={handleSendEmailOtp} className="space-y-4">
                             <Input
@@ -329,11 +294,8 @@ export function ProfilePage() {
                                 value={newEmail}
                                 onChange={(event) => setNewEmail(event.target.value)}
                             />
-
                             <div className="flex justify-end">
-                                <Button type="submit" variant="outline">
-                                    Gửi OTP
-                                </Button>
+                                <Button type="submit" variant="outline">Gửi OTP</Button>
                             </div>
                         </form>
                     ) : (
@@ -348,7 +310,6 @@ export function ProfilePage() {
                                 maxLength={6}
                                 onChange={(event) => setEmailOtp(event.target.value)}
                             />
-
                             <div className="flex flex-wrap gap-2">
                                 <Button type="submit">Xác nhận đổi email</Button>
                                 <Button
@@ -376,7 +337,6 @@ export function ProfilePage() {
                         </p>
                         <p className="mt-1 text-sm font-medium text-slate-700">{profile.phone}</p>
                     </div>
-
                     {phoneStep === "idle" ? (
                         <form onSubmit={handleSendPhoneOtp} className="space-y-4">
                             <Input
@@ -386,11 +346,8 @@ export function ProfilePage() {
                                 value={newPhone}
                                 onChange={(event) => setNewPhone(event.target.value)}
                             />
-
                             <div className="flex justify-end">
-                                <Button type="submit" variant="outline">
-                                    Gửi OTP
-                                </Button>
+                                <Button type="submit" variant="outline">Gửi OTP</Button>
                             </div>
                         </form>
                     ) : (
@@ -405,7 +362,6 @@ export function ProfilePage() {
                                 maxLength={6}
                                 onChange={(event) => setPhoneOtp(event.target.value)}
                             />
-
                             <div className="flex flex-wrap gap-2">
                                 <Button type="submit">Xác nhận đổi số điện thoại</Button>
                                 <Button
@@ -429,48 +385,29 @@ export function ProfilePage() {
                             <Input
                                 label="Mật khẩu cũ"
                                 type="password"
-                                value={passwordForm.currentPassword}
                                 autoComplete="current-password"
-                                onChange={(event) =>
-                                    setPasswordForm((current) => ({
-                                        ...current,
-                                        currentPassword: event.target.value,
-                                    }))
-                                }
+                                {...registerPassword("oldPassword")}
+                                error={passwordErrors.oldPassword?.message}
                             />
-
                             <Input
                                 label="Mật khẩu mới"
                                 type="password"
-                                value={passwordForm.newPassword}
                                 autoComplete="new-password"
-                                onChange={(event) =>
-                                    setPasswordForm((current) => ({
-                                        ...current,
-                                        newPassword: event.target.value,
-                                    }))
-                                }
+                                {...registerPassword("newPassword")}
+                                error={passwordErrors.newPassword?.message}
                             />
-
                             <Input
                                 label="Xác nhận mật khẩu mới"
                                 type="password"
-                                value={passwordForm.confirmPassword}
                                 autoComplete="new-password"
-                                onChange={(event) =>
-                                    setPasswordForm((current) => ({
-                                        ...current,
-                                        confirmPassword: event.target.value,
-                                    }))
-                                }
+                                {...registerPassword("confirmPassword")}
+                                error={passwordErrors.confirmPassword?.message}
                             />
                         </div>
-
                         <div className="flex items-start gap-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
                             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                             <p>{passwordHint}</p>
                         </div>
-
                         <div className="flex justify-end">
                             <Button type="submit" disabled={isUpdatingPassword}>
                                 {isUpdatingPassword ? "Đang lưu..." : "Cập nhật mật khẩu"}

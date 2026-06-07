@@ -184,6 +184,40 @@ export function MedicalRecordPage() {
                     />
                 </Card>
             </div>
-        </div>
+        );
+    }
+
+    if (isError || !record) {
+        return <EmptyState title="Lỗi" description="Không thể tải bệnh án" />;
+    }
+
+    return (
+        <FormProvider {...methods}>
+            <div className="mb-4 flex justify-between items-center">
+                <h2 className="text-xl font-bold">Chi tiết bệnh án: {record.recordCode}</h2>
+                {isFinalized && <Tag tone="green">Đã chốt</Tag>}
+            </div>
+            <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+                <VitalSignsForm 
+                    disabled={isFinalized}
+                    initialData={methods.getValues().vitalSigns}
+                    onSaveDraft={(data) => {
+                        methods.setValue('vitalSigns', data);
+                        saveDraftMutation.mutate(methods.getValues());
+                    }}
+                    onFinalize={(data) => {
+                        methods.setValue('vitalSigns', data);
+                        finalizeMutation.mutate(methods.getValues());
+                    }}
+                    isSaving={saveDraftMutation.isPending}
+                    isFinalizing={finalizeMutation.isPending}
+                />
+
+                <div className="space-y-6">
+                    <PrescriptionTable disabled={isFinalized} />
+                </div>
+            </div>
+        </FormProvider>
     );
 }
+

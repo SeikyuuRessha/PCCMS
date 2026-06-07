@@ -124,10 +124,12 @@ export const router = createBrowserRouter([
 
     // STAFF ROUTES
     {
-        path: "/reception",
+        path: "/staff",
         element: (
-            <AuthGuard requiredRole="reception">
-                <DashboardLayout />
+            <AuthGuard requiredRole="staff">
+                <ReceptionMockProvider>
+                    <DashboardLayout />
+                </ReceptionMockProvider>
             </AuthGuard>
         ),
         children: [
@@ -139,9 +141,9 @@ export const router = createBrowserRouter([
         ],
     },
     {
-        path: "/doctor",
+        path: "/veterinarian",
         element: (
-            <AuthGuard requiredRole="doctor">
+            <AuthGuard requiredRole="veterinarian">
                 <DashboardLayout />
             </AuthGuard>
         ),

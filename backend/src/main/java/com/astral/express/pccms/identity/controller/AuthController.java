@@ -1,5 +1,16 @@
 package com.astral.express.pccms.identity.controller;
 
+import java.time.Duration;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.astral.express.pccms.common.dto.ApiResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
@@ -7,15 +18,11 @@ import com.astral.express.pccms.identity.dto.request.LoginRequest;
 import com.astral.express.pccms.identity.dto.request.RegisterRequest;
 import com.astral.express.pccms.identity.dto.response.AuthResponse;
 import com.astral.express.pccms.identity.service.AuthService;
+
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.Duration;
 
 @Slf4j
 @RestController
@@ -43,6 +50,8 @@ public class AuthController {
     public ApiResponse<AuthResponse> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletResponse response) {
+
+        log.info("LOGIN_CONTROLLER_REACHED email={}", request.email());
 
         AuthResponse authResponse = authService.login(request);
 
