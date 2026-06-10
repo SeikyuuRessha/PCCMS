@@ -125,18 +125,20 @@ public class BillingHandoffServiceImpl implements BillingHandoffService {
         return Math.max(1, (minutes + oneDayMinutes - 1) / oneDayMinutes);
     }
 
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
     private String buildBoardingDescription(BoardingBooking booking, BoardingSession session) {
-        String range = resolveStartTime(booking, session).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+        String range = resolveStartTime(booking, session).format(FORMATTER)
                 + " - "
-                + resolveEndTime(booking, session).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                + resolveEndTime(booking, session).format(FORMATTER);
         return "Boarding stay for " + booking.getPet().getName()
                 + " (" + booking.getRequestedRoomType().getName() + "), " + range;
     }
 
     private String buildGroomingDescription(ServiceOrder serviceOrder, Appointment appointment, GroomingTicket ticket) {
-        String range = appointment.getScheduledStartAt().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+        String range = appointment.getScheduledStartAt().format(FORMATTER)
                 + " - "
-                + appointment.getScheduledEndAt().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                + appointment.getScheduledEndAt().format(FORMATTER);
         String stationName = ticket.getStation() == null ? "unassigned station" : ticket.getStation().getName();
         return "Grooming service for " + serviceOrder.getPet().getName()
                 + " (" + serviceOrder.getService().getName() + ", " + stationName + "), " + range;

@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from "react";
-import { Mail, Phone, ShieldCheck, Trash2, Upload, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Mail, Phone, ShieldCheck, User } from "lucide-react";
 import { Button, Input } from "~/components/atoms";
 import { Card } from "~/components/molecules";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,8 +41,6 @@ const roleLabels: Record<string, string> = {
 
 export function ProfilePage() {
     const queryClient = useQueryClient();
-    const avatarInputRef = useRef<HTMLInputElement>(null);
-    const [draftAvatarFileName, setDraftAvatarFileName] = useState("");
 
     const [emailStep, setEmailStep] = useState<OtpStep>("idle");
     const [newEmail, setNewEmail] = useState("");
@@ -88,7 +86,6 @@ export function ProfilePage() {
             resetProfile({
                 fullName: profile.fullName,
             });
-            setDraftAvatarFileName("");
         }
     }, [profile, resetProfile]);
 
@@ -127,16 +124,6 @@ export function ProfilePage() {
             currentPassword: data.oldPassword,
             newPassword: data.newPassword,
         });
-    };
-
-    const handleChooseAvatar = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        if (file.size > 20 * 1024 * 1024) {
-            toast.error("Ảnh đại diện không được vượt quá 20MB.");
-            return;
-        }
-        setDraftAvatarFileName(file.name);
     };
 
     const requestEmailOtpMutation = useMutation({
@@ -219,7 +206,7 @@ export function ProfilePage() {
 
     return (
         <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
-            <Card title="Hồ sơ người dùng" subtitle="Cập nhật ảnh đại diện và tên hiển thị">
+            <Card title="Hồ sơ người dùng" subtitle="Cập nhật tên hiển thị">
                 <form onSubmit={handleProfileSubmit(onSaveProfile)} className="space-y-6">
                     <div className="flex flex-col items-center rounded-3xl bg-slate-50 p-6 text-center">
                         <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-emerald-700">
@@ -228,47 +215,9 @@ export function ProfilePage() {
 
                         <h3 className="mt-4 text-lg font-semibold">{profile.fullName}</h3>
                         <p className="text-sm text-slate-500">
-                            {roleLabels[profile.roleCode] || profile.roleCode} • ID: {profile.id.substring(0, 8)}
+                            {roleLabels[profile.roleCode] || profile.roleCode} • ID:{" "}
+                            {profile.id.substring(0, 8)}
                         </p>
-
-                        {draftAvatarFileName ? (
-                            <p className="mt-2 max-w-full truncate text-xs text-slate-500">
-                                Ảnh đã chọn: {draftAvatarFileName}
-                            </p>
-                        ) : (
-                            <p className="mt-2 text-xs text-slate-500">
-                                Chưa có ảnh đại diện tùy chỉnh
-                            </p>
-                        )}
-
-                        <input
-                            ref={avatarInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleChooseAvatar}
-                        />
-
-                        <div className="mt-4 flex gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => avatarInputRef.current?.click()}
-                            >
-                                <Upload className="mr-2 h-4 w-4" />
-                                Đổi ảnh
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => setDraftAvatarFileName("")}
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Xóa ảnh
-                            </Button>
-                        </div>
-
-                        <p className="mt-3 text-xs text-slate-500">Hỗ trợ ảnh dưới 20MB.</p>
                     </div>
 
                     <div>
@@ -307,7 +256,6 @@ export function ProfilePage() {
                             variant="outline"
                             onClick={() => {
                                 resetProfile({ fullName: profile.fullName });
-                                setDraftAvatarFileName("");
                             }}
                             disabled={isUpdatingProfile}
                         >
@@ -335,7 +283,9 @@ export function ProfilePage() {
                                 onChange={(event) => setNewEmail(event.target.value)}
                             />
                             <div className="flex justify-end">
-                                <Button type="submit" variant="outline">Gửi OTP</Button>
+                                <Button type="submit" variant="outline">
+                                    Gửi OTP
+                                </Button>
                             </div>
                         </form>
                     ) : (
@@ -387,7 +337,9 @@ export function ProfilePage() {
                                 onChange={(event) => setNewPhone(event.target.value)}
                             />
                             <div className="flex justify-end">
-                                <Button type="submit" variant="outline">Gửi OTP</Button>
+                                <Button type="submit" variant="outline">
+                                    Gửi OTP
+                                </Button>
                             </div>
                         </form>
                     ) : (

@@ -258,7 +258,6 @@ export function RoomsPage() {
                             <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                                 <thead className="bg-slate-50 text-slate-500">
                                     <tr>
-                                        <th className="px-4 py-3 font-medium">Mã phòng</th>
                                         <th className="px-4 py-3 font-medium">Tên phòng</th>
                                         <th className="px-4 py-3 font-medium">Loại</th>
                                         <th className="px-4 py-3 font-medium">Tầng</th>
@@ -271,8 +270,7 @@ export function RoomsPage() {
                                 <tbody className="divide-y divide-slate-200 bg-white">
                                     {filteredRooms.map((room) => (
                                         <tr key={room.id}>
-                                            <td className="px-4 py-3 font-medium text-slate-900">{room.roomCode}</td>
-                                            <td className="px-4 py-3">{room.name}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-900">{room.name}</td>
                                             <td className="px-4 py-3">{room.roomTypeName}</td>
                                             <td className="px-4 py-3">{room.floor}</td>
                                             <td className="px-4 py-3">{room.capacity}</td>
@@ -338,9 +336,6 @@ export function RoomsPage() {
             <Modal isOpen={roomModalMode !== null} onClose={closeRoomModal} title={roomModalTitle}>
                 <form className="space-y-4" onSubmit={roomForm.handleSubmit((values) => saveRoomMutation.mutate(values))}>
                     <div className="grid gap-4 md:grid-cols-2">
-                        {roomModalMode !== "create" && (
-                            <Input label="Mã phòng" readOnly={true} {...roomForm.register("roomCode")} />
-                        )}
                         <Input label="Tên phòng" readOnly={roomReadOnly} {...roomForm.register("name")} error={roomForm.formState.errors.name?.message} />
                         <div className="flex flex-col gap-1.5">
                             <label className="text-[13px] font-medium text-slate-700" htmlFor="room-type-id">Loại phòng</label>

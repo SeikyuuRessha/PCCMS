@@ -15,12 +15,15 @@ import org.mapstruct.ReportingPolicy;
 public interface PetMapper {
 
     @Mapping(target = "speciesId", source = "pet.species.id")
+    @Mapping(target = "speciesName", source = "pet.species.name")
     @Mapping(target = "breedId", source = "pet.breed.id")
+    @Mapping(target = "breedName", source = "pet.breed.name")
     @Mapping(target = "ownerId", source = "pet.owner.id")
     @Mapping(target = "identificationNote", expression = "java(getStringAttribute(pet, \"identificationNote\"))")
     @Mapping(target = "specialNote", expression = "java(getStringAttribute(pet, \"specialNote\"))")
     @Mapping(target = "allergyNote", expression = "java(getStringAttribute(pet, \"allergyNote\"))")
     @Mapping(target = "nutritionNote", expression = "java(getStringAttribute(pet, \"nutritionNote\"))")
+    @Mapping(target = "estimatedAgeMonths", expression = "java(calculateAge(pet.getBirthDate()))")
     PetResponse toResponse(Pets pet, java.util.List<com.astral.express.pccms.medicalrecord.dto.response.HealthAlertResponse> healthAlerts);
 
     @Mapping(target = "species", ignore = true)
@@ -64,5 +67,11 @@ public interface PetMapper {
             return val != null ? val.toString() : null;
         }
         return null;
+    }
+
+    default Integer calculateAge(java.time.LocalDate birthDate) {
+        if (birthDate == null) return null;
+        java.time.Period period = java.time.Period.between(birthDate, java.time.LocalDate.now());
+        return period.getYears() * 12 + period.getMonths();
     }
 }

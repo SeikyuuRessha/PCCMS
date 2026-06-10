@@ -17,6 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
@@ -46,11 +48,16 @@ public class RoomManagementServiceImpl implements RoomManagementService {
     @Transactional
     public RoomResponse createRoom(RoomRequest request) {
         validateCapacity(request.capacity());
-        if (roomRepository.existsByRoomCodeIgnoreCase(request.roomCode())) {
+        if (request.roomCode() != null && !request.roomCode().isBlank() && roomRepository.existsByRoomCodeIgnoreCase(request.roomCode())) {
             throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
         }
 
         Room room = new Room();
+        String generatedRoomCode = request.roomCode();
+        if (generatedRoomCode == null || generatedRoomCode.isBlank()) {
+            generatedRoomCode = "ROOM" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        }
+        room.setRoomCode(generatedRoomCode);
         applyRequest(room, request);
         return toResponse(roomRepository.save(room));
     }
@@ -60,7 +67,7 @@ public class RoomManagementServiceImpl implements RoomManagementService {
     public RoomResponse updateRoom(UUID roomId, RoomRequest request) {
         validateCapacity(request.capacity());
         Room room = findRoom(roomId);
-        if (roomRepository.existsByRoomCodeIgnoreCaseAndIdNot(request.roomCode(), roomId)) {
+        if (request.roomCode() != null && !request.roomCode().isBlank() && roomRepository.existsByRoomCodeIgnoreCaseAndIdNot(request.roomCode(), roomId)) {
             throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
         }
 
@@ -94,7 +101,9 @@ public class RoomManagementServiceImpl implements RoomManagementService {
             throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
         }
 
-        room.setRoomCode(request.roomCode());
+        if (request.roomCode() != null && !request.roomCode().isBlank()) {
+            room.setRoomCode(request.roomCode());
+        }
         room.setName(request.name());
         room.setRoomType(roomType);
         room.setFloor(request.floor());

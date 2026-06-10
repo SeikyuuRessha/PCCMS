@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 public record RoomRequest(
-        @NotBlank @Size(max = 60) String roomCode,
+        @Size(max = 60) String roomCode,
         @NotBlank @Size(max = 120) String name,
         @NotNull UUID roomTypeId,
         @NotNull @Min(1) Integer floor,

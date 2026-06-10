@@ -12,3 +12,5 @@
 /.cursor
 /AGENTS.md
 /.github/copilot-instructions.md
+
+docker-compose.yml
