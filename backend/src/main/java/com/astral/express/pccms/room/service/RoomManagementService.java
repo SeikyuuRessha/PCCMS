@@ -11,6 +11,8 @@ import java.util.UUID;
 public interface RoomManagementService {
     PageResponse<RoomResponse> searchRooms(UUID roomTypeId, RoomStatus statusCode, Pageable pageable);
 
+    RoomResponse getRoom(UUID roomId);
+
     RoomResponse createRoom(RoomRequest request);
 
     RoomResponse updateRoom(UUID roomId, RoomRequest request);

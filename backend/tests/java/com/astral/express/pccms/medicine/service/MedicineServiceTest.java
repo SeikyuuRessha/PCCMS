@@ -7,6 +7,7 @@ import com.astral.express.pccms.medicine.dto.request.MedicineCreateRequest;
 import com.astral.express.pccms.medicine.dto.request.MedicineUpdateRequest;
 import com.astral.express.pccms.medicine.dto.response.MedicineResponse;
 import com.astral.express.pccms.medicine.entity.Medicine;
+import com.astral.express.pccms.medicine.entity.MedicineCategory;
 import com.astral.express.pccms.medicine.mapper.MedicineMapper;
 import com.astral.express.pccms.medicine.repository.MedicineCategoryRepository;
 import com.astral.express.pccms.medicine.repository.MedicineRepository;
@@ -39,6 +40,9 @@ class MedicineServiceTest {
     @Mock
     private MedicineMapper medicineMapper;
 
+    @Mock
+    private com.astral.express.pccms.medicalrecord.repository.PrescriptionItemRepository prescriptionItemRepository;
+
     @InjectMocks
     private MedicineServiceImpl medicineService;
 
@@ -52,14 +56,19 @@ class MedicineServiceTest {
         mockMedicine.setUnitPriceVnd(150000L);
         mockMedicine.setIsActive(true);
 
-        MedicineCreateRequest createReq = new MedicineCreateRequest("MED01", "Name", null, "Unit", null, inputStock, inputPrice);
-        MedicineUpdateRequest updateReq = new MedicineUpdateRequest("New Name", null, "Unit", null, inputStock, inputPrice);
+        UUID categoryId = UUID.randomUUID();
+        MedicineCreateRequest createReq = new MedicineCreateRequest("MED01", "Name", categoryId, "Unit", null, inputStock, inputPrice);
+        MedicineUpdateRequest updateReq = new MedicineUpdateRequest("MED01", "New Name", categoryId, "Unit", null, inputStock, inputPrice);
         AddStockRequest addStockReq = new AddStockRequest(inputStock); // inputStock acts as quantityToAdd here
+
+        MedicineCategory mockCategory = new MedicineCategory();
+        mockCategory.setId(categoryId);
 
         // GIVEN
         switch (action) {
             case "CREATE":
                 if ("VALID".equals(mockState) && inputPrice.compareTo(0L) >= 0 && inputStock >= 0) {
+                    given(categoryRepository.findById(categoryId)).willReturn(Optional.of(mockCategory));
                     given(medicineMapper.toMedicine(createReq)).willReturn(mockMedicine);
                     given(medicineRepository.save(any(Medicine.class))).willAnswer(inv -> inv.getArgument(0));
                     given(medicineMapper.toMedicineResponse(mockMedicine)).willReturn(new MedicineResponse(medicineId, "MED01", "Name", null, null, "Unit", null, inputStock, inputPrice, true));
@@ -67,6 +76,7 @@ class MedicineServiceTest {
                 break;
             case "UPDATE":
                 if ("VALID".equals(mockState) && inputPrice.compareTo(0L) >= 0 && inputStock >= 0) {
+                    given(categoryRepository.findById(categoryId)).willReturn(Optional.of(mockCategory));
                     given(medicineRepository.findById(medicineId)).willReturn(Optional.of(mockMedicine));
                     given(medicineRepository.save(any(Medicine.class))).willAnswer(inv -> inv.getArgument(0));
                 }

@@ -1,5 +1,6 @@
 package com.astral.express.pccms.boarding.entity;
 
+import com.astral.express.pccms.appointment.entity.ServiceOrder;
 import com.astral.express.pccms.common.domain.AuditableEntity;
 import com.astral.express.pccms.pet.entity.Pets;
 import com.astral.express.pccms.room.entity.RoomType;

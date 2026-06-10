@@ -15,9 +15,12 @@ import com.astral.express.pccms.common.dto.ApiResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.identity.dto.request.LoginRequest;
+import com.astral.express.pccms.identity.dto.request.OtpRequest;
+import com.astral.express.pccms.identity.dto.request.PasswordResetConfirmRequest;
 import com.astral.express.pccms.identity.dto.request.RegisterRequest;
 import com.astral.express.pccms.identity.dto.response.AuthResponse;
 import com.astral.express.pccms.identity.service.AuthService;
+import com.astral.express.pccms.identity.service.OtpService;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -26,10 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final OtpService otpService;
     private static final String REFRESH_TOKEN_COOKIE = "refresh_token";
     private static final Duration REFRESH_TOKEN_MAX_AGE = Duration.ofDays(7);
 
@@ -81,6 +85,18 @@ public class AuthController {
             log.error("Token refresh failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.ERR_IAM_001_INVALID_CREDENTIALS);
         }
+    }
+
+    @PostMapping("/password-reset/otp")
+    public ApiResponse<Void> requestPasswordResetOtp(@Valid @RequestBody OtpRequest request) {
+        otpService.requestPasswordResetOtp(request);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ApiResponse<Void> confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
+        otpService.confirmPasswordReset(request);
+        return ApiResponse.success(null);
     }
 
     @PostMapping("/logout")

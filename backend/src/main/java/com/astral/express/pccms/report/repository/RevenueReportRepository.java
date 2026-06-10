@@ -1,6 +1,6 @@
 package com.astral.express.pccms.report.repository;
 
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -92,3 +92,4 @@ public class RevenueReportRepository {
         );
     }
 }
+

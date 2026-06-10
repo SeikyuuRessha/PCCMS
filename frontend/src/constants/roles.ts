@@ -11,6 +11,7 @@ export const roles: Record<RoleKey, RoleConfig> = {
         screens: [
             "ownerDashboard",
             "pets",
+            "ownerAppointments",
             "unifiedBooking",
             "groomingBooking",
             "groomingTracking",
@@ -21,14 +22,14 @@ export const roles: Record<RoleKey, RoleConfig> = {
     },
     staff: {
         label: "Nhân viên",
-        screens: ["receptionDashboard", "appointmentReception", "groomingBoard", "boardingLog", "receptionMySchedule"],
+        screens: ["receptionDashboard", "appointmentReception", "groomingBoard", "boardingLog", "receptionMySchedule", "staffProfile"],
     },
     veterinarian: {
         label: "Bác sĩ",
-        screens: ["doctorDashboard", "doctorQueue", "medicalRecord", "doctorMySchedule"],
+        screens: ["doctorDashboard", "doctorQueue", "medicalRecord", "doctorMySchedule", "vetProfile"],
     },
     admin: {
         label: "Quản trị viên",
-        screens: ["adminDashboard", "accounts", "catalog", "rooms", "schedule", "reports"],
+        screens: ["adminDashboard", "accounts", "catalog", "rooms", "schedule", "reports", "adminProfile"],
     },
 };

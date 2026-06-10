@@ -14,6 +14,19 @@ vi.mock("~/shared/api/medicalRecordApi", () => ({
         updateMedicalRecord: vi.fn(),
         finalizeMedicalRecord: vi.fn(),
         createPrescription: vi.fn(),
+        listPrescriptions: vi.fn(),
+    },
+}));
+
+vi.mock("~/shared/api/petApi", () => ({
+    petApi: {
+        getPetById: vi.fn().mockResolvedValue({
+            id: "pet-123",
+            name: "Milu",
+            speciesName: "Chó",
+            breedName: "Poodle",
+            sex: "MALE",
+        }),
     },
 }));
 
@@ -59,6 +72,7 @@ const renderWithProviders = (ui: React.ReactElement, initialEntries = ["/records
 describe("MedicalRecordPage", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(medicalRecordApi.listPrescriptions).mockResolvedValue([]);
     });
 
     it("renders loading state initially", () => {

@@ -17,18 +17,18 @@ import com.astral.express.pccms.boarding.entity.CareLog;
 import com.astral.express.pccms.boarding.entity.CareLogMedia;
 import com.astral.express.pccms.boarding.entity.RoomAllocation;
 import com.astral.express.pccms.boarding.entity.RoomAllocationStatus;
-import com.astral.express.pccms.boarding.entity.ServiceCatalog;
-import com.astral.express.pccms.boarding.entity.ServiceCategory;
-import com.astral.express.pccms.boarding.entity.ServiceOrder;
-import com.astral.express.pccms.boarding.entity.ServiceOrderStatus;
+import com.astral.express.pccms.appointment.entity.ServiceCatalog;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceOrder;
+import com.astral.express.pccms.appointment.entity.ServiceOrderStatus;
 import com.astral.express.pccms.boarding.mapper.BoardingMapper;
 import com.astral.express.pccms.boarding.repository.BoardingBookingRepository;
 import com.astral.express.pccms.boarding.repository.BoardingSessionRepository;
 import com.astral.express.pccms.boarding.repository.CareLogMediaRepository;
 import com.astral.express.pccms.boarding.repository.CareLogRepository;
 import com.astral.express.pccms.boarding.repository.RoomAllocationRepository;
-import com.astral.express.pccms.boarding.repository.ServiceCatalogRepository;
-import com.astral.express.pccms.boarding.repository.ServiceOrderRepository;
+import com.astral.express.pccms.appointment.repository.ServiceCatalogRepository;
+import com.astral.express.pccms.appointment.repository.ServiceOrderRepository;
 import com.astral.express.pccms.boarding.service.BoardingService;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
@@ -137,19 +137,19 @@ public class BoardingServiceImpl implements BoardingService {
                 request.expectedCheckinAt(),
                 request.expectedCheckoutAt(),
                 roomType.getBaseDailyPriceVnd());
-        ServiceOrder serviceOrder = ServiceOrder.builder()
-                .orderCode(generateCode("SO"))
-                .owner(owner)
-                .pet(pet)
-                .service(serviceCatalog)
-                .categoryCode(ServiceCategory.BOARDING)
-                .statusCode(ServiceOrderStatus.REQUESTED)
-                .plannedStartAt(request.expectedCheckinAt())
-                .plannedEndAt(request.expectedCheckoutAt())
-                .baseAmountVnd(estimatedPrice)
-                .createdBy(owner)
-                .updatedBy(owner)
-                .build();
+        ServiceOrder serviceOrder = new ServiceOrder();
+        serviceOrder.setOrderCode(generateCode("SO"));
+        serviceOrder.setOwner(owner);
+        serviceOrder.setPet(pet);
+        serviceOrder.setService(serviceCatalog);
+        serviceOrder.setCategoryCode(ServiceCategory.BOARDING);
+        serviceOrder.setStatusCode(ServiceOrderStatus.REQUESTED);
+        serviceOrder.setRequestedAt(OffsetDateTime.now());
+        serviceOrder.setPlannedStartAt(request.expectedCheckinAt());
+        serviceOrder.setPlannedEndAt(request.expectedCheckoutAt());
+        serviceOrder.setBaseAmountVnd(estimatedPrice);
+        serviceOrder.setCreatedBy(owner.getId());
+        serviceOrder.setUpdatedBy(owner.getId());
         ServiceOrder savedServiceOrder = serviceOrderRepository.save(serviceOrder);
 
         BoardingBooking booking = BoardingBooking.builder()
@@ -226,7 +226,7 @@ public class BoardingServiceImpl implements BoardingService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_BOARDING_005_SESSION_NOT_FOUND));
         session.setRoomAllocation(allocation);
         booking.getServiceOrder().setStatusCode(ServiceOrderStatus.CONFIRMED);
-        booking.getServiceOrder().setUpdatedBy(staff);
+        booking.getServiceOrder().setUpdatedBy(staff.getId());
         boardingSessionRepository.save(session);
         serviceOrderRepository.save(booking.getServiceOrder());
         return toBookingResponse(booking, allocation, session);
@@ -248,7 +248,7 @@ public class BoardingServiceImpl implements BoardingService {
         session.setCheckedInBy(staff);
         booking.getServiceOrder().setStatusCode(ServiceOrderStatus.IN_PROGRESS);
         booking.getServiceOrder().setActualStartAt(now);
-        booking.getServiceOrder().setUpdatedBy(staff);
+        booking.getServiceOrder().setUpdatedBy(staff.getId());
         allocation.getRoom().setStatusCode(RoomStatus.OCCUPIED);
         roomRepository.save(allocation.getRoom());
         serviceOrderRepository.save(booking.getServiceOrder());
@@ -301,7 +301,7 @@ public class BoardingServiceImpl implements BoardingService {
         booking.getServiceOrder().setStatusCode(ServiceOrderStatus.COMPLETED);
         booking.getServiceOrder().setCompletedAt(now);
         booking.getServiceOrder().setFinalAmountVnd(finalAmount);
-        booking.getServiceOrder().setUpdatedBy(staff);
+        booking.getServiceOrder().setUpdatedBy(staff.getId());
         serviceOrderRepository.save(booking.getServiceOrder());
         roomAllocationRepository.save(allocation);
         boardingBookingRepository.save(booking);
@@ -331,7 +331,7 @@ public class BoardingServiceImpl implements BoardingService {
         booking.getServiceOrder().setStatusCode(ServiceOrderStatus.CANCELLED);
         booking.getServiceOrder().setCancelledAt(OffsetDateTime.now());
         booking.getServiceOrder().setCancellationReason(request.reason());
-        booking.getServiceOrder().setUpdatedBy(actor);
+        booking.getServiceOrder().setUpdatedBy(actor.getId());
         serviceOrderRepository.save(booking.getServiceOrder());
         boardingBookingRepository.save(booking);
         boardingSessionRepository.save(session);
@@ -488,3 +488,4 @@ public class BoardingServiceImpl implements BoardingService {
         return prefix + "-" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
     }
 }
+

@@ -38,9 +38,9 @@ class PersonalScheduleControllerTest {
 
     @Test
     void should_ReturnValidationFailed_when_MySchedulesMissingDateRange() throws Exception {
-        mockMvc.perform(get("/me/work-schedules"))
+        mockMvc.perform(get("/v1/me/work-schedules"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 }

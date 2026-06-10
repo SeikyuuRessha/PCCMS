@@ -25,7 +25,7 @@ public class RefreshToken {
     private UUID id;
 
     @Column(name = "token_hash")
-    private String hashedToken;
+    private String tokenHash;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

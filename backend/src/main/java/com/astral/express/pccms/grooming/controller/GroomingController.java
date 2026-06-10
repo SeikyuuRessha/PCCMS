@@ -11,7 +11,7 @@ import com.astral.express.pccms.grooming.dto.request.GroomingStationRequest;
 import com.astral.express.pccms.grooming.dto.response.GroomingServiceResponse;
 import com.astral.express.pccms.grooming.dto.response.GroomingStationResponse;
 import com.astral.express.pccms.grooming.dto.response.GroomingTicketResponse;
-import com.astral.express.pccms.grooming.entity.GroomingStatus;
+import com.astral.express.pccms.appointment.entity.GroomingStatus;
 import com.astral.express.pccms.grooming.service.GroomingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -163,3 +163,4 @@ public class GroomingController {
         return ApiResponse.success(null);
     }
 }
+

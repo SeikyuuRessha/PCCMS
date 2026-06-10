@@ -1,6 +1,6 @@
 package com.astral.express.pccms.report.service;
 
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.report.dto.response.ReportSummaryResponse;
@@ -186,3 +186,4 @@ class ReportSummaryServiceTest {
     ) {
     }
 }
+

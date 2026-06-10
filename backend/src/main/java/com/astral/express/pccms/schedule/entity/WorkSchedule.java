@@ -1,6 +1,7 @@
 package com.astral.express.pccms.schedule.entity;
 
 import com.astral.express.pccms.common.domain.AuditableEntity;
+import com.astral.express.pccms.grooming.entity.GroomingStation;
 import com.astral.express.pccms.user.entity.Roles;
 import com.astral.express.pccms.user.entity.Users;
 import jakarta.persistence.Column;
@@ -46,7 +47,7 @@ public class WorkSchedule extends AuditableEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_room_id")
-    private ExamRoom examRoom;
+    private com.astral.express.pccms.appointment.entity.ExamRoom examRoom;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "station_id")

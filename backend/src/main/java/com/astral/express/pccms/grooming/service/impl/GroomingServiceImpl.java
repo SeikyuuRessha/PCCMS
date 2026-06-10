@@ -3,12 +3,12 @@ package com.astral.express.pccms.grooming.service.impl;
 import com.astral.express.pccms.billing.entity.Invoice;
 import com.astral.express.pccms.billing.repository.InvoiceRepository;
 import com.astral.express.pccms.billing.service.BillingHandoffService;
-import com.astral.express.pccms.boarding.entity.ServiceCatalog;
-import com.astral.express.pccms.boarding.entity.ServiceCategory;
-import com.astral.express.pccms.boarding.entity.ServiceOrder;
-import com.astral.express.pccms.boarding.entity.ServiceOrderStatus;
-import com.astral.express.pccms.boarding.repository.ServiceCatalogRepository;
-import com.astral.express.pccms.boarding.repository.ServiceOrderRepository;
+import com.astral.express.pccms.appointment.entity.ServiceCatalog;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceOrder;
+import com.astral.express.pccms.appointment.entity.ServiceOrderStatus;
+import com.astral.express.pccms.appointment.repository.ServiceCatalogRepository;
+import com.astral.express.pccms.appointment.repository.ServiceOrderRepository;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
@@ -21,16 +21,16 @@ import com.astral.express.pccms.grooming.dto.request.GroomingStationRequest;
 import com.astral.express.pccms.grooming.dto.response.GroomingServiceResponse;
 import com.astral.express.pccms.grooming.dto.response.GroomingStationResponse;
 import com.astral.express.pccms.grooming.dto.response.GroomingTicketResponse;
-import com.astral.express.pccms.grooming.entity.Appointment;
-import com.astral.express.pccms.grooming.entity.AppointmentStatus;
-import com.astral.express.pccms.grooming.entity.AppointmentType;
+import com.astral.express.pccms.appointment.entity.Appointment;
+import com.astral.express.pccms.appointment.entity.AppointmentStatus;
+import com.astral.express.pccms.appointment.entity.AppointmentType;
 import com.astral.express.pccms.grooming.entity.GroomingStation;
-import com.astral.express.pccms.grooming.entity.GroomingStatus;
-import com.astral.express.pccms.grooming.entity.GroomingTicket;
+import com.astral.express.pccms.appointment.entity.GroomingStatus;
+import com.astral.express.pccms.appointment.entity.GroomingTicket;
 import com.astral.express.pccms.grooming.mapper.GroomingMapper;
-import com.astral.express.pccms.grooming.repository.AppointmentRepository;
+import com.astral.express.pccms.appointment.repository.AppointmentRepository;
 import com.astral.express.pccms.grooming.repository.GroomingStationRepository;
-import com.astral.express.pccms.grooming.repository.GroomingTicketRepository;
+import com.astral.express.pccms.appointment.repository.GroomingTicketRepository;
 import com.astral.express.pccms.grooming.service.GroomingService;
 import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.pet.entity.Pets;
@@ -43,7 +43,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -108,35 +107,36 @@ public class GroomingServiceImpl implements GroomingService {
 
         OffsetDateTime scheduledEndAt = request.scheduledStartAt().plusMinutes(service.getDurationMinutes());
         ensureOwnerBookingNotDuplicated(owner.getId(), pet.getId(), service.getId(), request.scheduledStartAt(), scheduledEndAt);
-        ServiceOrder serviceOrder = ServiceOrder.builder()
-                .orderCode(generateCode("SO"))
-                .owner(owner)
-                .pet(pet)
-                .service(service)
-                .categoryCode(ServiceCategory.GROOMING)
-                .statusCode(ServiceOrderStatus.REQUESTED)
-                .plannedStartAt(request.scheduledStartAt())
-                .plannedEndAt(scheduledEndAt)
-                .baseAmountVnd(service.getBasePriceVnd())
-                .createdBy(owner)
-                .updatedBy(owner)
-                .build();
+        ServiceOrder serviceOrder = new ServiceOrder();
+        serviceOrder.setOrderCode(generateCode("SO"));
+        serviceOrder.setOwner(owner);
+        serviceOrder.setPet(pet);
+        serviceOrder.setService(service);
+        serviceOrder.setCategoryCode(ServiceCategory.GROOMING);
+        serviceOrder.setStatusCode(ServiceOrderStatus.REQUESTED);
+        serviceOrder.setRequestedAt(OffsetDateTime.now());
+        serviceOrder.setPlannedStartAt(request.scheduledStartAt());
+        serviceOrder.setPlannedEndAt(scheduledEndAt);
+        serviceOrder.setBaseAmountVnd(service.getBasePriceVnd());
+        serviceOrder.setCreatedBy(owner.getId());
+        serviceOrder.setUpdatedBy(owner.getId());
         ServiceOrder savedServiceOrder = serviceOrderRepository.save(serviceOrder);
 
-        Appointment appointment = appointmentRepository.save(Appointment.builder()
-                .serviceOrder(savedServiceOrder)
-                .appointmentType(AppointmentType.GROOMING)
-                .scheduledStartAt(request.scheduledStartAt())
-                .scheduledEndAt(scheduledEndAt)
-                .statusCode(AppointmentStatus.PENDING)
-                .ownerNote(request.ownerNote())
-                .createdBy(owner)
-                .build());
-        GroomingTicket ticket = groomingTicketRepository.save(GroomingTicket.builder()
-                .appointment(appointment)
-                .statusCode(GroomingStatus.PENDING)
-                .ownerNote(request.ownerNote())
-                .build());
+        Appointment appt = new Appointment();
+        appt.setServiceOrder(savedServiceOrder);
+        appt.setAppointmentType(AppointmentType.GROOMING);
+        appt.setScheduledStartAt(request.scheduledStartAt());
+        appt.setScheduledEndAt(scheduledEndAt);
+        appt.setStatusCode(AppointmentStatus.PENDING);
+        appt.setOwnerNote(request.ownerNote());
+        appt.setCreatedBy(owner.getId());
+        Appointment appointment = appointmentRepository.save(appt);
+
+        GroomingTicket ticketObj = new GroomingTicket();
+        ticketObj.setAppointment(appointment);
+        ticketObj.setStatusCode(GroomingStatus.PENDING);
+        ticketObj.setOwnerNote(request.ownerNote());
+        GroomingTicket ticket = groomingTicketRepository.save(ticketObj);
         log.info("[GROOMING_CREATED] - {} - {} - {}", currentUserId, ticket.getId(), OffsetDateTime.now());
         return toTicketResponse(ticket);
     }
@@ -188,7 +188,7 @@ public class GroomingServiceImpl implements GroomingService {
         ticket.getAppointment().setInternalNote(request.internalNote());
         ticket.getAppointment().setStatusCode(AppointmentStatus.CONFIRMED);
         ticket.getAppointment().getServiceOrder().setStatusCode(ServiceOrderStatus.CONFIRMED);
-        ticket.getAppointment().getServiceOrder().setUpdatedBy(actor);
+        ticket.getAppointment().getServiceOrder().setUpdatedBy(actor.getId());
         appointmentRepository.save(ticket.getAppointment());
         serviceOrderRepository.save(ticket.getAppointment().getServiceOrder());
         return toTicketResponse(groomingTicketRepository.save(ticket));
@@ -210,7 +210,7 @@ public class GroomingServiceImpl implements GroomingService {
         ticket.getAppointment().setStatusCode(AppointmentStatus.IN_PROGRESS);
         ticket.getAppointment().getServiceOrder().setStatusCode(ServiceOrderStatus.IN_PROGRESS);
         ticket.getAppointment().getServiceOrder().setActualStartAt(now);
-        ticket.getAppointment().getServiceOrder().setUpdatedBy(actor);
+        ticket.getAppointment().getServiceOrder().setUpdatedBy(actor.getId());
         appointmentRepository.save(ticket.getAppointment());
         serviceOrderRepository.save(ticket.getAppointment().getServiceOrder());
         return toTicketResponse(groomingTicketRepository.save(ticket));
@@ -237,7 +237,7 @@ public class GroomingServiceImpl implements GroomingService {
         ticket.getAppointment().getServiceOrder().setStatusCode(ServiceOrderStatus.COMPLETED);
         ticket.getAppointment().getServiceOrder().setCompletedAt(now);
         ticket.getAppointment().getServiceOrder().setFinalAmountVnd(finalAmount);
-        ticket.getAppointment().getServiceOrder().setUpdatedBy(actor);
+        ticket.getAppointment().getServiceOrder().setUpdatedBy(actor.getId());
         appointmentRepository.save(ticket.getAppointment());
         serviceOrderRepository.save(ticket.getAppointment().getServiceOrder());
         GroomingTicket savedTicket = groomingTicketRepository.save(ticket);
@@ -270,7 +270,7 @@ public class GroomingServiceImpl implements GroomingService {
         ticket.getAppointment().getServiceOrder().setStatusCode(ServiceOrderStatus.CANCELLED);
         ticket.getAppointment().getServiceOrder().setCancelledAt(now);
         ticket.getAppointment().getServiceOrder().setCancellationReason(request.reason());
-        ticket.getAppointment().getServiceOrder().setUpdatedBy(actor);
+        ticket.getAppointment().getServiceOrder().setUpdatedBy(actor.getId());
         appointmentRepository.save(ticket.getAppointment());
         serviceOrderRepository.save(ticket.getAppointment().getServiceOrder());
         return toTicketResponse(groomingTicketRepository.save(ticket));
@@ -278,7 +278,7 @@ public class GroomingServiceImpl implements GroomingService {
 
     @Override
     public List<GroomingServiceResponse> listGroomingServicesForAdmin() {
-        return serviceCatalogRepository.findByCategoryCodeOrderByNameAsc(ServiceCategory.GROOMING).stream()
+        return serviceCatalogRepository.findByCategoryCodeAndIsActiveTrueOrderByNameAsc(ServiceCategory.GROOMING).stream()
                 .map(groomingMapper::toServiceResponse)
                 .toList();
     }
@@ -290,15 +290,14 @@ public class GroomingServiceImpl implements GroomingService {
         if (serviceCatalogRepository.existsByServiceCode(request.serviceCode())) {
             throw new BusinessException(ErrorCode.ERR_GROOMING_007_SERVICE_CODE_EXISTS);
         }
-        ServiceCatalog service = ServiceCatalog.builder()
-                .serviceCode(request.serviceCode())
-                .name(request.name())
-                .categoryCode(ServiceCategory.GROOMING)
-                .description(request.description())
-                .basePriceVnd(request.basePriceVnd())
-                .durationMinutes(request.durationMinutes())
-                .isActive(true)
-                .build();
+        ServiceCatalog service = new ServiceCatalog();
+        service.setServiceCode(request.serviceCode());
+        service.setName(request.name());
+        service.setCategoryCode(ServiceCategory.GROOMING);
+        service.setDescription(request.description());
+        service.setBasePriceVnd(request.basePriceVnd());
+        service.setDurationMinutes(request.durationMinutes());
+        service.setIsActive(true);
         return groomingMapper.toServiceResponse(serviceCatalogRepository.save(service));
     }
 
@@ -306,7 +305,8 @@ public class GroomingServiceImpl implements GroomingService {
     @Transactional
     public GroomingServiceResponse updateGroomingService(UUID id, GroomingServiceRequest request) {
         validateGroomingServiceRequest(request);
-        ServiceCatalog service = serviceCatalogRepository.findByIdAndCategoryCode(id, ServiceCategory.GROOMING)
+        ServiceCatalog service = serviceCatalogRepository.findById(id)
+                .filter(c -> c.getCategoryCode() == ServiceCategory.GROOMING)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_GROOMING_002_SERVICE_NOT_FOUND));
         if (serviceCatalogRepository.existsByServiceCodeAndIdNot(request.serviceCode(), id)) {
             throw new BusinessException(ErrorCode.ERR_GROOMING_007_SERVICE_CODE_EXISTS);
@@ -322,7 +322,8 @@ public class GroomingServiceImpl implements GroomingService {
     @Override
     @Transactional
     public void deactivateGroomingService(UUID id) {
-        ServiceCatalog service = serviceCatalogRepository.findByIdAndCategoryCode(id, ServiceCategory.GROOMING)
+        ServiceCatalog service = serviceCatalogRepository.findById(id)
+                .filter(c -> c.getCategoryCode() == ServiceCategory.GROOMING)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_GROOMING_002_SERVICE_NOT_FOUND));
         service.setIsActive(false);
         serviceCatalogRepository.save(service);
@@ -341,11 +342,10 @@ public class GroomingServiceImpl implements GroomingService {
         if (groomingStationRepository.existsByStationCode(request.stationCode())) {
             throw new BusinessException(ErrorCode.ERR_GROOMING_008_STATION_CODE_EXISTS);
         }
-        GroomingStation station = GroomingStation.builder()
-                .stationCode(request.stationCode())
-                .name(request.name())
-                .isActive(request.isActive())
-                .build();
+        GroomingStation station = new GroomingStation();
+        station.setStationCode(request.stationCode());
+        station.setName(request.name());
+        station.setIsActive(request.isActive());
         return groomingMapper.toStationResponse(groomingStationRepository.save(station));
     }
 
@@ -462,3 +462,6 @@ public class GroomingServiceImpl implements GroomingService {
         return prefix + "-" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
     }
 }
+
+
+

@@ -60,6 +60,8 @@ public class MedicineServiceImpl implements MedicineService {
         }
         
         Medicine medicine = medicineMapper.toMedicine(request);
+        medicine.setMedicineCode(resolveMedicineCode(request.medicineCode(), request.name()));
+        ensureUniqueNameAndUnit(request.name(), request.unit(), null);
         medicine.setCategory(resolveCategory(request.categoryId()));
 
         medicine = medicineRepository.save(medicine);
@@ -77,14 +79,15 @@ public class MedicineServiceImpl implements MedicineService {
         Medicine medicine = medicineRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_MED_004_MEDICINE_NOT_FOUND));
 
-        ensureUniqueCode(request.medicineCode(), id);
+        String medicineCode = request.medicineCode() == null || request.medicineCode().isBlank()
+                ? medicine.getMedicineCode()
+                : normalizeCode(request.medicineCode());
+        ensureUniqueCode(medicineCode, id);
         ensureUniqueNameAndUnit(request.name(), request.unit(), id);
 
         medicineMapper.updateMedicineFromRequest(request, medicine);
-        medicine.setMedicineCode(request.medicineCode());
-        if (request.categoryId() != null) {
-            medicine.setCategory(resolveCategory(request.categoryId()));
-        }
+        medicine.setMedicineCode(medicineCode);
+        medicine.setCategory(resolveCategory(request.categoryId()));
 
         medicine = medicineRepository.save(medicine);
         log.info("Updated medicine: {}", medicine.getId());
@@ -155,16 +158,10 @@ public class MedicineServiceImpl implements MedicineService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_MED_006_MEDICINE_CATEGORY_NOT_FOUND));
     }
 
-    private void validatePricingAndStock(Integer stock, java.math.BigDecimal price) {
-        if (stock < 0 || price.compareTo(java.math.BigDecimal.ZERO) < 0) {
-            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
-        }
-    }
-
     private void ensureUniqueCode(String medicineCode, UUID excludeId) {
         boolean exists = excludeId == null
-                ? medicineRepository.existsByMedicineCode(medicineCode)
-                : medicineRepository.existsByMedicineCodeAndIdNot(medicineCode, excludeId);
+                ? medicineRepository.existsByMedicineCodeIgnoreCase(medicineCode)
+                : medicineRepository.existsByMedicineCodeIgnoreCaseAndIdNot(medicineCode, excludeId);
         if (exists) {
             throw new BusinessException(ErrorCode.ERR_MED_005_MEDICINE_CODE_EXISTS);
         }
@@ -172,10 +169,81 @@ public class MedicineServiceImpl implements MedicineService {
 
     private void ensureUniqueNameAndUnit(String name, String unit, UUID excludeId) {
         boolean exists = excludeId == null
-                ? medicineRepository.existsByNameAndUnit(name, unit)
-                : medicineRepository.existsByNameAndUnitAndIdNot(name, unit, excludeId);
+                ? medicineRepository.existsByNameIgnoreCaseAndUnitIgnoreCase(name, unit)
+                : medicineRepository.existsByNameIgnoreCaseAndUnitIgnoreCaseAndIdNot(name, unit, excludeId);
         if (exists) {
             throw new BusinessException(ErrorCode.ERR_MED_007_MEDICINE_NAME_EXISTS);
         }
+    }
+
+    private String resolveMedicineCode(String requestedCode, String medicineName) {
+        if (requestedCode != null && !requestedCode.isBlank()) {
+            String normalized = normalizeCode(requestedCode);
+            ensureUniqueCode(normalized, null);
+            return normalized;
+        }
+
+        String prefix = normalizeCode(medicineName)
+                .replaceAll("[^A-Z0-9]+", "")
+                .replaceAll("^(.{0,8}).*$", "$1");
+        if (prefix.isBlank()) {
+            prefix = "MED";
+        }
+
+        for (int sequence = 1; sequence <= 9999; sequence++) {
+            String candidate = "MED-" + prefix + "-" + String.format("%04d", sequence);
+            if (!medicineRepository.existsByMedicineCodeIgnoreCase(candidate)) {
+                return candidate;
+            }
+        }
+        throw new BusinessException(ErrorCode.ERR_MED_005_MEDICINE_CODE_EXISTS);
+    }
+
+    private String normalizeCode(String code) {
+        return code.trim().toUpperCase();
+    }
+
+    private Specification<Medicine> keywordContains(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        String normalizedKeyword = keyword.trim().toLowerCase();
+        String pattern = "%" + normalizedKeyword + "%";
+        return (root, query, criteriaBuilder) -> criteriaBuilder.or(
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("medicineCode")), pattern),
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), pattern)
+        );
+    }
+
+    private Specification<Medicine> categoryEquals(UUID categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("category").get("id"), categoryId);
+    }
+
+    private Specification<Medicine> activeEquals(Boolean isActive) {
+        if (isActive == null) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("isActive"), isActive);
+    }
+
+    @SafeVarargs
+    private final Specification<Medicine> combine(Specification<Medicine>... specifications) {
+        java.util.List<Specification<Medicine>> activeSpecifications = new java.util.ArrayList<>();
+        for (Specification<Medicine> specification : specifications) {
+            if (specification != null) {
+                activeSpecifications.add(specification);
+            }
+        }
+        if (activeSpecifications.isEmpty()) {
+            return null;
+        }
+        Specification<Medicine> combined = activeSpecifications.get(0);
+        for (int index = 1; index < activeSpecifications.size(); index++) {
+            combined = combined.and(activeSpecifications.get(index));
+        }
+        return combined;
     }
 }

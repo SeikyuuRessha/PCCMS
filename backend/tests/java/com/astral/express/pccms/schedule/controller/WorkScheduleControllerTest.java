@@ -50,20 +50,20 @@ class WorkScheduleControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/admin/work-schedules")
+        mockMvc.perform(post("/v1/admin/work-schedules")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 
     @Test
     void should_ReturnValidationFailed_when_SearchSchedulesMissingDateRange() throws Exception {
-        mockMvc.perform(get("/admin/work-schedules"))
+        mockMvc.perform(get("/v1/admin/work-schedules"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 
     @Test
@@ -79,11 +79,11 @@ class WorkScheduleControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/admin/work-schedules")
+        mockMvc.perform(post("/v1/admin/work-schedules")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 }

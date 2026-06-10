@@ -15,6 +15,7 @@ import com.astral.express.pccms.pet.repository.PetSpeciesRepository;
 import com.astral.express.pccms.user.entity.Users;
 import com.astral.express.pccms.user.repository.UserRepository;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 import org.mockito.ArgumentCaptor;
@@ -23,16 +24,23 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,6 +72,41 @@ class PetServiceTest {
 
     @Captor
     private ArgumentCaptor<PetDeactivatedEvent> eventCaptor;
+
+    @Test
+    void should_ListCurrentOwnerPetsWithoutStatusFilter_whenIsActiveIsOmitted() {
+        UUID ownerId = UUID.randomUUID();
+        UUID petId = UUID.randomUUID();
+        UUID speciesId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Users owner = new Users();
+        owner.setId(ownerId);
+
+        PetSpecies species = PetSpecies.builder().id(speciesId).name("Chó").build();
+
+        Pets pet = new Pets();
+        pet.setId(petId);
+        pet.setOwner(owner);
+        pet.setSpecies(species);
+        pet.setIsActive(true);
+
+        given(securityHelper.getCurrentUserId()).willReturn(ownerId);
+        given(petRepository.findByOwner_Id(ownerId, pageable))
+                .willReturn(new PageImpl<>(List.of(pet), pageable, 1));
+        given(petMapper.toResponse(eq(pet), anyList())).willReturn(
+                new com.astral.express.pccms.pet.dto.response.PetResponse(
+                        petId, ownerId, "Milo", speciesId, "Chó", null, null,
+                        PetSex.MALE, null, 12, BigDecimal.valueOf(5), "Brown",
+                        null, null, null, null, true));
+
+        var response = petService.listPets((UUID) null, null, pageable);
+
+        assertThat(response.data().content()).hasSize(1);
+        assertThat(response.data().content().get(0).id()).isEqualTo(petId);
+        verify(petRepository).findByOwner_Id(ownerId, pageable);
+        verify(petRepository, never()).findByOwner_IdAndIsActive(eq(ownerId), eq(null), any(Pageable.class));
+    }
 
     @ParameterizedTest(name = "[{1}] {2}: {9}")
     @CsvFileSource(resources = "/testcases/pet-age-validation.csv", numLinesToSkip = 1)
@@ -122,7 +165,7 @@ class PetServiceTest {
             given(petSpeciesRepository.findByIdAndIsActiveTrue(speciesId)).willReturn(Optional.of(species));
             given(petMapper.toEntity(createRequest)).willReturn(new Pets());
             given(petRepository.save(any(Pets.class))).willReturn(mockPet);
-            given(petMapper.toResponse(mockPet)).willReturn(
+            given(petMapper.toResponse(eq(mockPet), anyList())).willReturn(
                     new com.astral.express.pccms.pet.dto.response.PetResponse(
                             petId, currentUserId, "Milo", speciesId, "Chó", null, null,
                             PetSex.MALE, birthDate, estimatedAgeMonths, weightKg, "Brown",
@@ -132,7 +175,7 @@ class PetServiceTest {
         if ("UPDATE_PET".equals(action) && "SUCCESS".equals(expectedResult)) {
             given(petSpeciesRepository.findByIdAndIsActiveTrue(speciesId)).willReturn(Optional.of(species));
             given(petRepository.save(any(Pets.class))).willAnswer(inv -> inv.getArgument(0));
-            given(petMapper.toResponse(any(Pets.class))).willReturn(
+            given(petMapper.toResponse(any(Pets.class), anyList())).willReturn(
                     new com.astral.express.pccms.pet.dto.response.PetResponse(
                             petId, owner.getId(), "Milo Updated", speciesId, "Chó", null, null,
                             PetSex.MALE, birthDate, estimatedAgeMonths, weightKg, "Brown",
@@ -144,7 +187,7 @@ class PetServiceTest {
         }
 
         if ("GET_PET".equals(action) && "SUCCESS".equals(expectedResult)) {
-            given(petMapper.toResponse(mockPet)).willReturn(
+            given(petMapper.toResponse(eq(mockPet), anyList())).willReturn(
                     new com.astral.express.pccms.pet.dto.response.PetResponse(
                             petId, owner.getId(), "Milo", speciesId, "Chó", null, null,
                             PetSex.MALE, birthDate, estimatedAgeMonths, weightKg, "Brown",
@@ -172,7 +215,7 @@ class PetServiceTest {
                 }
                 case "GET_PET" -> {
                     petService.getPet(petId);
-                    verify(petMapper).toResponse(mockPet);
+                    verify(petMapper).toResponse(eq(mockPet), anyList());
                 }
                 case "DEACTIVATE_PET" -> {
                     petService.deactivatePet(petId);

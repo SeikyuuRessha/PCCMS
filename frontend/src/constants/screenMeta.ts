@@ -24,6 +24,7 @@ export const screenMeta: Record<ScreenKey, ScreenMetaItem> = {
 
     ownerDashboard: { label: "Dashboard", icon: Home, path: "/owner" },
     pets: { label: "Hồ sơ thú cưng", icon: PawPrint, path: "/owner/pets" },
+    ownerAppointments: { label: "Lịch hẹn của tôi", icon: CalendarDays, path: "/owner/appointments" },
     unifiedBooking: { label: "Đặt phòng lưu trú", icon: Warehouse, path: "/owner/book" },
     groomingBooking: { label: "Đăng ký làm đẹp", icon: Sparkles, path: "/owner/grooming/book" },
     groomingTracking: {
@@ -49,8 +50,9 @@ export const screenMeta: Record<ScreenKey, ScreenMetaItem> = {
     medicalRecord: {
         label: "Bệnh án và kê đơn",
         icon: FileText,
-        path: "/veterinarian/medical-record",
+        path: "/veterinarian/medical-records",
     },
+
 
     adminDashboard: { label: "Dashboard quản trị", icon: Home, path: "/admin" },
     accounts: { label: "Quản lý tài khoản", icon: Users, path: "/admin/accounts" },
@@ -58,4 +60,10 @@ export const screenMeta: Record<ScreenKey, ScreenMetaItem> = {
     rooms: { label: "Quản lý phòng lưu trú", icon: Warehouse, path: "/admin/rooms" },
     schedule: { label: "Lịch làm việc", icon: CalendarDays, path: "/admin/schedule" },
     reports: { label: "Báo cáo thống kê", icon: FileText, path: "/admin/reports" },
+    
+    receptionMySchedule: { label: "Lịch trực cá nhân", icon: CalendarDays, path: "/staff/my-schedule" },
+    doctorMySchedule: { label: "Lịch khám cá nhân", icon: CalendarDays, path: "/veterinarian/my-schedule" },
+    staffProfile: { label: "Thông tin cá nhân", icon: User, path: "/staff/profile" },
+    vetProfile: { label: "Thông tin cá nhân", icon: User, path: "/veterinarian/profile" },
+    adminProfile: { label: "Thông tin cá nhân", icon: User, path: "/admin/profile" },
 };

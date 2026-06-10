@@ -10,13 +10,16 @@ import com.astral.express.pccms.user.dto.request.AdminUpdateUserRequest;
 import com.astral.express.pccms.user.dto.request.ChangePasswordRequest;
 import com.astral.express.pccms.user.dto.request.CreateUserRequest;
 import com.astral.express.pccms.user.dto.request.UserProfileUpdateRequest;
+import com.astral.express.pccms.user.dto.response.AccountCredentialResponse;
 import com.astral.express.pccms.user.dto.response.AccountResponse;
 import com.astral.express.pccms.user.dto.response.UserResponse;
 import com.astral.express.pccms.user.entity.Roles;
+import com.astral.express.pccms.user.entity.StaffProfile;
 import com.astral.express.pccms.user.entity.UserStatus;
 import com.astral.express.pccms.user.entity.Users;
 import com.astral.express.pccms.user.mapper.UserMapper;
 import com.astral.express.pccms.user.repository.RoleRepository;
+import com.astral.express.pccms.user.repository.StaffProfileRepository;
 import com.astral.express.pccms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +42,7 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final StaffProfileRepository staffProfileRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -54,9 +58,6 @@ public class UserService {
             String role,
             UserStatus status,
             Pageable pageable) {
-        if (!hasSearchCriteria(keyword, role, status)) {
-            throw new BusinessException(ErrorCode.ERR_ACC_007_SEARCH_CRITERIA_REQUIRED);
-        }
         Page<Users> users = userRepository.findAll(accountSearchSpecification(keyword, role, status), pageable);
         return com.astral.express.pccms.common.dto.PageResponse.of(users.map(this::toAccountResponse));
     }
@@ -95,33 +96,112 @@ public class UserService {
 
     @Transactional
     @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
+    public AccountCredentialResponse createAccount(CreateUserRequest request) {
+        Users savedUser = createUserEntity(request);
+        String temporaryPassword = PasswordGenerator.generate(12);
+        savedUser.setPasswordHash(passwordEncoder.encode(temporaryPassword));
+        savedUser = userRepository.save(savedUser);
+        createStaffProfileIfNeeded(savedUser);
+        emailService.sendAccountCreatedEmail(request.email(), temporaryPassword);
+
+        log.info("Created new account: {}", savedUser.getEmail());
+        return new AccountCredentialResponse(toAccountResponse(savedUser), temporaryPassword, true);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
     public UserResponse createUser(CreateUserRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new BusinessException(ErrorCode.ERR_ACC_001_EMAIL_EXISTS);
-        }
-
-        Users user = userMapper.toUser(request);
-
+        Users user = createUserEntity(request);
         String plainPassword = PasswordGenerator.generate(8);
         user.setPasswordHash(passwordEncoder.encode(plainPassword));
 
         Users savedUser = userRepository.save(user);
+        createStaffProfileIfNeeded(savedUser);
         emailService.sendAccountCreatedEmail(request.email(), plainPassword);
 
         log.info("Created new user: {}", savedUser.getEmail());
         return userMapper.toUserResponse(savedUser);
     }
 
+    private Users createUserEntity(CreateUserRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new BusinessException(ErrorCode.ERR_ACC_001_EMAIL_EXISTS);
+        }
+
+        Roles role = resolveActiveRole(request.roleCode());
+
+        return Users.builder()
+                .fullName(request.fullName())
+                .email(request.email())
+                .phone(normalize(request.phone()))
+                .role(role)
+                .statusCode(UserStatus.ACTIVE)
+                .build();
+    }
+
+    private void createStaffProfileIfNeeded(Users user) {
+        String roleCode = user.getRole() == null ? null : user.getRole().getCode();
+        if (!"STAFF".equals(roleCode) && !"VETERINARIAN".equals(roleCode)) {
+            return;
+        }
+        StaffProfile profile = StaffProfile.builder()
+                .user(user)
+                .professionalTitle(user.getRole().getName())
+                .isServiceProvider("VETERINARIAN".equals(roleCode))
+                .build();
+        staffProfileRepository.save(profile);
+    }
+
     @Transactional
     @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
-    public UserResponse adminUpdateUser(UUID userId, AdminUpdateUserRequest request) {
-        Users user = userRepository.findById(userId)
+    public AccountResponse adminUpdateUser(UUID userId, AdminUpdateUserRequest request) {
+        Users user = userRepository.findByIdWithRoleAndPermissions(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
 
-        userMapper.updateFromAdmin(request, user);
+        String fullName = normalize(request.fullName());
+        if (fullName != null) {
+            user.setFullName(fullName);
+        }
+
+        String email = normalize(request.email());
+        if (email != null && !email.equalsIgnoreCase(user.getEmail())) {
+            if (userRepository.existsByEmail(email)) {
+                throw new BusinessException(ErrorCode.ERR_ACC_001_EMAIL_EXISTS);
+            }
+            user.setEmail(email);
+        }
+
+        if (request.phone() != null) {
+            user.setPhone(normalize(request.phone()));
+        }
+
+        if (request.roleCode() != null) {
+            user.setRole(resolveActiveRole(request.roleCode()));
+        }
+
+        if (request.statusCode() != null) {
+            user.setStatusCode(request.statusCode());
+            if (request.statusCode() == UserStatus.LOCKED || request.statusCode() == UserStatus.DISABLED) {
+                refreshTokenRepository.revokeAllUserTokens(userId);
+            }
+        }
 
         log.info("Admin updated user: {}", user.getEmail());
-        return userMapper.toUserResponse(userRepository.save(user));
+        return toAccountResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
+    public AccountCredentialResponse resetAccountPassword(UUID accountId) {
+        Users user = findActiveAccount(accountId);
+        String temporaryPassword = PasswordGenerator.generate(12);
+        user.setPasswordHash(passwordEncoder.encode(temporaryPassword));
+        refreshTokenRepository.revokeAllUserTokens(accountId);
+        Users savedUser = userRepository.save(user);
+        emailService.sendTemporaryPasswordEmail(savedUser.getEmail(), temporaryPassword);
+
+        log.info("Admin reset account password: {}", accountId);
+        return new AccountCredentialResponse(toAccountResponse(savedUser), temporaryPassword, true);
     }
 
     @Transactional
@@ -158,11 +238,12 @@ public class UserService {
 
     @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
     public UserResponse getUser(UUID id) {
-        Users user = userRepository.findById(id)
+        Users user = userRepository.findByIdWithRoleAndPermissions(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
         return userMapper.toUserResponse(user);
     }
 
+    @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll()
@@ -171,7 +252,7 @@ public class UserService {
     }
 
     private Users findActiveAccount(UUID accountId) {
-        Users user = userRepository.findById(accountId)
+        Users user = userRepository.findByIdWithRoleAndPermissions(accountId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
         if (user.getDeletedAt() != null) {
             throw new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND);
@@ -203,12 +284,15 @@ public class UserService {
         return value.trim();
     }
 
-    private boolean hasSearchCriteria(String keyword, String role, UserStatus status) {
-        return status != null || hasText(keyword) || hasText(role);
-    }
+    private Roles resolveActiveRole(String roleCode) {
+        Roles role = roleRepository.findByCodeIgnoreCase(roleCode)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_006_ROLE_NOT_FOUND));
 
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
+        if (!Boolean.TRUE.equals(role.getIsActive())) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
+
+        return role;
     }
 
     private Specification<Users> accountSearchSpecification(String keyword, String role, UserStatus status) {
@@ -262,6 +346,9 @@ public class UserService {
                 activeSpecifications.add(specification);
             }
         }
+        if (activeSpecifications.isEmpty()) {
+            return null;
+        }
         Specification<Users> combined = activeSpecifications.getFirst();
         for (int index = 1; index < activeSpecifications.size(); index++) {
             combined = combined.and(activeSpecifications.get(index));
@@ -271,19 +358,19 @@ public class UserService {
 
     // ==================== USER SELF OPERATIONS ====================
 
-    @PreAuthorize("hasAuthority('OWNER_PROFILE_UPDATE')")
+    @PreAuthorize("isAuthenticated()")
     public UserResponse getMyProfile() {
         UUID userId = securityHelper.getCurrentUserId();
-        Users user = userRepository.findById(userId)
+        Users user = userRepository.findByIdWithRoleAndPermissions(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
         return userMapper.toUserResponse(user);
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('OWNER_PROFILE_UPDATE')")
+    @PreAuthorize("isAuthenticated()")
     public UserResponse updateMyProfile(UserProfileUpdateRequest request) {
         UUID userId = securityHelper.getCurrentUserId();
-        Users user = userRepository.findById(userId)
+        Users user = userRepository.findByIdWithRoleAndPermissions(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
 
         userMapper.updateProfile(request, user);
@@ -293,7 +380,7 @@ public class UserService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('OWNER_PROFILE_UPDATE')")
+    @PreAuthorize("isAuthenticated()")
     public void changePassword(ChangePasswordRequest request) {
         UUID userId = securityHelper.getCurrentUserId();
         Users user = userRepository.findById(userId)

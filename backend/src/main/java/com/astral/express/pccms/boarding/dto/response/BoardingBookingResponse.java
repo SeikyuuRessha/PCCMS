@@ -1,7 +1,7 @@
 package com.astral.express.pccms.boarding.dto.response;
 
 import com.astral.express.pccms.boarding.entity.BoardingStatus;
-import com.astral.express.pccms.boarding.entity.ServiceOrderStatus;
+import com.astral.express.pccms.appointment.entity.ServiceOrderStatus;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -34,3 +34,4 @@ public record BoardingBookingResponse(
         InvoiceSummaryResponse invoice
 ) {
 }
+

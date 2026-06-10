@@ -2,7 +2,6 @@ package com.astral.express.pccms.appointment.dto.response;
 
 import com.astral.express.pccms.appointment.entity.ServiceCategory;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 public record ServiceCatalogOptionResponse(
@@ -10,6 +9,6 @@ public record ServiceCatalogOptionResponse(
         String serviceCode,
         String name,
         ServiceCategory categoryCode,
-        BigDecimal basePriceVnd,
+        Long basePriceVnd,
         Integer durationMinutes
 ) {}

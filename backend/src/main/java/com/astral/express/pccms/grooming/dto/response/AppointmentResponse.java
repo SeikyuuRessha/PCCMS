@@ -1,7 +1,7 @@
 package com.astral.express.pccms.grooming.dto.response;
 
-import com.astral.express.pccms.grooming.entity.AppointmentStatus;
-import com.astral.express.pccms.grooming.entity.AppointmentType;
+import com.astral.express.pccms.appointment.entity.AppointmentStatus;
+import com.astral.express.pccms.appointment.entity.AppointmentType;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -21,3 +21,4 @@ public record AppointmentResponse(
         String internalNote
 ) {
 }
+

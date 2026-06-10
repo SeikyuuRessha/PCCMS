@@ -1,6 +1,6 @@
 package com.astral.express.pccms.catalog.dto.response;
 
-import com.astral.express.pccms.catalog.entity.RoomStatus;
+import com.astral.express.pccms.room.entity.RoomStatus;
 
 import java.util.UUID;
 

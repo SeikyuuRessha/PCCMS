@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import { SkeletonLoader } from "~/shared/components/SkeletonLoader/index";
+import { SkeletonLoader } from "~/shared/components/SkeletonLoader";
 
 describe("SkeletonLoader", () => {
     it("renders correct number of rows", () => {

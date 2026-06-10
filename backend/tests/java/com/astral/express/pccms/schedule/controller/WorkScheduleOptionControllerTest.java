@@ -44,7 +44,7 @@ class WorkScheduleOptionControllerTest {
         given(workScheduleOptionService.getStaffOptions())
                 .willReturn(List.of(new StaffOptionResponse(id("1"), "Staff One", "STAFF", "Nhan vien")));
 
-        mockMvc.perform(get("/admin/work-schedules/options/staff"))
+        mockMvc.perform(get("/v1/admin/work-schedules/options/staff"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(id("1").toString()))
@@ -57,7 +57,7 @@ class WorkScheduleOptionControllerTest {
         given(workScheduleOptionService.getShiftOptions())
                 .willReturn(List.of(new ShiftOptionResponse(id("2"), "MORNING", "Morning", LocalTime.of(8, 0), LocalTime.of(12, 0))));
 
-        mockMvc.perform(get("/admin/work-schedules/options/shifts"))
+        mockMvc.perform(get("/v1/admin/work-schedules/options/shifts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].shiftCode").value("MORNING"))
                 .andExpect(jsonPath("$.data[0].shiftName").value("Morning"));
@@ -68,7 +68,7 @@ class WorkScheduleOptionControllerTest {
         given(workScheduleOptionService.getRoleOptions())
                 .willReturn(List.of(new RoleOptionResponse(id("3"), "VETERINARIAN", "Bac si")));
 
-        mockMvc.perform(get("/admin/work-schedules/options/roles"))
+        mockMvc.perform(get("/v1/admin/work-schedules/options/roles"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].code").value("VETERINARIAN"))
                 .andExpect(jsonPath("$.data[0].name").value("Bac si"));
@@ -79,7 +79,7 @@ class WorkScheduleOptionControllerTest {
         given(workScheduleOptionService.getExamRoomOptions())
                 .willReturn(List.of(new ExamRoomOptionResponse(id("4"), "EX01", "Exam room 1")));
 
-        mockMvc.perform(get("/admin/work-schedules/options/exam-rooms"))
+        mockMvc.perform(get("/v1/admin/work-schedules/options/exam-rooms"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].roomCode").value("EX01"))
                 .andExpect(jsonPath("$.data[0].name").value("Exam room 1"));
@@ -90,7 +90,7 @@ class WorkScheduleOptionControllerTest {
         given(workScheduleOptionService.getGroomingStationOptions())
                 .willReturn(List.of(new GroomingStationOptionResponse(id("5"), "GR01", "Station 1")));
 
-        mockMvc.perform(get("/admin/work-schedules/options/grooming-stations"))
+        mockMvc.perform(get("/v1/admin/work-schedules/options/grooming-stations"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].stationCode").value("GR01"))
                 .andExpect(jsonPath("$.data[0].name").value("Station 1"));

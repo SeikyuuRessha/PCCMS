@@ -31,7 +31,10 @@ management:
       enabled: false
 
 pccms:
-  cloudinary:
-    cloud-name: test-cloud
-    api-key: test-key
-    api-secret: test-secret
+  r2:
+    account-id: test-account
+    access-key-id: test-key
+    secret-access-key: test-secret
+    bucket: test-bucket
+    public-base-url: https://media.test.local
+    cache-control: public,max-age=60

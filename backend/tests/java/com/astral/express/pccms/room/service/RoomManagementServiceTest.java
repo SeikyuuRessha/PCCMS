@@ -110,7 +110,7 @@ class RoomManagementServiceTest {
     private void assertUpdateSuccess(RoomCsvInput csv) {
         UUID roomId = UUID.randomUUID();
         Room room = room("R001", "Old Room", RoomStatus.AVAILABLE);
-        given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
+        given(roomRepository.findWithRoomTypeById(roomId)).willReturn(Optional.of(room));
         given(roomTypeRepository.findById(csv.roomTypeId())).willReturn(Optional.of(roomType(csv.roomTypeId())));
         given(roomRepository.save(room)).willReturn(room);
 
@@ -122,7 +122,7 @@ class RoomManagementServiceTest {
     private void assertStatusChangeSuccess(RoomCsvInput csv) {
         UUID roomId = UUID.randomUUID();
         Room room = room("R001", "Room 1", RoomStatus.AVAILABLE);
-        given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
+        given(roomRepository.findWithRoomTypeById(roomId)).willReturn(Optional.of(room));
         given(roomRepository.save(room)).willReturn(room);
 
         RoomResponse response = roomManagementService.updateRoomStatus(roomId, csv.statusCode());
@@ -140,7 +140,7 @@ class RoomManagementServiceTest {
         }
         if ("Delete or deactivate referenced room protected".equals(scenario)) {
             UUID roomId = UUID.randomUUID();
-            given(roomRepository.findById(roomId)).willReturn(Optional.of(room("R001", "Room 1", RoomStatus.AVAILABLE)));
+            given(roomRepository.findWithRoomTypeById(roomId)).willReturn(Optional.of(room("R001", "Room 1", RoomStatus.AVAILABLE)));
             given(roomRepository.countRoomAllocations(roomId)).willReturn(1L);
 
             assertThatThrownBy(() -> roomManagementService.deactivateRoom(roomId))
@@ -172,7 +172,7 @@ class RoomManagementServiceTest {
         type.setCode("STANDARD");
         type.setName("Standard");
         type.setDefaultCapacity(2);
-        type.setBaseDailyPriceVnd(BigDecimal.valueOf(100000));
+        type.setBaseDailyPriceVnd(100000L);
         type.setIsActive(true);
         return type;
     }

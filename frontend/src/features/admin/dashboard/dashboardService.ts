@@ -62,10 +62,10 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     const toDate = formatIsoDate(endOfCurrentMonth());
 
     const [activeAccounts, activeServices, availableRooms, reportResponse] = await Promise.all([
-        getPagedCount("/admin/accounts", { status: "ACTIVE", page: 0, size: 1 }),
-        getPagedCount("/admin/service-catalog", { isActive: true, page: 0, size: 1 }),
-        getPagedCount("/admin/rooms", { statusCode: "AVAILABLE", page: 0, size: 1 }),
-        api.get("/admin/reports/summary", {
+        getPagedCount("/v1/admin/accounts", { status: "ACTIVE", page: 0, size: 1 }),
+        getPagedCount("/v1/catalog/services", { isActive: true, page: 0, size: 1 }),
+        getPagedCount("/v1/admin/rooms", { statusCode: "AVAILABLE", page: 0, size: 1 }),
+        api.get("/v1/admin/reports/summary", {
             params: { fromDate, toDate, reportType: "REVENUE" },
         }),
     ]);

@@ -16,6 +16,11 @@ export type InvoiceStatus =
     | "CANCELLED"
     | "REFUNDED";
 
+export interface BoardingStay { [key: string]: any; }
+export interface CareLogEntry { [key: string]: any; }
+export interface StaffBoardingStay { [key: string]: any; }
+export interface UpsertCareLogPayload { [key: string]: any; }
+
 export interface RoomTypeResponse {
     id: string;
     code: string;
@@ -72,6 +77,7 @@ export interface BoardingBookingResponse {
     roomId?: string;
     roomCode?: string;
     roomName?: string;
+    roomTypeName?: string;
     expectedCheckinAt: string;
     expectedCheckoutAt: string;
     actualCheckinAt?: string;
@@ -80,6 +86,7 @@ export interface BoardingBookingResponse {
     estimatedPriceVnd: number;
     finalAmountVnd?: number;
     statusCode: BoardingStatus;
+    statusLabel?: string;
     invoice?: InvoiceSummaryResponse;
 }
 

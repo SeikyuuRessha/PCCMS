@@ -16,7 +16,11 @@ public interface RoomTypeRepository extends JpaRepository<RoomType, UUID> {
 
     List<RoomType> findByIsActiveTrueOrderByNameAsc();
 
+    List<RoomType> findAllByOrderByNameAsc();
+
     Optional<RoomType> findByIdAndIsActiveTrue(UUID id);
 
     boolean existsByCodeAndIsActiveTrue(String code);
+
+    boolean existsByCodeAndIdNot(String code, UUID id);
 }

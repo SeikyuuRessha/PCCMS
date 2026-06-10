@@ -2,9 +2,9 @@ package com.astral.express.pccms.catalog.service.impl;
 
 import com.astral.express.pccms.catalog.dto.request.ServiceCatalogRequest;
 import com.astral.express.pccms.catalog.dto.response.ServiceCatalogResponse;
-import com.astral.express.pccms.catalog.entity.ServiceCatalog;
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
-import com.astral.express.pccms.catalog.repository.ServiceCatalogRepository;
+import com.astral.express.pccms.appointment.entity.ServiceCatalog;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.repository.ServiceCatalogRepository;
 import com.astral.express.pccms.catalog.service.ServiceCatalogService;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
@@ -16,7 +16,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,7 +83,7 @@ public class ServiceCatalogServiceImpl implements ServiceCatalogService {
     }
 
     private void validateRequest(ServiceCatalogRequest request) {
-        if (request.basePriceVnd() == null || request.basePriceVnd().compareTo(BigDecimal.ZERO) < 0) {
+        if (request.basePriceVnd() == null || request.basePriceVnd() < 0) {
             throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
         }
         if (request.durationMinutes() != null && request.durationMinutes() <= 0) {
@@ -172,3 +171,4 @@ public class ServiceCatalogServiceImpl implements ServiceCatalogService {
         return combined;
     }
 }
+

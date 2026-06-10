@@ -6,8 +6,6 @@ import com.astral.express.pccms.pet.dto.request.CreatePetRequest;
 import com.astral.express.pccms.pet.dto.request.UpdatePetRequest;
 import com.astral.express.pccms.pet.dto.response.PetResponse;
 import com.astral.express.pccms.pet.service.PetService;
-import com.astral.express.pccms.common.dto.ApiResponse;
-import com.astral.express.pccms.common.dto.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -35,13 +33,7 @@ public class PetController {
 
     private final PetService petService;
 
-    @GetMapping
-    @PreAuthorize("hasRole('OWNER') or hasRole('CUSTOMER') or hasRole('STAFF') or hasRole('RECEPTIONIST') or hasRole('VETERINARIAN') or hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<PageResponse<PetResponse>>> listPets(
-            @RequestParam(required = false) Boolean isActive,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success(petService.listPets(isActive, pageable)));
-    }
+
 
     @PostMapping
     @PreAuthorize("hasAuthority('PET_CREATE')")
@@ -53,11 +45,14 @@ public class PetController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('PET_READ')")
-    public ApiResponse<PageResponse<PetResponse>> listPets(
+    public ResponseEntity<ApiResponse<PageResponse<PetResponse>>> listPets(
             @RequestParam(required = false) UUID ownerId,
             @RequestParam(required = false) Boolean isActive,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ApiResponse.success(petService.listPets(ownerId, isActive, pageable));
+        PageResponse<PetResponse> response = ownerId == null
+                ? petService.listPets(isActive, pageable)
+                : petService.listPets(ownerId, isActive, pageable);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{petId}")

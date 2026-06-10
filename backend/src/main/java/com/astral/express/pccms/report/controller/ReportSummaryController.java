@@ -1,6 +1,6 @@
 package com.astral.express.pccms.report.controller;
 
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
 import com.astral.express.pccms.common.dto.ApiResponse;
 import com.astral.express.pccms.report.dto.response.ReportSummaryResponse;
 import com.astral.express.pccms.report.entity.ReportType;
@@ -17,7 +17,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/admin/reports")
+@RequestMapping("/v1/admin/reports")
 @RequiredArgsConstructor
 public class ReportSummaryController {
 
@@ -40,3 +40,4 @@ public class ReportSummaryController {
         ));
     }
 }
+

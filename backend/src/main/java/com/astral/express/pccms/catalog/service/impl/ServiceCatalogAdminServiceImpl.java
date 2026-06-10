@@ -131,20 +131,14 @@ public class ServiceCatalogAdminServiceImpl implements ServiceCatalogAdminServic
                 service.getServiceCode(),
                 service.getName(),
                 service.getCategoryCode(),
-                categoryLabel(service.getCategoryCode()),
                 service.getDescription(),
                 service.getBasePriceVnd(),
                 service.getDurationMinutes(),
-                service.getIsActive()
+                service.getIsActive(),
+                service.getEffectiveFrom(),
+                service.getEffectiveTo(),
+                service.getCreatedAt(),
+                service.getUpdatedAt()
         );
-    }
-
-    static String categoryLabel(ServiceCategory category) {
-        return switch (category) {
-            case MEDICAL -> "Khám";
-            case GROOMING -> "Làm đẹp";
-            case BOARDING -> "Lưu trú";
-            case OTHER -> "Khác";
-        };
     }
 }

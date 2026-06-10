@@ -8,7 +8,9 @@ export interface PetResponse {
     ownerId: string;
     name: string;
     speciesId: string;
+    speciesName?: string;
     breedId: string;
+    breedName?: string;
     sex: PetSex;
     birthDate: string;
     estimatedAgeMonths: number;
@@ -35,3 +37,6 @@ export interface PetRequest {
     allergyNote?: string;
     nutritionNote?: string;
 }
+
+export interface PetSpeciesOption { [key: string]: any; }
+export interface PetBreedOption { [key: string]: any; }

@@ -12,9 +12,15 @@ import java.util.List;
 import java.util.UUID;
 
 public interface RoomAdminService {
+    List<RoomTypeResponse> listRoomTypes(boolean activeOnly);
+
+    RoomTypeResponse getRoomType(UUID id);
+
     RoomTypeResponse createRoomType(RoomTypeRequest request);
 
     RoomTypeResponse updateRoomType(UUID id, RoomTypeRequest request);
+
+    RoomTypeResponse updateRoomTypeActive(UUID id, Boolean isActive);
 
     void deactivateRoomType(UUID id);
 

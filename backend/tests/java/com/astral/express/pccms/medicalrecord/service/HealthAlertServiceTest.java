@@ -7,7 +7,6 @@ import com.astral.express.pccms.medicalrecord.entity.AlertSeverity;
 import com.astral.express.pccms.medicalrecord.entity.HealthAlert;
 import com.astral.express.pccms.medicalrecord.repository.HealthAlertRepository;
 import com.astral.express.pccms.medicalrecord.service.impl.HealthAlertServiceImpl;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -37,47 +36,44 @@ class HealthAlertServiceTest {
     @Captor
     private ArgumentCaptor<HealthAlert> captor;
 
-    @Test
-    void should_CreateHealthAlert() {
-        UUID petId = UUID.randomUUID();
-        CreateHealthAlertRequest request = new CreateHealthAlertRequest(
-                petId, null, AlertSeverity.HIGH, "Allergic to amoxicillin", UUID.randomUUID()
-        );
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvFileSource(resources = "/testcases/health-alert-testcases.csv", numLinesToSkip = 1)
+    void should_ProcessHealthAlert(String ruleId, String caseId, String action, String expectedError) {
+        if ("CREATE".equals(action)) {
+            UUID petId = UUID.randomUUID();
+            CreateHealthAlertRequest request = new CreateHealthAlertRequest(
+                    petId, null, AlertSeverity.HIGH, "Allergic to amoxicillin", UUID.randomUUID()
+            );
 
-        healthAlertService.createHealthAlert(request);
+            healthAlertService.createHealthAlert(request);
 
-        verify(healthAlertRepository).save(captor.capture());
-        HealthAlert savedAlert = captor.getValue();
-        assertThat(savedAlert.getPetId()).isEqualTo(petId);
-        assertThat(savedAlert.getSeverity()).isEqualTo(AlertSeverity.HIGH);
-        assertThat(savedAlert.getMessage()).isEqualTo("Allergic to amoxicillin");
-    }
+            verify(healthAlertRepository).save(captor.capture());
+            HealthAlert savedAlert = captor.getValue();
+            assertThat(savedAlert.getPetId()).isEqualTo(petId);
+            assertThat(savedAlert.getSeverity()).isEqualTo(AlertSeverity.HIGH);
+            assertThat(savedAlert.getMessage()).isEqualTo("Allergic to amoxicillin");
+        } else if ("RESOLVE".equals(action)) {
+            UUID alertId = UUID.randomUUID();
+            UUID resolvedBy = UUID.randomUUID();
+            HealthAlert alert = new HealthAlert();
+            alert.setId(alertId);
 
-    @Test
-    void should_ResolveHealthAlert() {
-        UUID alertId = UUID.randomUUID();
-        UUID resolvedBy = UUID.randomUUID();
-        HealthAlert alert = new HealthAlert();
-        alert.setId(alertId);
+            given(healthAlertRepository.findById(alertId)).willReturn(Optional.of(alert));
 
-        given(healthAlertRepository.findById(alertId)).willReturn(Optional.of(alert));
+            healthAlertService.resolveHealthAlert(alertId, resolvedBy);
 
-        healthAlertService.resolveHealthAlert(alertId, resolvedBy);
+            verify(healthAlertRepository).save(captor.capture());
+            HealthAlert savedAlert = captor.getValue();
+            assertThat(savedAlert.getResolvedAt()).isNotNull();
+        } else if ("RESOLVE_NOT_FOUND".equals(action)) {
+            UUID alertId = UUID.randomUUID();
+            UUID resolvedBy = UUID.randomUUID();
+            
+            given(healthAlertRepository.findById(alertId)).willReturn(Optional.empty());
 
-        verify(healthAlertRepository).save(captor.capture());
-        HealthAlert savedAlert = captor.getValue();
-        assertThat(savedAlert.getResolvedAt()).isNotNull();
-    }
-    
-    @Test
-    void should_ThrowException_when_ResolveNotFoundAlert() {
-        UUID alertId = UUID.randomUUID();
-        UUID resolvedBy = UUID.randomUUID();
-        
-        given(healthAlertRepository.findById(alertId)).willReturn(Optional.empty());
-
-        assertThatThrownBy(() -> healthAlertService.resolveHealthAlert(alertId, resolvedBy))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ERR_404_NOT_FOUND);
+            assertThatThrownBy(() -> healthAlertService.resolveHealthAlert(alertId, resolvedBy))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.valueOf(expectedError));
+        }
     }
 }

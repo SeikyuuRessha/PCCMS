@@ -3,6 +3,7 @@ package com.astral.express.pccms.reception.service.impl;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.common.helper.SqlHelper;
+import com.astral.express.pccms.notification.service.NotificationService;
 import com.astral.express.pccms.reception.dto.request.GroomingStatusUpdateRequest;
 import com.astral.express.pccms.reception.dto.response.GroomingTicketResponse;
 import com.astral.express.pccms.reception.service.GroomingBoardService;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class GroomingBoardServiceImpl implements GroomingBoardService {
     private final SqlHelper sql;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -62,16 +64,21 @@ public class GroomingBoardServiceImpl implements GroomingBoardService {
                 RETURNING id
                 """, request.statusCode(), request.internalNote(), request.statusCode(), request.statusCode(), ticketId);
         if ("COMPLETED".equals(request.statusCode())) {
-            sql.jdbc().update("""
-                    INSERT INTO notifications(recipient_user_id, source_type, source_id, notification_type, title, body)
-                    SELECT so.owner_id, 'GROOMING_TICKET', gt.id, 'GROOMING', 'Dịch vụ làm đẹp hoàn thành',
-                           p.name || ' đã hoàn thành dịch vụ, mời khách đến đón.'
+            sql.optional("""
+                    SELECT so.owner_id, p.name AS pet_name
                     FROM grooming_tickets gt
                     JOIN appointments a ON a.id = gt.appointment_id
                     JOIN service_orders so ON so.id = a.service_order_id
                     JOIN pets p ON p.id = so.pet_id
                     WHERE gt.id = ?
-                    """, ticketId);
+                    """, ticketId).ifPresent(row -> notificationService.createNotification(
+                    (UUID) row.get("owner_id"),
+                    "GROOMING_TICKET",
+                    ticketId,
+                    "GROOMING",
+                    "Dich vu lam dep hoan thanh",
+                    string(row.get("pet_name")) + " da hoan thanh dich vu, moi khach den don."
+            ));
         }
         return getTicket(ticketId);
     }

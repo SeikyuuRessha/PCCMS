@@ -1,16 +1,19 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Button, Input } from "~/components/atoms";
-import { loginWithEmail } from "../authService";
+import { authApi } from "../api/authApi";
+import { useAuth } from "../context/AuthContext";
+import type { LoginFormData } from "../schema/authSchema";
+import { loginSchema } from "../schema/authSchema";
+import toast from "react-hot-toast";
+import { ROUTES } from "~/constants/routes";
 
 export function LoginPage() {
     const navigate = useNavigate();
-    const location = useLocation();
     const { login } = useAuth();
-    const redirectTo =
-        (location.state as { from?: string } | null)?.from ?? null;
+
 
     const {
         register,
@@ -36,8 +39,9 @@ export function LoginPage() {
                 navigate(ROUTES.HOME);
             }
         },
-        onError: (error) => {
-            toast.error(parseApiError(error));
+        onError: (error: any) => {
+            const errorMsg = error?.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại.";
+            toast.error(errorMsg);
         },
     });
 
@@ -46,7 +50,7 @@ export function LoginPage() {
     };
 
     return (
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-slate-900">Đăng nhập</h1>
                 <p className="mt-2 text-sm text-slate-500">
@@ -80,7 +84,7 @@ export function LoginPage() {
                 </div>
             </div>
 
-            {error && <p className="text-sm font-medium text-error-600">{error}</p>}
+            {mutation.isError && <p className="text-sm font-medium text-error-600">{mutation.error?.message}</p>}
 
             <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 text-slate-600">

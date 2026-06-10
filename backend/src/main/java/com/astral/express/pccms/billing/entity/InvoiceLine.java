@@ -1,6 +1,6 @@
 package com.astral.express.pccms.billing.entity;
 
-import com.astral.express.pccms.boarding.entity.ServiceOrder;
+import com.astral.express.pccms.appointment.entity.ServiceOrder;
 import com.astral.express.pccms.medicine.entity.Medicine;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

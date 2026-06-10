@@ -45,4 +45,54 @@ public class EmailServiceImpl implements EmailService {
             log.error("Failed to send account creation email to: {}. Cause: {}", toEmail, exception.getMessage());
         }
     }
+
+    @Async("mailTaskExecutor")
+    @Override
+    public void sendTemporaryPasswordEmail(String toEmail, String temporaryPassword) {
+        try {
+            String content = emailTemplateService.buildTemporaryPasswordContent(toEmail, temporaryPassword);
+
+            SimpleMailMessage message = new SimpleMailMessage();
+
+            if (StringUtils.hasText(mailProperties.getFrom())) {
+                message.setFrom(mailProperties.getFrom());
+            }
+
+            message.setTo(toEmail);
+            message.setSubject(emailTemplateService.buildTemporaryPasswordSubject());
+            message.setText(content);
+
+            mailSender.send(message);
+
+            log.info("Temporary password email sent to: {}", toEmail);
+        } catch (MailException exception) {
+            log.error("Failed to send temporary password email to: {}. Cause: {}", toEmail, exception.getMessage());
+        }
+    }
+
+    @Async("mailTaskExecutor")
+    @Override
+    public void sendOtpEmail(String toEmail, String purpose, String otp) {
+        if (!StringUtils.hasText(toEmail) || !toEmail.contains("@")) {
+            log.info("OTP generated for non-email contact; external SMS sender is not configured");
+            return;
+        }
+
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+
+            if (StringUtils.hasText(mailProperties.getFrom())) {
+                message.setFrom(mailProperties.getFrom());
+            }
+
+            message.setTo(toEmail);
+            message.setSubject("PCCMS OTP - " + purpose);
+            message.setText("Your PCCMS OTP is: " + otp + "\nThis code expires in 10 minutes.");
+
+            mailSender.send(message);
+            log.info("OTP email sent to: {}", toEmail);
+        } catch (MailException exception) {
+            log.error("Failed to send OTP email to: {}. Cause: {}", toEmail, exception.getMessage());
+        }
+    }
 }

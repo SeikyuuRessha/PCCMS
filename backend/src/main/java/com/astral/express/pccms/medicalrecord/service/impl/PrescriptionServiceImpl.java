@@ -2,8 +2,11 @@ package com.astral.express.pccms.medicalrecord.service.impl;
 
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
+import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.medicalrecord.dto.request.CreatePrescriptionRequest;
 import com.astral.express.pccms.medicalrecord.dto.request.PrescriptionItemRequest;
+import com.astral.express.pccms.medicalrecord.dto.response.PrescriptionItemResponse;
+import com.astral.express.pccms.medicalrecord.dto.response.PrescriptionResponse;
 import com.astral.express.pccms.medicalrecord.entity.MedicalRecord;
 import com.astral.express.pccms.medicalrecord.entity.Prescription;
 import com.astral.express.pccms.medicalrecord.entity.PrescriptionItem;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -30,10 +34,11 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     private final PrescriptionRepository prescriptionRepository;
     private final MedicalRecordRepository medicalRecordRepository;
     private final MedicineRepository medicineRepository;
+    private final SecurityHelper securityHelper;
 
     @Override
     @Transactional
-    public void createPrescription(UUID medicalRecordId, CreatePrescriptionRequest request) {
+    public PrescriptionResponse createPrescription(UUID medicalRecordId, CreatePrescriptionRequest request) {
         // Validate medical record
         MedicalRecord record = medicalRecordRepository.findById(medicalRecordId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_400_BAD_REQUEST));
@@ -45,7 +50,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         Prescription prescription = new Prescription();
         prescription.setPrescriptionCode("PRE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         prescription.setMedicalRecordId(medicalRecordId);
-        prescription.setVetId(request.vetId());
+        prescription.setVetId(resolveVetId(request, record));
         prescription.setNote(request.note());
         prescription.setIssuedAt(OffsetDateTime.now());
 
@@ -75,6 +80,61 @@ public class PrescriptionServiceImpl implements PrescriptionService {
             prescription.addItem(prescriptionItem);
         }
 
-        prescriptionRepository.save(prescription);
+        Prescription saved = prescriptionRepository.save(prescription);
+        return toResponse(saved);
+    }
+
+    @Override
+    public List<PrescriptionResponse> listPrescriptions(UUID medicalRecordId) {
+        if (!medicalRecordRepository.existsById(medicalRecordId)) {
+            throw new BusinessException(ErrorCode.ERR_400_BAD_REQUEST);
+        }
+
+        return prescriptionRepository.findByMedicalRecordIdOrderByIssuedAtDesc(medicalRecordId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private UUID resolveVetId(CreatePrescriptionRequest request, MedicalRecord record) {
+        UUID currentUserId = securityHelper == null ? null : securityHelper.getCurrentUserId();
+        if (currentUserId != null) {
+            return currentUserId;
+        }
+        if (request.vetId() != null) {
+            return request.vetId();
+        }
+        if (record.getVetId() != null) {
+            return record.getVetId();
+        }
+        throw new BusinessException(ErrorCode.ERR_401_UNAUTHORIZED);
+    }
+
+    private PrescriptionResponse toResponse(Prescription prescription) {
+        return new PrescriptionResponse(
+                prescription.getId(),
+                prescription.getPrescriptionCode(),
+                prescription.getMedicalRecordId(),
+                prescription.getVetId(),
+                prescription.getNote(),
+                prescription.getIssuedAt(),
+                prescription.getItems().stream()
+                        .map(this::toItemResponse)
+                        .toList()
+        );
+    }
+
+    private PrescriptionItemResponse toItemResponse(PrescriptionItem item) {
+        Medicine medicine = medicineRepository.findById(item.getMedicineId()).orElse(null);
+        return new PrescriptionItemResponse(
+                item.getId(),
+                item.getMedicineId(),
+                medicine == null ? null : medicine.getName(),
+                medicine == null ? null : medicine.getUnit(),
+                item.getDosage(),
+                item.getQuantity(),
+                item.getInstruction(),
+                item.getUnitPriceVnd()
+        );
     }
 }

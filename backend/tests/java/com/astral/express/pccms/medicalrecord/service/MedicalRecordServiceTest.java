@@ -9,8 +9,10 @@ import com.astral.express.pccms.medicalrecord.entity.RecordStatus;
 import com.astral.express.pccms.medicalrecord.mapper.MedicalRecordMapper;
 import com.astral.express.pccms.medicalrecord.repository.MedicalRecordRepository;
 import com.astral.express.pccms.medicalrecord.event.MedicalRecordFinalizedEvent;
+import com.astral.express.pccms.appointment.service.AppointmentService;
+import com.astral.express.pccms.appointment.dto.response.AppointmentResponse;
 import com.astral.express.pccms.medicalrecord.service.impl.MedicalRecordServiceImpl;
-import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -43,6 +45,9 @@ class MedicalRecordServiceTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private AppointmentService appointmentService;
 
     @InjectMocks
     private MedicalRecordServiceImpl medicalRecordService;
@@ -188,40 +193,104 @@ class MedicalRecordServiceTest {
      * BR-05: When a medical record is finalized, a MedicalRecordFinalizedEvent
      * MUST be published via ApplicationEventPublisher (loose coupling).
      */
-    @Test
-    void should_PublishMedicalRecordFinalizedEvent_when_RecordIsFinalized() {
+    @ParameterizedTest
+    @CsvFileSource(resources = "/testcases/medical-record-testcases.csv", numLinesToSkip = 1)
+    void should_ProcessMedicalRecordEvents(String ruleId, String caseId, String action, String expectedEvent) {
+        if ("FINALIZE".equals(action)) {
+            // GIVEN
+            UUID recordId = UUID.randomUUID();
+            UUID petId = UUID.randomUUID();
+            UUID vetId = UUID.randomUUID();
+
+            MedicalRecord record = new MedicalRecord();
+            record.setId(recordId);
+            record.setPetId(petId);
+            record.setVetId(vetId);
+            record.setRecordStatus(RecordStatus.DRAFT);
+            record.setTemperatureC(BigDecimal.valueOf(38.5)); // At least one vital sign required
+
+            given(medicalRecordRepository.findById(recordId)).willReturn(Optional.of(record));
+            given(medicalRecordRepository.save(any(MedicalRecord.class))).willReturn(record);
+            given(medicalRecordMapper.toResponse(any(MedicalRecord.class))).willReturn(
+                    new MedicalRecordResponse(recordId, "MR-001", petId, vetId, null,
+                            RecordStatus.FINALIZED, null, null, null, null, null, null, null, null,
+                            null, "Final diagnosis", null, null, OffsetDateTime.now(), null, null)
+            );
+
+            FinalizeMedicalRecordRequest request = new FinalizeMedicalRecordRequest(
+                    "Final diagnosis", OffsetDateTime.now().plusDays(7), "Antibiotics"
+            );
+
+            // WHEN
+            medicalRecordService.finalizeMedicalRecord(recordId, request);
+
+            // THEN (BR-05)
+            if ("MedicalRecordFinalizedEvent".equals(expectedEvent)) {
+                verify(eventPublisher).publishEvent(eventCaptor.capture());
+                MedicalRecordFinalizedEvent publishedEvent = eventCaptor.getValue();
+                assertThat(publishedEvent.recordId()).isEqualTo(recordId);
+                assertThat(publishedEvent.petId()).isEqualTo(petId);
+                assertThat(publishedEvent.vetId()).isEqualTo(vetId);
+            }
+        }
+    }
+
+    @org.junit.jupiter.api.Test
+    void should_return_medical_record_when_retrieved_by_id() {
         // GIVEN
         UUID recordId = UUID.randomUUID();
+        MedicalRecord record = new MedicalRecord();
+        record.setId(recordId);
+        record.setRecordStatus(RecordStatus.DRAFT);
+
+        MedicalRecordResponse mockResponse = new MedicalRecordResponse(
+                recordId, "MR-123", null, null, null, RecordStatus.DRAFT,
+                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null
+        );
+
+        given(medicalRecordRepository.findById(recordId)).willReturn(Optional.of(record));
+        given(medicalRecordMapper.toResponse(record)).willReturn(mockResponse);
+
+        // WHEN
+        MedicalRecordResponse response = medicalRecordService.getMedicalRecordById(recordId);
+
+        // THEN
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(recordId);
+    }
+
+    @org.junit.jupiter.api.Test
+    void should_create_and_return_new_medical_record_when_not_exists_by_appointment_id() {
+        // GIVEN
+        UUID appointmentId = UUID.randomUUID();
         UUID petId = UUID.randomUUID();
         UUID vetId = UUID.randomUUID();
 
-        MedicalRecord record = new MedicalRecord();
-        record.setId(recordId);
-        record.setPetId(petId);
-        record.setVetId(vetId);
-        record.setRecordStatus(RecordStatus.DRAFT);
-        record.setTemperatureC(BigDecimal.valueOf(38.5)); // At least one vital sign required
-
-        given(medicalRecordRepository.findById(recordId)).willReturn(Optional.of(record));
-        given(medicalRecordRepository.save(any(MedicalRecord.class))).willReturn(record);
-        given(medicalRecordMapper.toResponse(any(MedicalRecord.class))).willReturn(
-                new MedicalRecordResponse(recordId, "MR-001", petId, vetId, null,
-                        RecordStatus.FINALIZED, null, null, null, null, null, null, null, null,
-                        null, "Final diagnosis", null, null, OffsetDateTime.now(), null, null)
+        AppointmentResponse mockAppointment = new AppointmentResponse(
+                appointmentId, "AP0001", null, "Khám", null, null,
+                "Chủ nuôi", "0900000000", petId, "Thú cưng", vetId, "BS. An",
+                null, null, null, null, 1
         );
 
-        FinalizeMedicalRecordRequest request = new FinalizeMedicalRecordRequest(
-                "Final diagnosis", OffsetDateTime.now().plusDays(7), "Antibiotics"
+        MedicalRecordResponse mockResponse = new MedicalRecordResponse(
+                UUID.randomUUID(), "MR-AP0001", appointmentId, petId, vetId, RecordStatus.DRAFT,
+                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null
         );
+
+        given(medicalRecordRepository.findByAppointmentId(appointmentId)).willReturn(Optional.empty());
+        given(appointmentService.getAppointmentById(appointmentId)).willReturn(mockAppointment);
+        given(medicalRecordRepository.save(any(MedicalRecord.class))).willAnswer(inv -> inv.getArgument(0));
+        given(medicalRecordMapper.toResponse(any(MedicalRecord.class))).willReturn(mockResponse);
 
         // WHEN
-        medicalRecordService.finalizeMedicalRecord(recordId, request);
+        MedicalRecordResponse response = medicalRecordService.getOrCreateMedicalRecordByAppointmentId(appointmentId);
 
-        // THEN (BR-05)
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        MedicalRecordFinalizedEvent publishedEvent = eventCaptor.getValue();
-        assertThat(publishedEvent.recordId()).isEqualTo(recordId);
-        assertThat(publishedEvent.petId()).isEqualTo(petId);
-        assertThat(publishedEvent.vetId()).isEqualTo(vetId);
+        // THEN
+        assertThat(response).isNotNull();
+        assertThat(response.appointmentId()).isEqualTo(appointmentId);
+        assertThat(response.recordCode()).isEqualTo("MR-AP0001");
     }
 }
+

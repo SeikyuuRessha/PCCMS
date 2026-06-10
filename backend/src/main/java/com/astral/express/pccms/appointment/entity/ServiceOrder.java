@@ -15,17 +15,22 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "service_orders")
 @Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Setter
 public class ServiceOrder extends AuditableEntity {
 
@@ -53,6 +58,7 @@ public class ServiceOrder extends AuditableEntity {
     @Column(name = "category_code", nullable = false)
     private ServiceCategory categoryCode;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status_code", nullable = false)
@@ -79,14 +85,16 @@ public class ServiceOrder extends AuditableEntity {
     @Column(name = "cancellation_reason")
     private String cancellationReason;
 
+    @Builder.Default
     @Column(name = "base_amount_vnd", nullable = false)
-    private BigDecimal baseAmountVnd = BigDecimal.ZERO;
+    private Long baseAmountVnd = 0L;
 
+    @Builder.Default
     @Column(name = "extra_amount_vnd", nullable = false)
-    private BigDecimal extraAmountVnd = BigDecimal.ZERO;
+    private Long extraAmountVnd = 0L;
 
     @Column(name = "final_amount_vnd")
-    private BigDecimal finalAmountVnd;
+    private Long finalAmountVnd;
 
     @Column(name = "created_by")
     private UUID createdBy;
@@ -94,3 +102,4 @@ public class ServiceOrder extends AuditableEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 }
+

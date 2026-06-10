@@ -1,7 +1,7 @@
 export type WorkScheduleRole = "Lễ tân" | "Nhân viên trung tâm" | "Bác sĩ thú y" | "Quản trị viên";
 export type WorkScheduleShift = "Ca sáng" | "Ca chiều" | "Ca tối";
 export type WorkScheduleStatus = "Đã phân công" | "Đã hủy" | "Đã hoàn thành";
-export type WorkScheduleSource = "backend" | "demo" | "local";
+export type WorkScheduleSource = "backend";
 export type BackendScheduleStatus = "ASSIGNED" | "CANCELLED" | "COMPLETED";
 
 export interface StaffMember {
@@ -96,4 +96,33 @@ export interface WorkScheduleOptions {
     roles: WorkScheduleRoleOption[];
     examRooms: WorkScheduleExamRoomOption[];
     groomingStations: WorkScheduleGroomingStationOption[];
+}
+
+export interface WeeklySchedulePlanRequest {
+    sourceWeekStart: string;
+    targetWeekStart: string;
+    roleIds?: string[];
+    shiftIds?: string[];
+}
+
+export interface WeeklySchedulePlanItem {
+    sourceScheduleId?: string | null;
+    createdScheduleId?: string | null;
+    staffId?: string | null;
+    staffName?: string | null;
+    sourceDate?: string | null;
+    targetDate: string;
+    shiftId?: string | null;
+    shiftCode?: string | null;
+    shiftName?: string | null;
+    roleId?: string | null;
+    roleCode?: string | null;
+    conflict: boolean;
+    conflictReason?: string | null;
+}
+
+export interface WeeklySchedulePlanResponse {
+    createdCount: number;
+    skippedCount: number;
+    items: WeeklySchedulePlanItem[];
 }

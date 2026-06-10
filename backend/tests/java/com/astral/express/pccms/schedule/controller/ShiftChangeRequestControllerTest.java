@@ -73,7 +73,7 @@ class ShiftChangeRequestControllerTest {
         given(shiftChangeRequestService.getMyRequests(isNull(), any()))
                 .willReturn(PageResponse.of(new PageImpl<>(List.of(response))));
 
-        userMockMvc.perform(get("/me/shift-change-requests"))
+        userMockMvc.perform(get("/v1/me/shift-change-requests"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.data.content[0].statusCode").value("PENDING"));
@@ -89,12 +89,12 @@ class ShiftChangeRequestControllerTest {
                 }
                 """;
 
-        userMockMvc.perform(post("/me/shift-change-requests")
+        userMockMvc.perform(post("/v1/me/shift-change-requests")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 
     @Test
@@ -106,11 +106,11 @@ class ShiftChangeRequestControllerTest {
                 }
                 """;
 
-        adminMockMvc.perform(patch("/admin/shift-change-requests/{requestId}/status", requestId)
+        adminMockMvc.perform(patch("/v1/admin/shift-change-requests/{requestId}/status", requestId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 }

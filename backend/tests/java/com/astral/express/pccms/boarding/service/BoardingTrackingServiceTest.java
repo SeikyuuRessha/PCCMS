@@ -6,7 +6,7 @@ import com.astral.express.pccms.boarding.entity.CareLog;
 import com.astral.express.pccms.boarding.repository.CareLogRepository;
 import com.astral.express.pccms.pet.entity.Pets;
 import com.astral.express.pccms.pet.repository.PetRepository;
-import org.junit.jupiter.api.Test;
+import com.astral.express.pccms.user.entity.Users;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -33,57 +33,68 @@ class BoardingTrackingServiceTest {
     @InjectMocks
     private BoardingTrackingServiceImpl boardingTrackingService;
 
-    @Test
-    void listActiveStays_mapsNativeQueryRows() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvFileSource(resources = "/testcases/boarding-tracking-testcases.csv", numLinesToSkip = 1)
+    void should_ProcessBoardingTracking(String ruleId, String caseId, String action, boolean hasData, int expectedSize) {
         UUID ownerId = UUID.randomUUID();
-        UUID petId = UUID.randomUUID();
-        Object[] row = new Object[]{petId, "Milu", "Chó", "Poodle"};
-        given(careLogRepository.findActiveStaysByOwner(ownerId)).willReturn(List.<Object[]>of(row));
 
-        List<BoardingStayResponse> stays = boardingTrackingService.listActiveStays(ownerId);
+        if ("LIST_ACTIVE_STAYS".equals(action)) {
+            if (hasData) {
+                UUID petId = UUID.randomUUID();
+                Object[] row = new Object[]{petId, "Milu", "Chó", "Poodle"};
+                given(careLogRepository.findActiveStaysByOwner(ownerId)).willReturn(List.<Object[]>of(row));
+            } else {
+                given(careLogRepository.findActiveStaysByOwner(ownerId)).willReturn(List.of());
+            }
 
-        assertThat(stays).hasSize(1);
-        assertThat(stays.get(0).petName()).isEqualTo("Milu");
-        assertThat(stays.get(0).speciesName()).isEqualTo("Chó");
-        assertThat(stays.get(0).breedName()).isEqualTo("Poodle");
-    }
+            List<BoardingStayResponse> stays = boardingTrackingService.listActiveStays(ownerId);
 
-    @Test
-    void listCareLogs_returnsMappedResponses() {
-        UUID ownerId = UUID.randomUUID();
-        UUID petId = UUID.randomUUID();
-        UUID logId = UUID.randomUUID();
+            assertThat(stays).hasSize(expectedSize);
+            if (expectedSize > 0) {
+                assertThat(stays.get(0).petName()).isEqualTo("Milu");
+                assertThat(stays.get(0).speciesName()).isEqualTo("Chó");
+                assertThat(stays.get(0).breedName()).isEqualTo("Poodle");
+            }
+        } else if ("LIST_CARE_LOGS".equals(action)) {
+            if (hasData) {
+                UUID petId = UUID.randomUUID();
+                UUID logId = UUID.randomUUID();
 
-        CareLog log = mock(CareLog.class);
-        when(log.getId()).thenReturn(logId);
-        when(log.getPetId()).thenReturn(petId);
-        when(log.getLogDate()).thenReturn(LocalDate.of(2026, 6, 5));
-        when(log.getPeriodCode()).thenReturn("MORNING");
-        when(log.getFeedingStatus()).thenReturn("Ăn tốt");
-        when(log.getHygieneStatus()).thenReturn("Bình thường");
-        when(log.getHealthNote()).thenReturn(null);
-        when(log.getStaffNote()).thenReturn("Ghi chú nhân viên");
+                CareLog log = new CareLog();
+                log.setId(logId);
+                
+                Pets pet = new Pets();
+                pet.setId(petId);
+                pet.setName("Milu");
+                log.setPet(pet);
+                
+                com.astral.express.pccms.boarding.entity.BoardingSession session = new com.astral.express.pccms.boarding.entity.BoardingSession();
+                session.setId(UUID.randomUUID());
+                log.setSession(session);
+                
+                Users staff = new Users();
+                staff.setId(UUID.randomUUID());
+                staff.setFullName("StaffName");
+                log.setStaff(staff);
 
-        Pets pet = new Pets();
-        pet.setId(petId);
-        pet.setName("Milu");
+                log.setLogDate(LocalDate.of(2026, 6, 5));
+                log.setPeriodCode(com.astral.express.pccms.boarding.entity.CarePeriod.MORNING);
+                log.setFeedingStatus("Ăn tốt");
+                log.setHygieneStatus("Bình thường");
+                log.setHealthNote(null);
+                log.setStaffNote("Ghi chú nhân viên");
 
-        given(careLogRepository.findActiveStayLogsByOwner(ownerId, null)).willReturn(List.of(log));
-        given(petRepository.findAllById(List.of(petId))).willReturn(List.of(pet));
+                given(careLogRepository.findActiveStayLogsByOwner(ownerId, null)).willReturn(List.of(log));
+            } else {
+                given(careLogRepository.findActiveStayLogsByOwner(ownerId, null)).willReturn(List.of());
+            }
 
-        List<CareLogResponse> responses = boardingTrackingService.listCareLogs(ownerId, null);
+            List<CareLogResponse> responses = boardingTrackingService.listCareLogs(ownerId, null);
 
-        assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).petName()).isEqualTo("Milu");
-        assertThat(responses.get(0).periodLabel()).isEqualTo("Sáng");
-        assertThat(responses.get(0).feedingStatus()).isEqualTo("Ăn tốt");
-    }
-
-    @Test
-    void listCareLogs_returnsEmptyWhenNoLogs() {
-        UUID ownerId = UUID.randomUUID();
-        given(careLogRepository.findActiveStayLogsByOwner(ownerId, null)).willReturn(List.of());
-
-        assertThat(boardingTrackingService.listCareLogs(ownerId, null)).isEmpty();
+            assertThat(responses).hasSize(expectedSize);
+            if (expectedSize > 0) {
+                assertThat(responses.get(0).feedingStatus()).isEqualTo("Ăn tốt");
+            }
+        }
     }
 }

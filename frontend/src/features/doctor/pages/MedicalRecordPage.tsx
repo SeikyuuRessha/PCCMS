@@ -1,15 +1,17 @@
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, FormProvider } from "react-hook-form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast } from "react-hot-toast";
 import { Tag } from "~/components/atoms";
-import { EmptyState } from "~/components/molecules";
+import { Card, EmptyState } from "~/components/molecules";
+import { medicalRecordApi } from "~/shared/api/medicalRecordApi";
+import { petApi } from "~/shared/api/petApi";
+import { parseApiError } from "~/shared/utils/errorHandlers";
 import { VitalSignsForm, vitalSignsSchema } from "../components/VitalSignsForm";
 import { PrescriptionTable, prescriptionFormSchema } from "../components/PrescriptionTable";
-import { medicalRecordApi } from "~/shared/api/medicalRecordApi";
-import { toast } from "react-hot-toast";
-import { useEffect } from "react";
 
 const fullRecordSchema = z.object({
     vitalSigns: vitalSignsSchema,
@@ -18,21 +20,71 @@ const fullRecordSchema = z.object({
 
 type FullRecordFormValues = z.infer<typeof fullRecordSchema>;
 
+function buildDosage(item: FullRecordFormValues["prescription"]["items"][number]) {
+    const parts = [item.dosage, item.frequency, item.durationDays].map(Number);
+    if (parts.every((value) => Number.isFinite(value) && value > 0)) {
+        return `${parts[0]} x ${parts[1]} x ${parts[2]}`;
+    }
+    return item.dosage ? String(item.dosage) : "";
+}
+
+function toPrescriptionRequest(data: FullRecordFormValues) {
+    return {
+        items: data.prescription.items
+            .filter((item) => item.medicineId && item.quantity > 0 && item.instruction)
+            .map((item) => ({
+                medicineId: item.medicineId,
+                dosage: buildDosage(item),
+                quantity: item.quantity,
+                instruction: item.instruction,
+            })),
+    };
+}
+
+function validatePrescriptionForFinalize(data: FullRecordFormValues) {
+    const incompleteItem = data.prescription.items.find((item) => !item.medicineId || !item.quantity || !item.instruction);
+    if (incompleteItem) {
+        throw new Error("Vui lòng hoàn tất hoặc xóa dòng thuốc chưa đầy đủ trước khi chốt bệnh án");
+    }
+}
+
+function formatAge(months?: number) {
+    if (months == null) return "-";
+    if (months < 12) return `${months} tháng`;
+    const years = Math.floor(months / 12);
+    const rest = months % 12;
+    return rest ? `${years} năm ${rest} tháng` : `${years} năm`;
+}
+
 export function MedicalRecordPage() {
-    const { id } = useParams<{ id: string }>();
+    const { id, appointmentId } = useParams<{ id?: string; appointmentId?: string }>();
     const queryClient = useQueryClient();
 
-    const {
-        data: record,
-        isLoading,
-        isError,
-    } = useQuery({
-        queryKey: ["medicalRecord", id],
-        queryFn: () => medicalRecordApi.getMedicalRecordById(id as string),
-        enabled: !!id,
+    const recordQuery = useQuery({
+        queryKey: ["medicalRecord", id, appointmentId],
+        queryFn: () => {
+            if (id) return medicalRecordApi.getMedicalRecordById(id);
+            if (appointmentId) return medicalRecordApi.getOrCreateMedicalRecordByAppointmentId(appointmentId);
+            return Promise.reject(new Error("Thiếu mã bệnh án hoặc mã lịch hẹn"));
+        },
+        enabled: !!id || !!appointmentId,
     });
 
+    const record = recordQuery.data;
+    const recordId = record?.id;
     const isFinalized = record?.recordStatus === "FINALIZED";
+
+    const petQuery = useQuery({
+        queryKey: ["pet", record?.petId],
+        queryFn: () => petApi.getPetById(record!.petId),
+        enabled: !!record?.petId,
+    });
+
+    const prescriptionsQuery = useQuery({
+        queryKey: ["medicalRecordPrescriptions", recordId],
+        queryFn: () => medicalRecordApi.listPrescriptions(recordId!),
+        enabled: !!recordId,
+    });
 
     const methods = useForm<FullRecordFormValues>({
         resolver: zodResolver(fullRecordSchema) as any,
@@ -43,73 +95,115 @@ export function MedicalRecordPage() {
     });
 
     useEffect(() => {
-        if (record) {
-            methods.reset({
-                vitalSigns: {
-                    temperatureC: record.temperatureC,
-                    heartRateBpm: record.heartRateBpm,
-                    respiratoryRateBpm: record.respiratoryRateBpm,
-                    weightKg: record.weightKg,
-                    bloodPressure: record.bloodPressure,
-                    spo2Percent: record.spo2Percent,
-                    mucousMembraneColor: record.mucousMembraneColor,
-                    capillaryRefillSeconds: record.capillaryRefillSeconds,
-                    preliminaryDiagnosis: record.preliminaryDiagnosis,
-                    finalDiagnosis: record.finalDiagnosis,
-                },
-                prescription: { items: [] }, // In a real app we'd fetch prescription items too
-            });
-        }
+        if (!record) return;
+        methods.reset({
+            vitalSigns: {
+                temperatureC: record.temperatureC,
+                heartRateBpm: record.heartRateBpm,
+                respiratoryRateBpm: record.respiratoryRateBpm,
+                weightKg: record.weightKg,
+                bloodPressure: record.bloodPressure,
+                spo2Percent: record.spo2Percent,
+                mucousMembraneColor: record.mucousMembraneColor,
+                capillaryRefillSeconds: record.capillaryRefillSeconds,
+                preliminaryDiagnosis: record.preliminaryDiagnosis,
+                finalDiagnosis: record.finalDiagnosis,
+                treatmentNote: record.treatmentNote,
+            },
+            prescription: { items: [] },
+        });
     }, [record, methods]);
+
+    const invalidateRecord = async () => {
+        await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["medicalRecord", id, appointmentId] }),
+            queryClient.invalidateQueries({ queryKey: ["medicalRecordPrescriptions", recordId] }),
+        ]);
+    };
 
     const saveDraftMutation = useMutation({
         mutationFn: async (data: FullRecordFormValues) => {
-            if (!id) throw new Error("Missing ID");
-            await medicalRecordApi.updateMedicalRecord(id, data.vitalSigns as any);
-            if (data.prescription.items.length > 0) {
-                await medicalRecordApi.createPrescription(id, { items: data.prescription.items });
+            if (!recordId) throw new Error("Thiếu mã bệnh án");
+            await medicalRecordApi.updateMedicalRecord(recordId, data.vitalSigns as any);
+            const prescriptionRequest = toPrescriptionRequest(data);
+            if (prescriptionRequest.items.length > 0) {
+                await medicalRecordApi.createPrescription(recordId, prescriptionRequest);
             }
         },
-        onSuccess: () => {
-            toast.success("Đã lưu nháp thành công");
-            queryClient.invalidateQueries({ queryKey: ["medicalRecord", id] });
+        onSuccess: async () => {
+            methods.setValue("prescription.items", []);
+            toast.success("Đã lưu nháp bệnh án");
+            await invalidateRecord();
         },
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
     const finalizeMutation = useMutation({
         mutationFn: async (data: FullRecordFormValues) => {
-            if (!id) throw new Error("Missing ID");
-            await medicalRecordApi.finalizeMedicalRecord(id, {
-                finalDiagnosis: data.vitalSigns.finalDiagnosis || "",
-            });
-            if (data.prescription.items.length > 0) {
-                await medicalRecordApi.createPrescription(id, { items: data.prescription.items });
+            if (!recordId) throw new Error("Thiếu mã bệnh án");
+            validatePrescriptionForFinalize(data);
+            await medicalRecordApi.updateMedicalRecord(recordId, data.vitalSigns as any);
+            const prescriptionRequest = toPrescriptionRequest(data);
+            if (prescriptionRequest.items.length > 0) {
+                await medicalRecordApi.createPrescription(recordId, prescriptionRequest);
             }
+            await medicalRecordApi.finalizeMedicalRecord(recordId, {
+                finalDiagnosis: data.vitalSigns.finalDiagnosis || "",
+                treatmentNote: data.vitalSigns.treatmentNote,
+            });
         },
-        onSuccess: () => {
-            toast.success("Đã chốt bệnh án thành công");
-            queryClient.invalidateQueries({ queryKey: ["medicalRecord", id] });
+        onSuccess: async () => {
+            methods.setValue("prescription.items", []);
+            toast.success("Đã chốt bệnh án");
+            await invalidateRecord();
         },
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
-    if (isLoading) {
+    if (recordQuery.isLoading) {
         return (
-            <div className="flex justify-center p-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="flex items-center gap-2 p-8 text-sm text-slate-500">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-primary-600" />
+                Đang tải bệnh án...
             </div>
         );
     }
 
-    if (isError || !record) {
+    if (recordQuery.isError || !record) {
         return <EmptyState title="Lỗi" description="Không thể tải bệnh án" />;
     }
 
+    const pet = petQuery.data;
+    const prescriptions = prescriptionsQuery.data ?? [];
+
     return (
         <FormProvider {...methods}>
-            <div className="mb-4 flex justify-between items-center">
+            <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-bold">Chi tiết bệnh án: {record.recordCode}</h2>
                 {isFinalized && <Tag tone="green">Đã chốt</Tag>}
             </div>
+
+            <div className="mb-6">
+                <Card title="Thông tin thú cưng">
+                    {petQuery.isLoading ? (
+                        <p className="text-sm text-slate-500">Đang tải hồ sơ thú cưng...</p>
+                    ) : !pet ? (
+                        <p className="text-sm text-slate-500">Chưa tải được hồ sơ thú cưng.</p>
+                    ) : (
+                        <div className="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-4">
+                            <div><span className="text-slate-500">Tên:</span> <span className="font-medium">{pet.name}</span></div>
+                            <div><span className="text-slate-500">Loài:</span> <span className="font-medium">{pet.speciesName || "-"}</span></div>
+                            <div><span className="text-slate-500">Giống:</span> <span className="font-medium">{pet.breedName || "-"}</span></div>
+                            <div><span className="text-slate-500">Giới tính:</span> <span className="font-medium">{pet.sex}</span></div>
+                            <div><span className="text-slate-500">Tuổi:</span> <span className="font-medium">{formatAge(pet.estimatedAgeMonths)}</span></div>
+                            <div><span className="text-slate-500">Cân nặng hồ sơ:</span> <span className="font-medium">{pet.weightKg ? `${pet.weightKg} kg` : "-"}</span></div>
+                            <div className="md:col-span-2"><span className="text-slate-500">Dị ứng:</span> <span className="font-medium">{pet.allergyNote || "-"}</span></div>
+                            <div className="md:col-span-2"><span className="text-slate-500">Ghi chú chăm sóc:</span> <span className="font-medium">{pet.specialNote || pet.nutritionNote || "-"}</span></div>
+                        </div>
+                    )}
+                </Card>
+            </div>
+
             <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
                 <VitalSignsForm
                     disabled={isFinalized}
@@ -127,97 +221,37 @@ export function MedicalRecordPage() {
                 />
 
                 <div className="space-y-6">
-                    {record.petId && (
-                        <PetProfileSummary petId={record.petId} showClinicalNotes />
-                    )}
                     <PrescriptionTable disabled={isFinalized} />
-                </div>
-                <div className="mt-4 grid gap-4">
-                    <Textarea
-                        label="Chẩn đoán ban đầu"
-                        value="Nghi viêm đường ruột cấp."
-                        rows={3}
-                    />
-                    <Textarea
-                        label="Chẩn đoán xác định"
-                        value="Theo dõi thêm sau xét nghiệm máu."
-                        rows={3}
-                    />
-                    <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                        <p className="font-medium">Tệp kết quả xét nghiệm</p>
-                        <p className="mt-2 text-sm text-slate-500">
-                            Hỗ trợ PDF, PNG, JPG. Tối đa 10MB mỗi tệp.
-                        </p>
-                        <Button variant="outline" className="mt-3">
-                            Tải tệp lên
-                        </Button>
-                    </div>
-                </div>
-                <div className="mt-6 flex gap-2">
-                    <Button>Lưu nháp</Button>
-                    <Button variant="secondary">Xác nhận lưu bệnh án</Button>
-                </div>
-            </Card>
 
-            <div className="space-y-6">
-                <Card title="Kê đơn thuốc">
-                    <div className="space-y-4">
-                        <Select
-                            label="Thuốc"
-                            options={["Amoxicillin", "Metronidazole", "Vitamin tổng hợp"]}
-                        />
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <Input label="Liều lượng" placeholder="2 viên/lần" />
-                            <Input label="Số lượng kê" placeholder="10" />
-                        </div>
-                        <Textarea label="Hướng dẫn dùng" value="Ngày 2 lần sau ăn" rows={3} />
-                        <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-                            Tồn kho hiện tại: <span className="font-semibold">24 hộp</span>
-                        </div>
-                        <Button className="w-full py-3">Thêm vào đơn thuốc</Button>
-                    </div>
-                </Card>
-                <Card title="Đơn đã kê hôm nay">
-                    <DataTable
-                        columns={["Thuốc", "Liều lượng", "Số lượng", "Hướng dẫn"]}
-                        rows={[["Amoxicillin", "2 viên/lần", "10", "Ngày 2 lần sau ăn"]]}
-                    />
-                </Card>
-            </div>
-        );
-    }
-
-    if (isError || !record) {
-        return <EmptyState title="Lỗi" description="Không thể tải bệnh án" />;
-    }
-
-    return (
-        <FormProvider {...methods}>
-            <div className="mb-4 flex justify-between items-center">
-                <h2 className="text-xl font-bold">Chi tiết bệnh án: {record.recordCode}</h2>
-                {isFinalized && <Tag tone="green">Đã chốt</Tag>}
-            </div>
-            <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-                <VitalSignsForm 
-                    disabled={isFinalized}
-                    initialData={methods.getValues().vitalSigns}
-                    onSaveDraft={(data) => {
-                        methods.setValue('vitalSigns', data);
-                        saveDraftMutation.mutate(methods.getValues());
-                    }}
-                    onFinalize={(data) => {
-                        methods.setValue('vitalSigns', data);
-                        finalizeMutation.mutate(methods.getValues());
-                    }}
-                    isSaving={saveDraftMutation.isPending}
-                    isFinalizing={finalizeMutation.isPending}
-                />
-
-                <div className="space-y-6">
-                    <PrescriptionTable disabled={isFinalized} />
+                    <Card title="Đơn thuốc đã tạo">
+                        {prescriptions.length === 0 ? (
+                            <p className="text-sm text-slate-500">Chưa có đơn thuốc.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                {prescriptions.map((prescription) => (
+                                    <div key={prescription.id} className="rounded-md border border-slate-200 p-3">
+                                        <div className="mb-2 flex items-center justify-between gap-3">
+                                            <div className="font-medium text-slate-900">{prescription.prescriptionCode}</div>
+                                            <div className="text-xs text-slate-500">{new Date(prescription.issuedAt).toLocaleString("vi-VN")}</div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {prescription.items.map((item) => (
+                                                <div key={item.id} className="text-sm text-slate-700">
+                                                    <span className="font-medium">{item.medicineName || item.medicineId}</span>
+                                                    {item.medicineUnit && <span> ({item.medicineUnit})</span>}
+                                                    <span> - SL {item.quantity}</span>
+                                                    {item.dosage && <span> - {item.dosage}</span>}
+                                                    {item.instruction && <span> - {item.instruction}</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </Card>
                 </div>
             </div>
         </FormProvider>
     );
 }
-

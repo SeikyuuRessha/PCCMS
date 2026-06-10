@@ -75,4 +75,26 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
             @Param("statusCode") RoomStatus statusCode,
             @Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt);
+
+    @Query("SELECT r FROM Room r WHERE (:roomTypeId IS NULL OR r.roomType.id = :roomTypeId) AND (:statusCode IS NULL OR cast(r.statusCode as string) = :statusCode)")
+    Page<Room> searchRooms(@Param("roomTypeId") UUID roomTypeId, @Param("statusCode") String statusCode, Pageable pageable);
+
+    boolean existsByRoomCodeIgnoreCase(String roomCode);
+
+    boolean existsByRoomCodeIgnoreCaseAndIdNot(String roomCode, UUID id);
+
+    @Query("SELECT COUNT(ra) FROM RoomAllocation ra WHERE ra.room.id = :roomId")
+    long countRoomAllocations(@Param("roomId") UUID roomId);
+
+    Page<Room> findByRoomTypeIdAndStatusCode(UUID roomTypeId, RoomStatus statusCode, Pageable pageable);
+
+    Page<Room> findByRoomTypeId(UUID roomTypeId, Pageable pageable);
+
+    Page<Room> findByStatusCode(RoomStatus statusCode, Pageable pageable);
+
+    boolean existsByName(String name);
+
+    boolean existsByNameAndIdNot(String name, UUID id);
+
+    boolean existsByRoomTypeId(UUID roomTypeId);
 }

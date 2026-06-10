@@ -1,17 +1,19 @@
+import { useEffect, useState } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { Plus, Trash2 } from "lucide-react";
+import { z } from "zod";
 import { Button, Input, Textarea } from "~/components/atoms";
 import { Card, DataTable } from "~/components/molecules";
-import { z } from "zod";
-import { useEffect } from "react";
+import { medicineApi, type MedicineSuggestion } from "~/shared/api/medicineApi";
 
 export const prescriptionItemSchema = z.object({
-    medicineId: z.string().min(1, "Vui lòng chọn thuốc"),
+    medicineId: z.string().min(1, "Vui lòng chọn thuốc từ danh sách"),
+    medicineName: z.string().optional(),
     dosage: z.coerce.number().min(0).optional(),
     frequency: z.coerce.number().min(0).optional(),
     durationDays: z.coerce.number().min(0).optional(),
     quantity: z.coerce.number().min(1, "Số lượng phải >= 1"),
-    dosageInstruction: z.string().min(1, "Vui lòng nhập hướng dẫn"),
+    instruction: z.string().min(1, "Vui lòng nhập hướng dẫn"),
 });
 
 export const prescriptionFormSchema = z.object({
@@ -24,28 +26,134 @@ interface PrescriptionTableProps {
     disabled?: boolean;
 }
 
+function MedicinePicker({
+    index,
+    disabled,
+    error,
+}: {
+    index: number;
+    disabled: boolean;
+    error?: string;
+}) {
+    const { register, setValue, getValues } = useFormContext<any>();
+    const selectedName = useWatch({ name: `prescription.items.${index}.medicineName` }) || "";
+    const [keyword, setKeyword] = useState(selectedName);
+    const [open, setOpen] = useState(false);
+    const [suggestions, setSuggestions] = useState<MedicineSuggestion[]>([]);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
+    useEffect(() => {
+        setKeyword(selectedName);
+    }, [selectedName]);
+
+    useEffect(() => {
+        const trimmed = keyword.trim();
+        if (!open || disabled || trimmed.length < 1) {
+            setSuggestions([]);
+            setIsLoadingSuggestions(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsLoadingSuggestions(true);
+        medicineApi
+            .suggestMedicines(trimmed)
+            .then((items) => {
+                if (!cancelled) {
+                    setSuggestions(items);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setSuggestions([]);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsLoadingSuggestions(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [disabled, keyword, open]);
+
+    const selectMedicine = (medicine: MedicineSuggestion) => {
+        const firstInstruction = (medicine.defaultInstruction || "")
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .find(Boolean);
+        setValue(`prescription.items.${index}.medicineId`, medicine.id, { shouldValidate: true, shouldDirty: true });
+        setValue(`prescription.items.${index}.medicineName`, medicine.name, { shouldValidate: true, shouldDirty: true });
+        if (!getValues(`prescription.items.${index}.instruction`) && firstInstruction) {
+            setValue(`prescription.items.${index}.instruction`, firstInstruction, { shouldValidate: true, shouldDirty: true });
+        }
+        setKeyword(medicine.name);
+        setOpen(false);
+    };
+
+    return (
+        <div className="relative w-64">
+            <input type="hidden" {...register(`prescription.items.${index}.medicineId`)} />
+            <Input
+                value={keyword}
+                placeholder="Nhập tên thuốc"
+                disabled={disabled}
+                onFocus={() => setOpen(true)}
+                onChange={(event) => {
+                    setKeyword(event.target.value);
+                    setOpen(true);
+                    setValue(`prescription.items.${index}.medicineId`, "", { shouldValidate: true, shouldDirty: true });
+                    setValue(`prescription.items.${index}.medicineName`, event.target.value, { shouldDirty: true });
+                }}
+                error={error}
+            />
+            {open && !disabled && (
+                <div className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                    {isLoadingSuggestions ? (
+                        <div className="px-3 py-2 text-sm text-slate-500">Đang tìm thuốc...</div>
+                    ) : suggestions.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-slate-500">Không có thuốc phù hợp</div>
+                    ) : (
+                        suggestions.map((medicine) => (
+                            <button
+                                key={medicine.id}
+                                type="button"
+                                className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50 focus:bg-slate-50"
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => selectMedicine(medicine)}
+                            >
+                                <span className="block font-medium text-slate-900">{medicine.name}</span>
+                                <span className="block text-xs text-slate-500">
+                                    {medicine.categoryName || "Chưa phân nhóm"} - {medicine.unit} - tồn {medicine.currentStock}
+                                </span>
+                            </button>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) {
     const {
         control,
         register,
         setValue,
         formState: { errors },
-    } = useFormContext<PrescriptionFormValues>();
+    } = useFormContext<any>();
 
     const { fields, append, remove } = useFieldArray({
         control,
-        name: "items",
+        name: "prescription.items",
     });
 
-    const watchItems =
-        useWatch({
-            control,
-            name: "items",
-        }) || [];
+    const watchItems = useWatch({ control, name: "prescription.items" }) || [];
 
-    // Auto calculate total quantity
     useEffect(() => {
-        watchItems.forEach((item, index) => {
+        watchItems.forEach((item: any, index: number) => {
             const dosage = Number(item.dosage);
             const frequency = Number(item.frequency);
             const durationDays = Number(item.durationDays);
@@ -53,7 +161,7 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
             if (dosage > 0 && frequency > 0 && durationDays > 0) {
                 const calculated = dosage * frequency * durationDays;
                 if (calculated !== item.quantity) {
-                    setValue(`items.${index}.quantity`, calculated);
+                    setValue(`prescription.items.${index}.quantity`, calculated);
                 }
             }
         });
@@ -65,71 +173,29 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
                 <DataTable
                     columns={["Thuốc", "Liều x Lần x Ngày", "Tổng số lượng", "Hướng dẫn", ""]}
                     rows={fields.map((field, index) => {
-                        const itemErrors = errors.items?.[index];
+                        const itemErrors = (errors.prescription as any)?.items?.[index];
                         return [
-                            <div key={`medicine-${field.id}`} className="w-48">
-                                <Input
-                                    placeholder="ID Thuốc (VD: Amoxicillin)"
-                                    disabled={disabled}
-                                    {...register(`items.${index}.medicineId`)}
-                                    error={itemErrors?.medicineId?.message}
-                                />
-                            </div>,
+                            <MedicinePicker
+                                key={`medicine-${field.id}`}
+                                index={index}
+                                disabled={disabled}
+                                error={itemErrors?.medicineId?.message}
+                            />,
                             <div key={`calc-${field.id}`} className="flex items-center gap-2">
-                                <Input
-                                    type="number"
-                                    className="w-16"
-                                    placeholder="Liều"
-                                    disabled={disabled}
-                                    {...register(`items.${index}.dosage`, { valueAsNumber: true })}
-                                />
+                                <Input type="number" min="0" className="w-16" placeholder="Liều" disabled={disabled} {...register(`prescription.items.${index}.dosage`, { valueAsNumber: true })} />
                                 <span>x</span>
-                                <Input
-                                    type="number"
-                                    className="w-16"
-                                    placeholder="Lần"
-                                    disabled={disabled}
-                                    {...register(`items.${index}.frequency`, {
-                                        valueAsNumber: true,
-                                    })}
-                                />
+                                <Input type="number" min="0" className="w-16" placeholder="Lần" disabled={disabled} {...register(`prescription.items.${index}.frequency`, { valueAsNumber: true })} />
                                 <span>x</span>
-                                <Input
-                                    type="number"
-                                    className="w-16"
-                                    placeholder="Ngày"
-                                    disabled={disabled}
-                                    {...register(`items.${index}.durationDays`, {
-                                        valueAsNumber: true,
-                                    })}
-                                />
+                                <Input type="number" min="0" className="w-16" placeholder="Ngày" disabled={disabled} {...register(`prescription.items.${index}.durationDays`, { valueAsNumber: true })} />
                             </div>,
                             <div key={`quantity-${field.id}`} className="w-24">
-                                <Input
-                                    type="number"
-                                    disabled={disabled}
-                                    {...register(`items.${index}.quantity`, {
-                                        valueAsNumber: true,
-                                    })}
-                                    error={itemErrors?.quantity?.message}
-                                />
+                                <Input type="number" min="1" disabled={disabled} {...register(`prescription.items.${index}.quantity`, { valueAsNumber: true })} error={itemErrors?.quantity?.message} />
                             </div>,
-                            <div key={`instruction-${field.id}`} className="w-48">
-                                <Textarea
-                                    rows={2}
-                                    disabled={disabled}
-                                    {...register(`items.${index}.dosageInstruction`)}
-                                    error={itemErrors?.dosageInstruction?.message}
-                                />
+                            <div key={`instruction-${field.id}`} className="w-56">
+                                <Textarea rows={2} disabled={disabled} {...register(`prescription.items.${index}.instruction`)} error={itemErrors?.instruction?.message} />
                             </div>,
                             <div key={`action-${field.id}`} className="flex justify-center">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    disabled={disabled}
-                                    onClick={() => remove(index)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 h-auto"
-                                >
+                                <Button type="button" variant="ghost" disabled={disabled} onClick={() => remove(index)} className="h-auto p-2 text-red-500 hover:bg-red-50 hover:text-red-700">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>,
@@ -145,15 +211,16 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
                         onClick={() =>
                             append({
                                 medicineId: "",
-                                quantity: 0,
-                                dosageInstruction: "",
+                                medicineName: "",
+                                quantity: 1,
+                                instruction: "",
                                 dosage: 0,
                                 frequency: 0,
                                 durationDays: 0,
                             })
                         }
                     >
-                        <Plus className="h-4 w-4 mr-2" /> Thêm thuốc
+                        <Plus className="mr-2 h-4 w-4" /> Thêm thuốc
                     </Button>
                 )}
             </div>

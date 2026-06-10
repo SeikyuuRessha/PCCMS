@@ -19,7 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,10 +32,31 @@ public class RoomAdminServiceImpl implements RoomAdminService {
     private final RoomMapper roomMapper;
 
     @Override
+    public List<RoomTypeResponse> listRoomTypes(boolean activeOnly) {
+        List<RoomType> roomTypes = activeOnly
+                ? roomTypeRepository.findByIsActiveTrueOrderByNameAsc()
+                : roomTypeRepository.findAllByOrderByNameAsc();
+        return roomTypes.stream()
+                .map(roomMapper::toRoomTypeResponse)
+                .toList();
+    }
+
+    @Override
+    public RoomTypeResponse getRoomType(UUID id) {
+        return roomMapper.toRoomTypeResponse(findRoomType(id));
+    }
+
+    @Override
     @Transactional
     public RoomTypeResponse createRoomType(RoomTypeRequest request) {
         validateRoomTypeRequest(request);
+        String code = resolveRoomTypeCode(request.code(), request.name(), null);
+        if (roomTypeRepository.existsByCodeAndIsActiveTrue(code)) {
+            throw new BusinessException(ErrorCode.ERR_ROOM_005_TYPE_CODE_EXISTS);
+        }
         RoomType roomType = roomMapper.toRoomType(request);
+        roomType.setCode(code);
+        roomType.setIsActive(request.isActive() == null || Boolean.TRUE.equals(request.isActive()));
         return roomMapper.toRoomTypeResponse(roomTypeRepository.save(roomType));
     }
 
@@ -44,26 +64,42 @@ public class RoomAdminServiceImpl implements RoomAdminService {
     @Transactional
     public RoomTypeResponse updateRoomType(UUID id, RoomTypeRequest request) {
         validateRoomTypeRequest(request);
-        RoomType roomType = roomTypeRepository.findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ROOM_001_ROOM_TYPE_NOT_FOUND));
+        RoomType roomType = findRoomType(id);
+        String code = resolveRoomTypeCode(request.code(), request.name(), id);
+        if (roomTypeRepository.existsByCodeAndIdNot(code, id)) {
+            throw new BusinessException(ErrorCode.ERR_ROOM_005_TYPE_CODE_EXISTS);
+        }
+        Boolean previousActive = roomType.getIsActive();
         roomMapper.updateRoomType(request, roomType);
+        roomType.setCode(code);
+        if (request.isActive() == null) {
+            roomType.setIsActive(previousActive);
+        }
+        return roomMapper.toRoomTypeResponse(roomTypeRepository.save(roomType));
+    }
+
+    @Override
+    @Transactional
+    public RoomTypeResponse updateRoomTypeActive(UUID id, Boolean isActive) {
+        RoomType roomType = findRoomType(id);
+        roomType.setIsActive(Boolean.TRUE.equals(isActive));
         return roomMapper.toRoomTypeResponse(roomTypeRepository.save(roomType));
     }
 
     @Override
     @Transactional
     public void deactivateRoomType(UUID id) {
-        RoomType roomType = roomTypeRepository.findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ROOM_001_ROOM_TYPE_NOT_FOUND));
+        RoomType roomType = findRoomType(id);
+        if (roomRepository.existsByRoomTypeId(id)) {
+            throw new BusinessException(ErrorCode.ERR_ROOM_007_TYPE_IN_USE);
+        }
         roomType.setIsActive(false);
         roomTypeRepository.save(roomType);
     }
 
     @Override
     public List<RoomTypeResponse> listActiveRoomTypes() {
-        return roomTypeRepository.findByIsActiveTrueOrderByNameAsc().stream()
-                .map(roomMapper::toRoomTypeResponse)
-                .toList();
+        return listRoomTypes(true);
     }
 
     @Override
@@ -117,5 +153,38 @@ public class RoomAdminServiceImpl implements RoomAdminService {
         if (request.capacity() == null || request.capacity() < 1 || request.floor() == null || request.floor() < 1) {
             throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
         }
+    }
+
+    private RoomType findRoomType(UUID id) {
+        return roomTypeRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ROOM_001_ROOM_TYPE_NOT_FOUND));
+    }
+
+    private String resolveRoomTypeCode(String requestedCode, String name, UUID existingId) {
+        if (requestedCode != null && !requestedCode.isBlank()) {
+            return normalizeRoomTypeCode(requestedCode);
+        }
+        if (existingId != null) {
+            return findRoomType(existingId).getCode();
+        }
+
+        String prefix = normalizeRoomTypeCode(name).replaceAll("[^A-Z0-9]+", "");
+        if (prefix.length() > 10) {
+            prefix = prefix.substring(0, 10);
+        }
+        if (prefix.isBlank()) {
+            prefix = "ROOMTYPE";
+        }
+        for (int sequence = 1; sequence <= 9999; sequence++) {
+            String candidate = "RT-" + prefix + "-" + String.format("%04d", sequence);
+            if (!roomTypeRepository.existsByCodeAndIsActiveTrue(candidate)) {
+                return candidate;
+            }
+        }
+        throw new BusinessException(ErrorCode.ERR_ROOM_005_TYPE_CODE_EXISTS);
+    }
+
+    private String normalizeRoomTypeCode(String value) {
+        return value.trim().toUpperCase();
     }
 }

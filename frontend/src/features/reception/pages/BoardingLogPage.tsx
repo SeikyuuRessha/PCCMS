@@ -9,6 +9,8 @@ import { Button, Input, Tag, Textarea } from "~/components/atoms";
 import { Card, EmptyState, SummaryRow } from "~/components/molecules";
 import { boardingApi, roomAdminApi } from "~/features/boarding/api/boardingApi";
 import type { BoardingBookingResponse, BoardingStatus, CarePeriod } from "~/types/boarding";
+import { clinicTodayIso } from "~/shared/utils/dateGuards";
+import { parseApiError } from "~/shared/utils/errorHandlers";
 
 const statusTone: Record<BoardingStatus, "green" | "amber" | "blue" | "red" | "default"> = {
     RESERVED: "amber",
@@ -42,6 +44,16 @@ function formatDateTime(value?: string) {
     return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(
         new Date(value)
     );
+}
+
+function datePart(value?: string) {
+    return value ? value.slice(0, 10) : undefined;
+}
+
+function minDate(first?: string, second?: string) {
+    if (!first) return second;
+    if (!second) return first;
+    return first < second ? first : second;
 }
 
 export function BoardingLogPage() {
@@ -98,19 +110,19 @@ export function BoardingLogPage() {
             setSelectedRoomId("");
             invalidate();
         },
-        onError: () => toast.error("Không thể xác nhận booking"),
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
     const checkInMutation = useMutation({
         mutationFn: () => boardingApi.checkIn(selectedBooking!.id),
         onSuccess: invalidate,
-        onError: () => toast.error("Không thể check-in"),
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
     const startStayMutation = useMutation({
         mutationFn: () => boardingApi.startStay(selectedBooking!.id),
         onSuccess: invalidate,
-        onError: () => toast.error("Không thể bắt đầu lưu trú"),
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
     const checkOutMutation = useMutation({
@@ -119,7 +131,7 @@ export function BoardingLogPage() {
             toast.success("Đã check-out và tạo hóa đơn");
             invalidate();
         },
-        onError: () => toast.error("Không thể check-out"),
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
     const createCareLogMutation = useMutation({
@@ -140,7 +152,7 @@ export function BoardingLogPage() {
             reset();
             invalidate();
         },
-        onError: () => toast.error("Không thể thêm nhật ký"),
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
     const availableRooms = (roomsQuery.data?.content ?? []).filter(
@@ -148,6 +160,8 @@ export function BoardingLogPage() {
             room.statusCode === "AVAILABLE" &&
             room.roomTypeId === selectedBooking?.requestedRoomTypeId
     );
+    const careLogMinDate = datePart(selectedBooking?.expectedCheckinAt);
+    const careLogMaxDate = minDate(clinicTodayIso(), datePart(selectedBooking?.expectedCheckoutAt));
 
     if (bookingsQuery.isLoading) {
         return (
@@ -207,7 +221,7 @@ export function BoardingLogPage() {
             {selectedBooking && (
                 <div className="space-y-6">
                     <Card
-                        title="Van hanh booking"
+                        title="Vận hành booking"
                         right={
                             <Tag tone={statusTone[selectedBooking.statusCode]}>
                                 {selectedBooking.statusCode}
@@ -326,6 +340,8 @@ export function BoardingLogPage() {
                                 <Input
                                     type="date"
                                     label="Ngày"
+                                    min={careLogMinDate}
+                                    max={careLogMaxDate}
                                     error={errors.logDate?.message}
                                     {...register("logDate")}
                                 />
@@ -427,7 +443,7 @@ export function BoardingLogPage() {
                                         </p>
                                         {log.media.length > 0 && (
                                             <p className="mt-2 text-xs text-slate-500">
-                                                {log.media.length} anh da tai len
+                                                {log.media.length} ảnh đã tải lên
                                             </p>
                                         )}
                                     </div>
@@ -440,121 +456,3 @@ export function BoardingLogPage() {
         </div>
     );
   }
-
-  if (stays.length === 0) {
-    return (
-      <EmptyState
-        title="Thú cưng đang lưu trú"
-        description="Hiện không có thú cưng nào đang lưu trú tại trung tâm."
-      />
-    );
-  }
-
-  return (
-    <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-      <Card title="Thú cưng đang lưu trú">
-        <div className="space-y-3">
-          {stays.map((stay) => {
-            const isSelected = selectedStay?.sessionId === stay.sessionId;
-            return (
-              <button
-                key={stay.sessionId}
-                type="button"
-                onClick={() => setSelectedSessionId(stay.sessionId)}
-                className={`w-full rounded-3xl border p-4 text-left transition hover:border-emerald-300 hover:shadow-sm ${
-                  isSelected ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200'
-                }`}
-              >
-                <p className="font-semibold">
-                  {stay.roomLabel} — {stay.petName}
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Ngày {stay.currentDay}/{stay.totalDays}
-                </p>
-                <p className="mt-2 text-xs text-slate-500">{stay.todayLogSummary}</p>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-      <Card title="Cập nhật nhật ký hôm nay">
-        {selectedStay && (
-          <p className="mb-4 text-sm text-slate-500">
-            {selectedStay.roomLabel} — {selectedStay.petName}
-          </p>
-        )}
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <Select
-            label="Buổi cập nhật"
-            value={form.periodCode}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                periodCode: event.target.value as typeof form.periodCode,
-              }))
-            }
-            options={BOARDING_PERIOD_OPTIONS.map((option) => ({
-              value: option.value,
-              label: option.label,
-            }))}
-          />
-          <Select
-            label="Tình trạng ăn uống"
-            value={form.feedingStatus}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, feedingStatus: event.target.value }))
-            }
-            options={[...BOARDING_FEEDING_OPTIONS]}
-          />
-          <Select
-            label="Tình trạng vệ sinh"
-            value={form.hygieneStatus}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, hygieneStatus: event.target.value }))
-            }
-            options={[...BOARDING_HYGIENE_OPTIONS]}
-          />
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-4">
-            <p className="text-sm font-medium">Ảnh / video</p>
-            <p className="mt-2 text-xs text-slate-500">
-              Tối đa 5 tệp, mỗi tệp không quá 10MB.
-            </p>
-            <Button variant="outline" className="mt-3" disabled>
-              Tải tệp lên
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <Textarea
-            label="Ghi chú sức khỏe"
-            placeholder="Biểu hiện bất thường, nhiệt độ, giờ uống thuốc..."
-            value={form.healthNote}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, healthNote: event.target.value }))
-            }
-          />
-          <Textarea
-            label="Ghi chú nhân viên"
-            placeholder="Thói quen, tâm trạng, hoạt động trong ngày..."
-            value={form.staffNote}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, staffNote: event.target.value }))
-            }
-          />
-        </div>
-
-        <div className="mt-5 flex gap-2">
-          <Button
-            onClick={() => saveMutation.mutate()}
-            disabled={!selectedStay || saveMutation.isPending}
-          >
-            {saveMutation.isPending ? 'Đang lưu...' : 'Lưu nhật ký'}
-          </Button>
-        </div>
-      </Card>
-    </div>
-  );
-}

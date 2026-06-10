@@ -2,9 +2,9 @@ package com.astral.express.pccms.catalog.service;
 
 import com.astral.express.pccms.catalog.dto.request.ServiceCatalogRequest;
 import com.astral.express.pccms.catalog.dto.response.ServiceCatalogResponse;
-import com.astral.express.pccms.catalog.entity.ServiceCatalog;
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
-import com.astral.express.pccms.catalog.repository.ServiceCatalogRepository;
+import com.astral.express.pccms.appointment.entity.ServiceCatalog;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.repository.ServiceCatalogRepository;
 import com.astral.express.pccms.catalog.service.impl.ServiceCatalogServiceImpl;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
@@ -15,7 +15,6 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -86,41 +85,44 @@ class ServiceCatalogServiceTest {
         }
     }
 
-    @Test
-    void should_SearchByServiceCodeOrName_when_KeywordProvided() {
-        PageRequest pageable = PageRequest.of(0, 20);
-        given(serviceCatalogRepository.findAll(any(Specification.class), eq(pageable)))
-                .willReturn(new PageImpl<>(List.of(), pageable, 0));
+    @ParameterizedTest
+    @CsvFileSource(resources = "/testcases/service-catalog-search.csv", numLinesToSkip = 1)
+    void should_ProcessSearch(String ruleId, String caseId, String action, String keyword) {
+        if ("SEARCH".equals(action)) {
+            PageRequest pageable = PageRequest.of(0, 20);
+            given(serviceCatalogRepository.findAll(any(Specification.class), eq(pageable)))
+                    .willReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        serviceCatalogService.searchServices("SVC001", null, null, pageable);
+            serviceCatalogService.searchServices(keyword, null, null, pageable);
 
-        ArgumentCaptor<Specification<ServiceCatalog>> captor = ArgumentCaptor.forClass(Specification.class);
-        verify(serviceCatalogRepository).findAll(captor.capture(), eq(pageable));
+            ArgumentCaptor<Specification<ServiceCatalog>> captor = ArgumentCaptor.forClass(Specification.class);
+            verify(serviceCatalogRepository).findAll(captor.capture(), eq(pageable));
 
-        Root<ServiceCatalog> root = org.mockito.Mockito.mock(Root.class);
-        CriteriaQuery<?> query = org.mockito.Mockito.mock(CriteriaQuery.class);
-        CriteriaBuilder criteriaBuilder = org.mockito.Mockito.mock(CriteriaBuilder.class);
-        Path<String> serviceCodePath = org.mockito.Mockito.mock(Path.class);
-        Path<String> namePath = org.mockito.Mockito.mock(Path.class);
-        Expression<String> lowerServiceCode = org.mockito.Mockito.mock(Expression.class);
-        Expression<String> lowerName = org.mockito.Mockito.mock(Expression.class);
-        Predicate serviceCodePredicate = org.mockito.Mockito.mock(Predicate.class);
-        Predicate namePredicate = org.mockito.Mockito.mock(Predicate.class);
-        Predicate keywordPredicate = org.mockito.Mockito.mock(Predicate.class);
+            Root<ServiceCatalog> root = org.mockito.Mockito.mock(Root.class);
+            CriteriaQuery<?> query = org.mockito.Mockito.mock(CriteriaQuery.class);
+            CriteriaBuilder criteriaBuilder = org.mockito.Mockito.mock(CriteriaBuilder.class);
+            Path<String> serviceCodePath = org.mockito.Mockito.mock(Path.class);
+            Path<String> namePath = org.mockito.Mockito.mock(Path.class);
+            Expression<String> lowerServiceCode = org.mockito.Mockito.mock(Expression.class);
+            Expression<String> lowerName = org.mockito.Mockito.mock(Expression.class);
+            Predicate serviceCodePredicate = org.mockito.Mockito.mock(Predicate.class);
+            Predicate namePredicate = org.mockito.Mockito.mock(Predicate.class);
+            Predicate keywordPredicate = org.mockito.Mockito.mock(Predicate.class);
 
-        given(root.<String>get("serviceCode")).willReturn(serviceCodePath);
-        given(root.<String>get("name")).willReturn(namePath);
-        given(criteriaBuilder.lower(serviceCodePath)).willReturn(lowerServiceCode);
-        given(criteriaBuilder.lower(namePath)).willReturn(lowerName);
-        given(criteriaBuilder.like(lowerServiceCode, "%svc001%")).willReturn(serviceCodePredicate);
-        given(criteriaBuilder.like(lowerName, "%svc001%")).willReturn(namePredicate);
-        given(criteriaBuilder.or(serviceCodePredicate, namePredicate)).willReturn(keywordPredicate);
+            given(root.<String>get("serviceCode")).willReturn(serviceCodePath);
+            given(root.<String>get("name")).willReturn(namePath);
+            given(criteriaBuilder.lower(serviceCodePath)).willReturn(lowerServiceCode);
+            given(criteriaBuilder.lower(namePath)).willReturn(lowerName);
+            given(criteriaBuilder.like(lowerServiceCode, "%" + keyword.toLowerCase() + "%")).willReturn(serviceCodePredicate);
+            given(criteriaBuilder.like(lowerName, "%" + keyword.toLowerCase() + "%")).willReturn(namePredicate);
+            given(criteriaBuilder.or(serviceCodePredicate, namePredicate)).willReturn(keywordPredicate);
 
-        captor.getValue().toPredicate(root, query, criteriaBuilder);
+            captor.getValue().toPredicate(root, query, criteriaBuilder);
 
-        verify(root).get("serviceCode");
-        verify(root).get("name");
-        verify(criteriaBuilder).or(serviceCodePredicate, namePredicate);
+            verify(root).get("serviceCode");
+            verify(root).get("name");
+            verify(criteriaBuilder).or(serviceCodePredicate, namePredicate);
+        }
     }
 
     private void assertSearch(ServiceCatalogCsvInput csv, PageRequest pageable) {
@@ -190,7 +192,7 @@ class ServiceCatalogServiceTest {
         service.setServiceCode(code);
         service.setName(name);
         service.setCategoryCode(category);
-        service.setBasePriceVnd(BigDecimal.valueOf(100000));
+        service.setBasePriceVnd(100000L);
         service.setDurationMinutes(30);
         service.setIsActive(active);
         return service;
@@ -219,7 +221,7 @@ class ServiceCatalogServiceTest {
                 text(input, "name"),
                 category(input, "categoryCode"),
                 text(input, "description"),
-                decimal(input, "basePriceVnd"),
+                longVal(input, "basePriceVnd"),
                 integer(input, "durationMinutes"),
                 bool(input, "isActive"),
                 date(input, "effectiveFrom"),
@@ -237,9 +239,9 @@ class ServiceCatalogServiceTest {
         return value == null ? null : LocalDate.parse(value);
     }
 
-    private BigDecimal decimal(String input, String key) {
+    private Long longVal(String input, String key) {
         String value = text(input, key);
-        return value == null ? null : new BigDecimal(value);
+        return value == null ? null : Long.valueOf(value);
     }
 
     private Integer integer(String input, String key) {
@@ -271,7 +273,7 @@ class ServiceCatalogServiceTest {
             String name,
             ServiceCategory categoryCode,
             String description,
-            BigDecimal basePriceVnd,
+            Long basePriceVnd,
             Integer durationMinutes,
             Boolean isActive,
             LocalDate effectiveFrom,

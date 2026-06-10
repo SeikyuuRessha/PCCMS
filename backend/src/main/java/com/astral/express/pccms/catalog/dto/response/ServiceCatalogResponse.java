@@ -2,7 +2,8 @@ package com.astral.express.pccms.catalog.dto.response;
 
 import com.astral.express.pccms.appointment.entity.ServiceCategory;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record ServiceCatalogResponse(
@@ -10,10 +11,14 @@ public record ServiceCatalogResponse(
         String serviceCode,
         String name,
         ServiceCategory categoryCode,
-        String categoryLabel,
         String description,
-        BigDecimal basePriceVnd,
+        Long basePriceVnd,
         Integer durationMinutes,
-        Boolean isActive
+        Boolean isActive,
+        LocalDate effectiveFrom,
+        LocalDate effectiveTo,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
 }
+

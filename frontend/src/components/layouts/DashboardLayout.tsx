@@ -41,7 +41,7 @@ export function DashboardLayout() {
         <div className="flex min-h-screen bg-surface">
             <aside
                 className={cx(
-                    "fixed bottom-0 left-0 top-0 z-40 hidden flex-col border-r border-border-main bg-white transition-all duration-300 md:flex",
+                    "fixed bottom-0 left-0 top-0 z-40 hidden flex-col border-r border-border-main bg-white transition-all duration-300 md:flex print:hidden",
                     sidebarCollapsed ? "w-[72px]" : "w-[260px]"
                 )}
             >
@@ -112,11 +112,11 @@ export function DashboardLayout() {
 
             <div
                 className={cx(
-                    "flex flex-1 flex-col transition-all duration-300",
+                    "flex flex-1 flex-col transition-all duration-300 print:ml-0",
                     sidebarCollapsed ? "md:ml-[72px]" : "md:ml-[260px]"
                 )}
             >
-                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-border-main bg-white/80 px-4 backdrop-blur-md sm:px-6">
+                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-border-main bg-white/80 px-4 backdrop-blur-md sm:px-6 print:hidden">
                     <div className="flex items-center gap-3">
                         <button className="rounded-xl p-2 text-text-muted transition hover:bg-slate-100 md:hidden">
                             <Menu className="h-5 w-5" />

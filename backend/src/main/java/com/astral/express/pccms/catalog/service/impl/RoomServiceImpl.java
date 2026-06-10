@@ -1,13 +1,13 @@
 package com.astral.express.pccms.catalog.service.impl;
 
-import com.astral.express.pccms.appointment.entity.RoomType;
-import com.astral.express.pccms.appointment.repository.RoomTypeRepository;
+import com.astral.express.pccms.room.entity.RoomType;
+import com.astral.express.pccms.room.repository.RoomTypeRepository;
 import com.astral.express.pccms.catalog.dto.request.CreateRoomRequest;
 import com.astral.express.pccms.catalog.dto.request.UpdateRoomRequest;
 import com.astral.express.pccms.catalog.dto.response.RoomResponse;
-import com.astral.express.pccms.catalog.entity.Room;
-import com.astral.express.pccms.catalog.entity.RoomStatus;
-import com.astral.express.pccms.catalog.repository.RoomRepository;
+import com.astral.express.pccms.room.entity.Room;
+import com.astral.express.pccms.room.entity.RoomStatus;
+import com.astral.express.pccms.room.repository.RoomRepository;
 import com.astral.express.pccms.catalog.service.RoomService;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
@@ -114,8 +114,8 @@ public class RoomServiceImpl implements RoomService {
 
     private void ensureUniqueCode(String roomCode, UUID excludeId) {
         boolean exists = excludeId == null
-                ? roomRepository.existsByRoomCode(roomCode)
-                : roomRepository.existsByRoomCodeAndIdNot(roomCode, excludeId);
+                ? roomRepository.existsByRoomCodeIgnoreCase(roomCode)
+                : roomRepository.existsByRoomCodeIgnoreCaseAndIdNot(roomCode, excludeId);
         if (exists) {
             throw new BusinessException(ErrorCode.ERR_ROOM_002_CODE_EXISTS);
         }

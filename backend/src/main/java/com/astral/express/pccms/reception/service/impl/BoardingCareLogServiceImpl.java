@@ -3,6 +3,8 @@ package com.astral.express.pccms.reception.service.impl;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.common.helper.SqlHelper;
+import com.astral.express.pccms.filemedia.dto.UploadedFileResponse;
+import com.astral.express.pccms.filemedia.service.FileMediaService;
 import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.reception.dto.request.CareLogRequest;
 import com.astral.express.pccms.reception.dto.response.BoardingBookingResponse;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class BoardingCareLogServiceImpl implements BoardingCareLogService {
     private final SqlHelper sql;
     private final SecurityHelper securityHelper;
+    private final FileMediaService fileMediaService;
 
     @Override
     @Transactional(readOnly = true)
@@ -118,22 +121,18 @@ public class BoardingCareLogServiceImpl implements BoardingCareLogService {
             throw new BusinessException(ErrorCode.ERR_REC_005_INVALID_CARE_LOG);
         }
         ReceptionValidation.validateCareLogMedia(file.getSize(), file.getContentType());
-        Map<String, Object> asset = sql.one("""
-                INSERT INTO file_assets(original_name, stored_key, mime_type, size_bytes, uploaded_by, visibility_code)
-                VALUES (?, ?, ?, ?, ?, 'OWNER_VISIBLE')
-                RETURNING id, original_name, stored_key, mime_type, size_bytes, uploaded_by, visibility_code
-                """, file.getOriginalFilename(), "care-logs/" + UUID.randomUUID() + "/" + file.getOriginalFilename(),
-                file.getContentType(), file.getSize(), securityHelper.getCurrentUserId());
+        UUID currentUserId = securityHelper.getCurrentUserId();
+        UploadedFileResponse uploaded = fileMediaService.uploadOwnerVisibleMedia(file, currentUserId);
         sql.jdbc().update("INSERT INTO care_log_media(care_log_id, file_id, caption) VALUES (?, ?, ?)",
-                careLogId, asset.get("id"), "Ảnh/video nhật ký lưu trú");
+                careLogId, uploaded.id(), "Anh/video nhat ky luu tru");
         return new CareLogMediaResponse(
-                (UUID) asset.get("id"),
-                string(asset.get("original_name")),
-                string(asset.get("stored_key")),
-                string(asset.get("mime_type")),
-                asset.get("size_bytes") == null ? null : ((Number) asset.get("size_bytes")).longValue(),
-                (UUID) asset.get("uploaded_by"),
-                string(asset.get("visibility_code"))
+                uploaded.id(),
+                file.getOriginalFilename() == null ? "care-log-image" : file.getOriginalFilename(),
+                uploaded.url(),
+                uploaded.mimeType(),
+                uploaded.sizeBytes(),
+                currentUserId,
+                "OWNER_VISIBLE"
         );
     }
 

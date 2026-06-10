@@ -1,6 +1,5 @@
 import axiosClient from '~/shared/api/axiosClient';
 import { normalizePage, toSpringPage } from '~/shared/api/pageUtils';
-import type { PageResponse } from '~/types/api';
 import type {
   CreateMedicineCategoryRequest,
   CreateRoomRequest,
@@ -83,6 +82,10 @@ export const catalogApi = {
 
   deleteRoom: (id: string) => {
     return axiosClient.delete(`/v1/catalog/rooms/${id}`);
+  },
+
+  updateRoomStatus: (id: string, statusCode: string) => {
+    return axiosClient.patch(`/v1/catalog/rooms/${id}/status`, { statusCode });
   },
 
   // Room types

@@ -5,8 +5,11 @@ import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.common.exception.GlobalExceptionHandler;
 import com.astral.express.pccms.user.dto.request.AssignAccountRoleRequest;
+import com.astral.express.pccms.user.dto.request.CreateUserRequest;
 import com.astral.express.pccms.user.dto.request.UpdateAccountStatusRequest;
+import com.astral.express.pccms.user.dto.response.AccountCredentialResponse;
 import com.astral.express.pccms.user.dto.response.AccountResponse;
+import com.astral.express.pccms.user.dto.response.UserResponse;
 import com.astral.express.pccms.user.entity.UserStatus;
 import com.astral.express.pccms.user.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -67,7 +71,7 @@ class AdminAccountControllerTest {
         given(userService.searchAccounts(eq("staff"), eq("STAFF"), eq(UserStatus.ACTIVE), any(Pageable.class)))
                 .willReturn(PageResponse.of(new PageImpl<>(List.of(account))));
 
-        mockMvc.perform(get("/admin/accounts")
+        mockMvc.perform(get("/v1/admin/accounts")
                         .param("keyword", "staff")
                         .param("role", "STAFF")
                         .param("status", "ACTIVE"))
@@ -78,14 +82,31 @@ class AdminAccountControllerTest {
     }
 
     @Test
-    void searchAccounts_returnsBadRequest_whenCriteriaAreEmpty() throws Exception {
-        mockMvc.perform(get("/admin/accounts")
+    void searchAccounts_returnsPage_whenCriteriaAreEmpty() throws Exception {
+        AccountResponse account = accountResponse(UserStatus.ACTIVE, "OWNER", "Chu nuoi");
+        given(userService.searchAccounts(eq(" "), eq(" "), eq(null), any(Pageable.class)))
+                .willReturn(PageResponse.of(new PageImpl<>(List.of(account))));
+
+        mockMvc.perform(get("/v1/admin/accounts")
                         .param("keyword", " ")
                         .param("role", " "))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Cần nhập ít nhất một tiêu chí tìm kiếm"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.data.content[0].roleCode").value("OWNER"));
+    }
 
-        verifyNoInteractions(userService);
+    @Test
+    void createAccount_returnsCreatedUser() throws Exception {
+        CreateUserRequest request = new CreateUserRequest("Staff User", "staff@pccms.vn", "STAFF", "0901234567");
+        AccountResponse accountResp = accountResponse(UserStatus.ACTIVE, "STAFF", "Nhan vien trung tam");
+        AccountCredentialResponse response = new AccountCredentialResponse(accountResp, "temp123", true);
+        given(userService.createAccount(request)).willReturn(response);
+
+        mockMvc.perform(post("/v1/admin/accounts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(201))
+                .andExpect(jsonPath("$.data.account.roleCode").value("STAFF"));
     }
 
     @ParameterizedTest(name = "[{1}] {3}")
@@ -105,7 +126,7 @@ class AdminAccountControllerTest {
             return;
         }
 
-        mockMvc.perform(get("/admin/accounts")
+        mockMvc.perform(get("/v1/admin/accounts")
                         .param("status", "INACTIVE"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value(expectedErrorCode));
@@ -119,7 +140,7 @@ class AdminAccountControllerTest {
         AccountResponse account = accountResponse(UserStatus.LOCKED, "OWNER", "Chu nuoi");
         given(userService.updateAccountStatus(accountId, UserStatus.LOCKED)).willReturn(account);
 
-        mockMvc.perform(patch("/admin/accounts/{accountId}/status", accountId)
+        mockMvc.perform(patch("/v1/admin/accounts/{accountId}/status", accountId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateAccountStatusRequest(UserStatus.LOCKED))))
                 .andExpect(status().isOk())
@@ -144,7 +165,7 @@ class AdminAccountControllerTest {
             return;
         }
 
-        mockMvc.perform(patch("/admin/accounts/{accountId}/status", UUID.randomUUID())
+        mockMvc.perform(patch("/v1/admin/accounts/{accountId}/status", UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"statusCode\":\"BANNED\"}"))
                 .andExpect(status().isBadRequest())
@@ -159,7 +180,7 @@ class AdminAccountControllerTest {
         AccountResponse account = accountResponse(UserStatus.ACTIVE, "STAFF", "Nhan vien trung tam");
         given(userService.assignAccountRole(accountId, "STAFF")).willReturn(account);
 
-        mockMvc.perform(patch("/admin/accounts/{accountId}/role", accountId)
+        mockMvc.perform(patch("/v1/admin/accounts/{accountId}/role", accountId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new AssignAccountRoleRequest("STAFF"))))
                 .andExpect(status().isOk())
@@ -189,7 +210,7 @@ class AdminAccountControllerTest {
         willThrow(new BusinessException(ErrorCode.valueOf(expectedErrorCode)))
                 .given(userService).assignAccountRole(accountId, roleCode);
 
-        mockMvc.perform(patch("/admin/accounts/{accountId}/role", accountId)
+        mockMvc.perform(patch("/v1/admin/accounts/{accountId}/role", accountId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"roleCode\":\"" + roleCode + "\"}"))
                 .andExpect(status().isNotFound())

@@ -7,18 +7,35 @@ import type {
 
 export interface PrescriptionItemRequest {
     medicineId: string;
+    dosage?: string;
     quantity: number;
-    dosageInstruction: string;
+    instruction: string;
 }
 
 export interface CreatePrescriptionRequest {
+    note?: string;
     items: PrescriptionItemRequest[];
+}
+
+export interface PrescriptionItemResponse {
+    id: string;
+    medicineId: string;
+    medicineName?: string;
+    medicineUnit?: string;
+    dosage: string;
+    quantity: number;
+    instruction?: string;
+    unitPriceVnd: number;
 }
 
 export interface PrescriptionResponse {
     id: string;
+    prescriptionCode: string;
     medicalRecordId: string;
-    items: any[]; // define later if needed
+    vetId: string;
+    note?: string;
+    issuedAt: string;
+    items: PrescriptionItemResponse[];
 }
 
 export const medicalRecordApi = {
@@ -26,7 +43,17 @@ export const medicalRecordApi = {
         return axiosClient.get(`/v1/medical-records/${id}`);
     },
 
+    getMedicalRecords: (vetId?: string): Promise<MedicalRecordResponse[]> => {
+        return axiosClient.get("/v1/medical-records", { params: { vetId } });
+    },
+
+    getOrCreateMedicalRecordByAppointmentId: (appointmentId: string): Promise<MedicalRecordResponse> => {
+        return axiosClient.get(`/v1/medical-records/appointment/${appointmentId}`);
+    },
+
+
     updateMedicalRecord: (
+
         id: string,
         data: UpdateMedicalRecordRequest
     ): Promise<MedicalRecordResponse> => {
@@ -45,5 +72,9 @@ export const medicalRecordApi = {
         data: CreatePrescriptionRequest
     ): Promise<PrescriptionResponse> => {
         return axiosClient.post(`/v1/medical-records/${recordId}/prescriptions`, data);
+    },
+
+    listPrescriptions: (recordId: string): Promise<PrescriptionResponse[]> => {
+        return axiosClient.get(`/v1/medical-records/${recordId}/prescriptions`);
     },
 };

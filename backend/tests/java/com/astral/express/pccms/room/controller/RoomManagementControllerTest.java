@@ -61,12 +61,12 @@ class RoomManagementControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/admin/rooms")
+        mockMvc.perform(post("/v1/admin/rooms")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 
     @Test
@@ -76,20 +76,17 @@ class RoomManagementControllerTest {
                 "R001",
                 "Room 1",
                 UUID.randomUUID(),
-                "STANDARD",
                 "Standard",
                 1,
                 2,
                 RoomStatus.AVAILABLE,
-                "",
-                null,
-                null
+                ""
         );
-        PageRequest pageable = PageRequest.of(0, 1, org.springframework.data.domain.Sort.by("created_at").descending());
+        PageRequest pageable = PageRequest.of(0, 1, org.springframework.data.domain.Sort.by("createdAt").descending());
         given(roomManagementService.searchRooms(eq(null), eq(RoomStatus.AVAILABLE), eq(pageable)))
                 .willReturn(PageResponse.of(new PageImpl<>(List.of(room), pageable, 1)));
 
-        mockMvc.perform(get("/admin/rooms")
+        mockMvc.perform(get("/v1/admin/rooms")
                         .param("statusCode", "AVAILABLE")
                         .param("page", "0")
                         .param("size", "1"))

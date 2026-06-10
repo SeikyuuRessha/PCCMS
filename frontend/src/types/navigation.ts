@@ -10,6 +10,7 @@ export type ScreenKey =
     // Owner
     | "ownerDashboard"
     | "pets"
+    | "ownerAppointments"
     | "unifiedBooking"
     | "groomingBooking"
     | "groomingTracking"
@@ -33,7 +34,11 @@ export type ScreenKey =
     | "catalog"
     | "rooms"
     | "schedule"
-    | "reports";
+    | "reports"
+    | "staffProfile"
+    | "vetProfile"
+    | "adminProfile";
+
 
 export type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 

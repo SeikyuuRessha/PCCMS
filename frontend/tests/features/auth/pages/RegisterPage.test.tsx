@@ -93,4 +93,10 @@ describe("RegisterPage", () => {
             expect(toast.success).toHaveBeenCalledWith("Đăng ký tài khoản thành công!");
         });
     });
+
+    it("has type='button' for 'Về trang đăng nhập' to prevent form submission", () => {
+        renderComponent();
+        const btn = screen.getByRole("button", { name: "Về trang đăng nhập" });
+        expect(btn).toHaveAttribute("type", "button");
+    });
 });

@@ -1,6 +1,6 @@
 package com.astral.express.pccms.catalog.dto.request;
 
-import com.astral.express.pccms.catalog.entity.RoomStatus;
+import com.astral.express.pccms.room.entity.RoomStatus;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -121,6 +121,7 @@ export function RegisterPage() {
             <p className="text-center text-sm text-slate-600">
                 Đã có tài khoản?{" "}
                 <button
+                    type="button"
                     onClick={() => navigate("/login")}
                     className="font-medium text-primary-700 hover:text-primary-800"
                 >

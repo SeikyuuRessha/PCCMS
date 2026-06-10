@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/me/work-schedules")
+@RequestMapping("/v1/me/work-schedules")
 @RequiredArgsConstructor
 public class PersonalScheduleController {
     private final PersonalScheduleService personalScheduleService;

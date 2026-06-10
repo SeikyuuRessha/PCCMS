@@ -10,17 +10,22 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
 @Table(name = "service_catalog")
 @Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Setter
 public class ServiceCatalog extends AuditableEntity {
 
@@ -43,11 +48,12 @@ public class ServiceCatalog extends AuditableEntity {
     private String description;
 
     @Column(name = "base_price_vnd", nullable = false)
-    private BigDecimal basePriceVnd;
+    private Long basePriceVnd;
 
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
 
+    @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
@@ -57,3 +63,4 @@ public class ServiceCatalog extends AuditableEntity {
     @Column(name = "effective_to")
     private LocalDate effectiveTo;
 }
+

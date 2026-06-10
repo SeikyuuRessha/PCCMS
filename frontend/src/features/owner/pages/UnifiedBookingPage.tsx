@@ -11,6 +11,7 @@ import { Card, EmptyState, SummaryRow } from "~/components/molecules";
 import { boardingApi } from "~/features/boarding/api/boardingApi";
 import { petApi } from "~/shared/api/petApi";
 import { parseApiError } from "~/shared/utils/errorHandlers";
+import { clinicTodayIso } from "~/shared/utils/dateGuards";
 
 function combineLocalDateTime(date: string, time: string) {
     if (!date || !time) return "";
@@ -93,6 +94,7 @@ export function UnifiedBookingPage() {
     const checkinTime = watch("expectedCheckinTime");
     const checkoutDate = watch("expectedCheckoutDate");
     const checkoutTime = watch("expectedCheckoutTime");
+    const todayIso = clinicTodayIso();
     const checkinAt = useMemo(
         () => combineLocalDateTime(checkinDate, checkinTime),
         [checkinDate, checkinTime]
@@ -156,15 +158,6 @@ export function UnifiedBookingPage() {
 
 
 
-    const handleSubmit = () => {
-
-        if (!canProceedStep1) return;
-
-        createMutation.mutate();
-
-    };
-
-
 
     return (
         <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
@@ -217,6 +210,7 @@ export function UnifiedBookingPage() {
                             <Input
                                 type="date"
                                 label="Ngày nhận phòng"
+                                min={todayIso}
                                 error={errors.expectedCheckinDate?.message}
                                 {...register("expectedCheckinDate")}
                             />
@@ -229,6 +223,7 @@ export function UnifiedBookingPage() {
                             <Input
                                 type="date"
                                 label="Ngày trả phòng"
+                                min={checkinDate || todayIso}
                                 error={errors.expectedCheckoutDate?.message}
                                 {...register("expectedCheckoutDate")}
                             />
@@ -357,5 +352,3 @@ export function UnifiedBookingPage() {
     );
 
 }
-
-

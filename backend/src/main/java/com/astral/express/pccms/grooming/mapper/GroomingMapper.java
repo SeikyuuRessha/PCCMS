@@ -1,14 +1,14 @@
 package com.astral.express.pccms.grooming.mapper;
 
 import com.astral.express.pccms.billing.entity.Invoice;
-import com.astral.express.pccms.boarding.entity.ServiceCatalog;
+import com.astral.express.pccms.appointment.entity.ServiceCatalog;
 import com.astral.express.pccms.grooming.dto.response.GroomingInvoiceSummaryResponse;
 import com.astral.express.pccms.grooming.dto.response.GroomingServiceResponse;
 import com.astral.express.pccms.grooming.dto.response.GroomingStationResponse;
 import com.astral.express.pccms.grooming.dto.response.GroomingTicketResponse;
-import com.astral.express.pccms.grooming.entity.Appointment;
+import com.astral.express.pccms.appointment.entity.Appointment;
 import com.astral.express.pccms.grooming.entity.GroomingStation;
-import com.astral.express.pccms.grooming.entity.GroomingTicket;
+import com.astral.express.pccms.appointment.entity.GroomingTicket;
 import com.astral.express.pccms.user.entity.Users;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +33,7 @@ public class GroomingMapper {
                 service.getId(),
                 service.getServiceCode(),
                 service.getName(),
-                service.getBasePriceVnd(),
+                service.getBasePriceVnd() == null ? null : service.getBasePriceVnd().longValue(),
                 service.getDurationMinutes(),
                 appointment.getScheduledStartAt(),
                 appointment.getScheduledEndAt(),
@@ -48,8 +48,8 @@ public class GroomingMapper {
                 ticket.getCompletedAt(),
                 ticket.getOwnerNote(),
                 ticket.getInternalNote(),
-                appointment.getServiceOrder().getBaseAmountVnd(),
-                appointment.getServiceOrder().getFinalAmountVnd(),
+                appointment.getServiceOrder().getBaseAmountVnd() == null ? null : appointment.getServiceOrder().getBaseAmountVnd().longValue(),
+                appointment.getServiceOrder().getFinalAmountVnd() == null ? null : appointment.getServiceOrder().getFinalAmountVnd().longValue(),
                 toInvoiceSummary(invoice));
     }
 
@@ -59,7 +59,7 @@ public class GroomingMapper {
                 service.getServiceCode(),
                 service.getName(),
                 service.getDescription(),
-                service.getBasePriceVnd(),
+                service.getBasePriceVnd() == null ? null : service.getBasePriceVnd().longValue(),
                 service.getDurationMinutes(),
                 service.getIsActive());
     }
@@ -85,3 +85,5 @@ public class GroomingMapper {
                 invoice.getIssuedAt());
     }
 }
+
+

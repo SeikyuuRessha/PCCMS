@@ -21,7 +21,7 @@ describe("userApi", () => {
 
         const result = await userApi.getProfile();
         expect(result).toEqual(mockUser);
-        expect(axiosClient.get).toHaveBeenCalledWith("/users/me");
+        expect(axiosClient.get).toHaveBeenCalledWith("/v1/users/me");
     });
 
     it("updates profile successfully", async () => {
@@ -29,15 +29,15 @@ describe("userApi", () => {
 
         const result = await userApi.updateProfile({ fullName: "New Name" });
         expect(result).toEqual(mockUser);
-        expect(axiosClient.put).toHaveBeenCalledWith("/users/me", { fullName: "New Name" });
+        expect(axiosClient.put).toHaveBeenCalledWith("/v1/users/me", { fullName: "New Name" });
     });
 
     it("changes password successfully", async () => {
-        vi.mocked(axiosClient.patch).mockResolvedValueOnce(undefined);
+        vi.mocked(axiosClient.put).mockResolvedValueOnce(undefined);
 
-        await userApi.changePassword({ oldPassword: "123", newPassword: "456" });
-        expect(axiosClient.patch).toHaveBeenCalledWith("/users/me/password", {
-            oldPassword: "123",
+        await userApi.changePassword({ currentPassword: "123", newPassword: "456" });
+        expect(axiosClient.put).toHaveBeenCalledWith("/v1/users/me/password", {
+            currentPassword: "123",
             newPassword: "456",
         });
     });

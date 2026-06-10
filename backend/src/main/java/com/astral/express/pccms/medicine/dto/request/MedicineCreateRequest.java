@@ -5,11 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 public record MedicineCreateRequest(
-        @NotBlank(message = "Medicine code is required")
         @Size(max = 60, message = "Medicine code must not exceed 60 characters")
         String medicineCode,
 

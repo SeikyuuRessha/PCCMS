@@ -20,6 +20,7 @@
 		<java.version>25</java.version>
 		<org.mapstruct.version>1.6.3</org.mapstruct.version>
 		<io.jwt.version>0.13.0</io.jwt.version>
+		<aws.sdk.version>2.29.52</aws.sdk.version>
 	</properties>
 
 	<dependencies>
@@ -55,9 +56,9 @@
 
 		<!-- Cloud media storage -->
 		<dependency>
-			<groupId>com.cloudinary</groupId>
-			<artifactId>cloudinary-http5</artifactId>
-			<version>2.0.0</version>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>${aws.sdk.version}</version>
 		</dependency>
 
 		<!-- Validation -->

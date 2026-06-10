@@ -54,7 +54,7 @@ export function PetDetailView({
       <section className="space-y-3">
         <h4 className="text-sm font-semibold text-slate-700">Thông tin nhận diện</h4>
         <div className="grid gap-3 sm:grid-cols-2">
-          <DetailItem label="Loài" value={pet.speciesName} />
+          <DetailItem label="Loài" value={display(pet.speciesName)} />
           <DetailItem label="Giống" value={display(pet.breedName)} />
           <DetailItem label="Giới tính" value={formatSex(pet.sex)} />
           <DetailItem label="Ngày sinh / Tuổi" value={formatAge(pet)} />

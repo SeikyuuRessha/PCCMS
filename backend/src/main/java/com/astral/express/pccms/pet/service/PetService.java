@@ -11,6 +11,7 @@ public interface PetService {
 
     PetResponse createPet(CreatePetRequest request);
     PageResponse<PetResponse> listPets(Boolean isActive, Pageable pageable);
+    PageResponse<PetResponse> listPets(java.util.UUID ownerId, Boolean isActive, Pageable pageable);
     PetResponse updatePet(java.util.UUID petId, com.astral.express.pccms.pet.dto.request.UpdatePetRequest request);
     PetResponse getPet(java.util.UUID petId);
     void deactivatePet(java.util.UUID petId);

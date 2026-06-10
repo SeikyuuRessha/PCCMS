@@ -118,6 +118,13 @@ public class AppointmentController {
         return ApiResponse.success(appointmentService.checkIn(appointmentId, staffId), "Tiếp nhận thành công");
     }
 
+    @PostMapping("/{appointmentId}/start-exam")
+    @PreAuthorize("hasRole('VETERINARIAN')")
+    public ApiResponse<AppointmentResponse> startExam(@PathVariable UUID appointmentId) {
+        UUID vetId = securityHelper.getCurrentUserId();
+        return ApiResponse.success(appointmentService.startExam(appointmentId, vetId), "Bắt đầu khám thành công");
+    }
+
     @PostMapping("/{appointmentId}/cancel")
     @PreAuthorize("hasAuthority('APPOINTMENT_CREATE') or hasAuthority('APPOINTMENT_RECEIVE')")
     public ApiResponse<AppointmentResponse> cancel(@PathVariable UUID appointmentId) {

@@ -10,6 +10,9 @@ import com.astral.express.pccms.medicalrecord.entity.RecordStatus;
 import com.astral.express.pccms.medicalrecord.mapper.MedicalRecordMapper;
 import com.astral.express.pccms.medicalrecord.repository.MedicalRecordRepository;
 import com.astral.express.pccms.medicalrecord.event.MedicalRecordFinalizedEvent;
+import com.astral.express.pccms.appointment.service.AppointmentService;
+import com.astral.express.pccms.appointment.dto.response.AppointmentResponse;
+import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.medicalrecord.service.MedicalRecordService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -27,9 +31,13 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class MedicalRecordServiceImpl implements MedicalRecordService {
 
+
     private final MedicalRecordRepository medicalRecordRepository;
     private final MedicalRecordMapper medicalRecordMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final AppointmentService appointmentService;
+    private final SecurityHelper securityHelper;
+
 
     @Override
     @Transactional
@@ -93,6 +101,7 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
         record.setLockedAt(OffsetDateTime.now());
 
         MedicalRecord savedRecord = medicalRecordRepository.save(record);
+        appointmentService.completeMedicalAppointment(savedRecord.getAppointmentId(), currentUserIdOrNull());
         log.info("Medical record {} finalized for pet {}", recordId, record.getPetId());
 
         eventPublisher.publishEvent(new MedicalRecordFinalizedEvent(
@@ -105,19 +114,19 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
     }
 
     private void validateVitals(BigDecimal temperature, Integer heartRate, Integer respiratoryRate, Integer spo2, BigDecimal weight) {
-        if (temperature != null && (temperature.compareTo(new BigDecimal("30.0")) < 0 || temperature.compareTo(new BigDecimal("45.0")) > 0)) {
+        if (temperature != null && temperature.compareTo(BigDecimal.ZERO) < 0) {
             throw new BusinessException(ErrorCode.ERR_MR_001_INVALID_TEMPERATURE);
         }
-        if (heartRate != null && (heartRate < 40 || heartRate > 250)) {
+        if (heartRate != null && heartRate < 0) {
             throw new BusinessException(ErrorCode.ERR_MR_002_INVALID_HEART_RATE);
         }
-        if (respiratoryRate != null && (respiratoryRate < 10 || respiratoryRate > 100)) {
+        if (respiratoryRate != null && respiratoryRate < 0) {
             throw new BusinessException(ErrorCode.ERR_MR_003_INVALID_RESPIRATORY_RATE);
         }
-        if (spo2 != null && (spo2 < 70 || spo2 > 100)) {
+        if (spo2 != null && (spo2 < 0 || spo2 > 100)) {
             throw new BusinessException(ErrorCode.ERR_MR_004_INVALID_SPO2);
         }
-        if (weight != null && (weight.compareTo(new BigDecimal("0.1")) < 0 || weight.compareTo(new BigDecimal("100.0")) > 0)) {
+        if (weight != null && weight.compareTo(BigDecimal.ZERO) < 0) {
             throw new BusinessException(ErrorCode.ERR_MR_005_INVALID_WEIGHT);
         }
     }
@@ -131,5 +140,57 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
                 || record.getBloodPressure() != null
                 || record.getCapillaryRefillSeconds() != null
                 || record.getMucousMembraneColor() != null;
+    }
+
+    @Override
+    public MedicalRecordResponse getMedicalRecordById(UUID recordId) {
+        MedicalRecord record = medicalRecordRepository.findById(recordId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_400_BAD_REQUEST));
+        return medicalRecordMapper.toResponse(record);
+    }
+
+    @Override
+    public List<MedicalRecordResponse> getMedicalRecords(UUID vetId) {
+        List<MedicalRecord> records;
+        if (vetId != null) {
+            records = medicalRecordRepository.findByVetIdOrderByCreatedAtDesc(vetId);
+        } else {
+            records = medicalRecordRepository.findAllByOrderByCreatedAtDesc();
+        }
+        return records.stream()
+                .map(medicalRecordMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public MedicalRecordResponse getOrCreateMedicalRecordByAppointmentId(UUID appointmentId) {
+        AppointmentResponse appointment = shouldStartExamForCurrentUser()
+                ? appointmentService.startExam(appointmentId, currentUserIdOrNull())
+                : appointmentService.getAppointmentById(appointmentId);
+
+        return medicalRecordRepository.findByAppointmentId(appointmentId)
+                .map(medicalRecordMapper::toResponse)
+                .orElseGet(() -> {
+                    String recordCode = "MR-" + appointment.appointmentCode();
+
+                    MedicalRecord record = MedicalRecord.builder()
+                            .recordCode(recordCode)
+                            .appointmentId(appointmentId)
+                            .petId(appointment.petId())
+                            .vetId(appointment.assignedVetId())
+                            .recordStatus(RecordStatus.DRAFT)
+                            .build();
+
+                    return medicalRecordMapper.toResponse(medicalRecordRepository.save(record));
+                });
+    }
+
+    private boolean shouldStartExamForCurrentUser() {
+        return securityHelper != null && securityHelper.hasAnyRole("VETERINARIAN");
+    }
+
+    private UUID currentUserIdOrNull() {
+        return securityHelper == null ? null : securityHelper.getCurrentUserId();
     }
 }

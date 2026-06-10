@@ -47,13 +47,13 @@ class BoardingStaffControllerTest {
         given(boardingStaffService.listActiveStays()).willReturn(List.of(
                 new StaffBoardingStayResponse(
                         sessionId, UUID.randomUUID(), "Milu", "STANDARD",
-                        2, 5, "Đã cập nhật sáng"
+                        2, 5, "ÄÃ£ cáº­p nháº­t sÃ¡ng"
                 )
         ));
 
         mockMvc.perform(get("/v1/boarding/staff/stays"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].petName").value("Milu"))
-                .andExpect(jsonPath("$.data[0].todayLogSummary").value("Đã cập nhật sáng"));
+                .andExpect(jsonPath("$.data[0].todayLogSummary").value("ÄÃ£ cáº­p nháº­t sÃ¡ng"));
     }
 }

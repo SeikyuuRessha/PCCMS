@@ -2,10 +2,11 @@ package com.astral.express.pccms.user.controller;
 
 import com.astral.express.pccms.common.dto.ApiResponse;
 import com.astral.express.pccms.common.dto.PageResponse;
-import com.astral.express.pccms.common.exception.BusinessException;
-import com.astral.express.pccms.common.exception.ErrorCode;
+import com.astral.express.pccms.user.dto.request.AdminUpdateUserRequest;
 import com.astral.express.pccms.user.dto.request.AssignAccountRoleRequest;
+import com.astral.express.pccms.user.dto.request.CreateUserRequest;
 import com.astral.express.pccms.user.dto.request.UpdateAccountStatusRequest;
+import com.astral.express.pccms.user.dto.response.AccountCredentialResponse;
 import com.astral.express.pccms.user.dto.response.AccountResponse;
 import com.astral.express.pccms.user.entity.UserStatus;
 import com.astral.express.pccms.user.service.UserService;
@@ -18,6 +19,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/admin/accounts")
+@RequestMapping("/v1/admin/accounts")
 @RequiredArgsConstructor
 public class AdminAccountController {
     private final UserService userService;
@@ -38,10 +41,21 @@ public class AdminAccountController {
             @RequestParam(required = false) String role,
             @RequestParam(required = false) UserStatus status,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        if (!hasSearchCriteria(keyword, role, status)) {
-            throw new BusinessException(ErrorCode.ERR_ACC_007_SEARCH_CRITERIA_REQUIRED);
-        }
         return ApiResponse.success(userService.searchAccounts(keyword, role, status, pageable));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
+    public ApiResponse<AccountCredentialResponse> createAccount(@Valid @RequestBody CreateUserRequest request) {
+        return ApiResponse.created(userService.createAccount(request));
+    }
+
+    @PutMapping("/{accountId}")
+    @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
+    public ApiResponse<AccountResponse> updateAccount(
+            @PathVariable UUID accountId,
+            @Valid @RequestBody AdminUpdateUserRequest request) {
+        return ApiResponse.success(userService.adminUpdateUser(accountId, request));
     }
 
     @PatchMapping("/{accountId}/status")
@@ -60,11 +74,9 @@ public class AdminAccountController {
         return ApiResponse.success(userService.assignAccountRole(accountId, request.roleCode()));
     }
 
-    private boolean hasSearchCriteria(String keyword, String role, UserStatus status) {
-        return status != null || hasText(keyword) || hasText(role);
-    }
-
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
+    @PostMapping("/{accountId}/password/reset")
+    @PreAuthorize("hasAuthority('ACCOUNT_MANAGE')")
+    public ApiResponse<AccountCredentialResponse> resetPassword(@PathVariable UUID accountId) {
+        return ApiResponse.success(userService.resetAccountPassword(accountId));
     }
 }

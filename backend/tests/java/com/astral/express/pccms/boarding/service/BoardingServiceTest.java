@@ -6,18 +6,18 @@ import com.astral.express.pccms.boarding.dto.request.BoardingBookingCreateReques
 import com.astral.express.pccms.boarding.entity.BoardingBooking;
 import com.astral.express.pccms.boarding.entity.BoardingSession;
 import com.astral.express.pccms.boarding.entity.BoardingStatus;
-import com.astral.express.pccms.boarding.entity.ServiceCatalog;
-import com.astral.express.pccms.boarding.entity.ServiceCategory;
-import com.astral.express.pccms.boarding.entity.ServiceOrder;
-import com.astral.express.pccms.boarding.entity.ServiceOrderStatus;
+import com.astral.express.pccms.appointment.entity.ServiceCatalog;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceOrder;
+import com.astral.express.pccms.appointment.entity.ServiceOrderStatus;
 import com.astral.express.pccms.boarding.mapper.BoardingMapper;
 import com.astral.express.pccms.boarding.repository.BoardingBookingRepository;
 import com.astral.express.pccms.boarding.repository.BoardingSessionRepository;
 import com.astral.express.pccms.boarding.repository.CareLogMediaRepository;
 import com.astral.express.pccms.boarding.repository.CareLogRepository;
 import com.astral.express.pccms.boarding.repository.RoomAllocationRepository;
-import com.astral.express.pccms.boarding.repository.ServiceCatalogRepository;
-import com.astral.express.pccms.boarding.repository.ServiceOrderRepository;
+import com.astral.express.pccms.appointment.repository.ServiceCatalogRepository;
+import com.astral.express.pccms.appointment.repository.ServiceOrderRepository;
 import com.astral.express.pccms.boarding.service.impl.BoardingServiceImpl;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
@@ -185,6 +185,8 @@ class BoardingServiceTest {
 
         given(serviceOrderRepository.save(any(ServiceOrder.class))).willAnswer(invocation -> {
             ServiceOrder order = invocation.getArgument(0);
+            assertThat(order.getRequestedAt()).isNotNull();
+            assertThat(order.getStatusCode()).isEqualTo(ServiceOrderStatus.REQUESTED);
             order.setId(UUID.randomUUID());
             return order;
         });
@@ -226,3 +228,6 @@ class BoardingServiceTest {
         };
     }
 }
+
+
+

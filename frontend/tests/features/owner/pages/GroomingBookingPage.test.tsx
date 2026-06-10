@@ -38,6 +38,12 @@ function renderWithQueryClient(ui: React.ReactElement) {
     );
 }
 
+function futureDateInputValue(daysFromNow = 1) {
+    const date = new Date();
+    date.setDate(date.getDate() + daysFromNow);
+    return date.toISOString().slice(0, 10);
+}
+
 describe("GroomingBookingPage", () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -72,7 +78,7 @@ describe("GroomingBookingPage", () => {
             {
                 id: "service-1",
                 serviceCode: "GRM-BATH",
-                name: "Tam say",
+                name: "Tắm sấy",
                 basePriceVnd: 100000,
                 durationMinutes: 60,
                 isActive: true,
@@ -82,12 +88,14 @@ describe("GroomingBookingPage", () => {
     });
 
     it("should_show_estimate_and_submit_grooming_booking", async () => {
+        const futureDate = futureDateInputValue();
+
         renderWithQueryClient(<GroomingBookingPage />);
 
         await screen.findByText("Milu");
         await userEvent.selectOptions(screen.getByLabelText("Thú cưng"), "pet-1");
         await userEvent.selectOptions(screen.getByLabelText("Dịch vụ làm đẹp"), "service-1");
-        fireEvent.change(screen.getByLabelText("Ngày hẹn"), { target: { value: "2026-06-10" } });
+        fireEvent.change(screen.getByLabelText("Ngày hẹn"), { target: { value: futureDate } });
         fireEvent.change(screen.getByLabelText("Giờ hẹn"), { target: { value: "09:00" } });
 
         expect(screen.getAllByText(/100.000/).length).toBeGreaterThan(0);
@@ -104,17 +112,19 @@ describe("GroomingBookingPage", () => {
     });
 
     it("should_keep_selected_date_when_time_changes", async () => {
+        const futureDate = futureDateInputValue();
+
         renderWithQueryClient(<GroomingBookingPage />);
 
         await screen.findByText("Milu");
         const dateInput = screen.getByLabelText("Ngày hẹn") as HTMLInputElement;
         const timeInput = screen.getByLabelText("Giờ hẹn") as HTMLInputElement;
 
-        fireEvent.change(dateInput, { target: { value: "2026-06-10" } });
+        fireEvent.change(dateInput, { target: { value: futureDate } });
         fireEvent.change(timeInput, { target: { value: "09:00" } });
         fireEvent.change(timeInput, { target: { value: "14:30" } });
 
-        expect(dateInput.value).toBe("2026-06-10");
+        expect(dateInput.value).toBe(futureDate);
         expect(timeInput.value).toBe("14:30");
     });
 });

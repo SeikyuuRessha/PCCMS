@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { ProfilePage } from "~/features/owner/pages/ProfilePage";
+import { ProfilePage } from "~/shared/pages/ProfilePage";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { server } from "@tests/mocks/server";
@@ -38,7 +39,7 @@ describe("ProfilePage", () => {
 
     it("renders skeleton while loading", async () => {
         server.use(
-            http.get("http://localhost:8080/api/users/me", () => {
+            http.get("http://localhost:8080/api/v1/users/me", () => {
                 return new Promise(() => {}); // never resolves to simulate loading
             })
         );
@@ -49,7 +50,7 @@ describe("ProfilePage", () => {
 
     it("renders profile data when fetch succeeds", async () => {
         server.use(
-            http.get("http://localhost:8080/api/users/me", () => {
+            http.get("http://localhost:8080/api/v1/users/me", () => {
                 return HttpResponse.json({
                     success: true,
                     code: 200,
@@ -70,14 +71,14 @@ describe("ProfilePage", () => {
 
     it("updates profile successfully", async () => {
         server.use(
-            http.get("http://localhost:8080/api/users/me", () => {
+            http.get("http://localhost:8080/api/v1/users/me", () => {
                 return HttpResponse.json({
                     success: true,
                     code: 200,
                     data: mockUser,
                 });
             }),
-            http.put("http://localhost:8080/api/users/me", () => {
+            http.put("http://localhost:8080/api/v1/users/me", () => {
                 return HttpResponse.json({
                     success: true,
                     code: 200,
@@ -106,7 +107,7 @@ describe("ProfilePage", () => {
 
     it("shows error if name is empty", async () => {
         server.use(
-            http.get("http://localhost:8080/api/users/me", () => {
+            http.get("http://localhost:8080/api/v1/users/me", () => {
                 return HttpResponse.json({
                     success: true,
                     code: 200,

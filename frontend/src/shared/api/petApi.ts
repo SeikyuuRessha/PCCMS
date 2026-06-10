@@ -17,6 +17,7 @@ function unwrapPage<T>(value: PageEnvelope<T>): PageResponse<T> {
 
 export const petApi = {
     getPets: async (params?: {
+        ownerId?: string;
         page?: number;
         size?: number;
         isActive?: boolean;

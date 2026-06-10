@@ -8,6 +8,8 @@ import { appointmentApi } from "~/shared/api/appointmentApi";
 import { hasAccessToken } from "~/shared/auth/tokenStorage";
 import { useAuth } from "~/features/auth/context/AuthContext";
 import type { AppointmentResponse, AppointmentStatus } from "~/types/appointment";
+import { addDaysIso, clinicTodayIso } from "~/shared/utils/dateGuards";
+import { parseApiError } from "~/shared/utils/errorHandlers";
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
     { value: "", label: "Tất cả trạng thái" },
@@ -39,10 +41,6 @@ function formatTime(iso: string) {
     });
 }
 
-function clinicTodayIso() {
-    return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
-}
-
 export function AppointmentReceptionPage() {
     const queryClient = useQueryClient();
     const { isAuthenticated, user } = useAuth();
@@ -55,6 +53,9 @@ export function AppointmentReceptionPage() {
     const [quickPetId, setQuickPetId] = useState("");
     const [quickVetId, setQuickVetId] = useState("");
     const [quickSymptom, setQuickSymptom] = useState("");
+    const todayIso = clinicTodayIso();
+    const minReceptionDate = addDaysIso(todayIso, -30);
+    const maxReceptionDate = addDaysIso(todayIso, 30);
 
     const searchParams = useMemo(() => {
         const trimmed = search.trim();
@@ -100,7 +101,7 @@ export function AppointmentReceptionPage() {
             toast.success("Tiếp nhận thành công");
             queryClient.invalidateQueries({ queryKey: ["appointments"] });
         },
-        onError: () => toast.error("Không thể tiếp nhận lịch hẹn"),
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
     const cancelMutation = useMutation({
@@ -109,7 +110,7 @@ export function AppointmentReceptionPage() {
             toast.success("Hủy lịch thành công");
             queryClient.invalidateQueries({ queryKey: ["appointments"] });
         },
-        onError: () => toast.error("Không thể hủy lịch hẹn"),
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
     const quickCheckInMutation = useMutation({
@@ -121,7 +122,7 @@ export function AppointmentReceptionPage() {
             setQuickSymptom("");
             queryClient.invalidateQueries({ queryKey: ["appointments"] });
         },
-        onError: () => toast.error("Tạo nhanh thất bại — kiểm tra SĐT và thú cưng"),
+        onError: (error) => toast.error(parseApiError(error)),
     });
 
     const handleLookupPets = async () => {
@@ -186,6 +187,8 @@ export function AppointmentReceptionPage() {
                         label=""
                         type="date"
                         value={selectedDate}
+                        min={minReceptionDate}
+                        max={maxReceptionDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
                     />
                     <div className="relative">
@@ -307,27 +310,9 @@ export function AppointmentReceptionPage() {
                         Khi tiếp nhận thành công, thú cưng được đưa vào danh sách chờ khám của bác sĩ phụ trách.
                     </div>
                 </div>
-            )}
+            </Card>
 
-            {cancelTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-                    <div className="w-full max-w-md rounded-3xl border border-border-main bg-white p-5 shadow-lg">
-                        <h3 className="text-base font-semibold text-text-main">Xác nhận hủy lịch hẹn</h3>
-                        <p className="mt-2 text-sm text-text-muted">
-                            Bạn có chắc chắn muốn hủy lịch <span className="font-semibold">{cancelTarget.id}</span> của
-                            khách <span className="font-semibold">{cancelTarget.customerName}</span> không?
-                        </p>
-                        <div className="mt-5 flex justify-end gap-2">
-                            <Button variant="ghost" onClick={() => setCancelTarget(null)}>
-                                Không
-                            </Button>
-                            <Button variant="soft" onClick={confirmCancel}>
-                                Xác nhận hủy
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 }

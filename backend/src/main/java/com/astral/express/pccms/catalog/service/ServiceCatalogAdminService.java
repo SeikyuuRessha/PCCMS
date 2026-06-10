@@ -18,3 +18,4 @@ public interface ServiceCatalogAdminService {
     void delete(UUID id);
     List<ServiceCategory> listCategories();
 }
+

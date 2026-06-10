@@ -1,10 +1,12 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Select, Textarea } from "~/components/atoms";
 import { petApi } from "~/shared/api/petApi";
-import type { PetRequest } from "~/types/pet";
+import { petCatalogApi } from "~/shared/api/petCatalogApi";
+import type { PetRequest, PetResponse } from "~/types/pet";
 
 const petSchema = z.object({
     name: z.string().min(1, "Vui lòng nhập tên thú cưng"),
@@ -25,21 +27,66 @@ type PetFormValues = z.infer<typeof petSchema>;
 interface PetFormProps {
     onSuccess: () => void;
     onCancel: () => void;
+    pet?: PetResponse;
 }
 
-export function PetForm({ onSuccess, onCancel }: PetFormProps) {
+function toDefaultValues(pet?: PetResponse): Partial<PetFormValues> {
+    return {
+        name: pet?.name ?? "",
+        speciesId: pet?.speciesId ?? "",
+        breedId: pet?.breedId ?? "",
+        sex: pet?.sex ?? "UNKNOWN",
+        birthDate: pet?.birthDate ?? "",
+        weightKg: pet?.weightKg ? String(pet.weightKg) : "",
+        color: pet?.color ?? "",
+        identificationNote: pet?.identificationNote ?? "",
+        specialNote: pet?.specialNote ?? "",
+        allergyNote: pet?.allergyNote ?? "",
+        nutritionNote: pet?.nutritionNote ?? "",
+    };
+}
+
+export function PetForm({ onSuccess, onCancel, pet }: PetFormProps) {
     const queryClient = useQueryClient();
+    const isEditing = Boolean(pet);
 
     const {
         register,
         handleSubmit,
+        watch,
+        reset,
         formState: { errors },
     } = useForm<PetFormValues>({
         resolver: zodResolver(petSchema),
-        defaultValues: {
-            sex: "UNKNOWN",
-        },
+        defaultValues: toDefaultValues(pet),
     });
+
+    const selectedSpeciesId = watch("speciesId");
+
+    useEffect(() => {
+        reset(toDefaultValues(pet));
+    }, [pet, reset]);
+
+    const { data: speciesList = [] } = useQuery({
+        queryKey: ["species"],
+        queryFn: petCatalogApi.getSpecies,
+    });
+
+    const { data: breedList = [] } = useQuery({
+        queryKey: ["breeds", selectedSpeciesId],
+        queryFn: () => petCatalogApi.getBreedsBySpecies(selectedSpeciesId),
+        enabled: Boolean(selectedSpeciesId),
+    });
+
+    const speciesOptions = speciesList.map((species: any) => ({
+        value: species.id,
+        label: species.name,
+    }));
+
+    const breedOptions = breedList.map((breed: any) => ({
+        value: breed.id,
+        label: breed.name,
+    }));
 
     const createPetMutation = useMutation({
         mutationFn: (data: PetRequest) => petApi.createPet(data),
@@ -49,14 +96,32 @@ export function PetForm({ onSuccess, onCancel }: PetFormProps) {
         },
     });
 
+    const updatePetMutation = useMutation({
+        mutationFn: (data: PetRequest) => petApi.updatePet(pet!.id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["pets"] });
+            onSuccess();
+        },
+    });
+
     const onSubmit = (data: PetFormValues) => {
-        // Transform empty strings to undefined to match optional backend fields
         const requestData: PetRequest = {
             ...data,
+            breedId: data.breedId || undefined,
+            birthDate: data.birthDate || undefined,
             weightKg: data.weightKg ? Number(data.weightKg) : undefined,
         };
+
+        if (isEditing) {
+            updatePetMutation.mutate(requestData);
+            return;
+        }
+
         createPetMutation.mutate(requestData);
     };
+
+    const isPending = createPetMutation.isPending || updatePetMutation.isPending;
+    const isError = createPetMutation.isError || updatePetMutation.isError;
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -69,13 +134,16 @@ export function PetForm({ onSuccess, onCancel }: PetFormProps) {
                 />
                 <Select
                     label="Loài"
-                    options={["CHÓ", "MÈO", "THỎ", "CHIM"]}
+                    placeholder="Chọn loài"
+                    options={speciesOptions}
                     {...register("speciesId")}
                     error={errors.speciesId?.message}
                 />
-                <Input
+                <Select
                     label="Giống"
-                    placeholder="Poodle"
+                    placeholder={selectedSpeciesId ? "Chọn giống thú cưng" : "Chọn loài trước"}
+                    options={breedOptions}
+                    disabled={!selectedSpeciesId}
                     {...register("breedId")}
                     error={errors.breedId?.message}
                 />
@@ -95,41 +163,58 @@ export function PetForm({ onSuccess, onCancel }: PetFormProps) {
                 />
                 <Select
                     label="Giới tính"
-                    options={["MALE", "FEMALE", "UNKNOWN"]}
+                    options={[
+                        { value: "MALE", label: "Đực" },
+                        { value: "FEMALE", label: "Cái" },
+                        { value: "UNKNOWN", label: "Chưa rõ" },
+                    ]}
                     {...register("sex")}
                     error={errors.sex?.message}
                 />
+                <Input
+                    label="Màu lông"
+                    placeholder="Vàng nâu"
+                    {...register("color")}
+                    error={errors.color?.message}
+                />
             </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1fr]">
+
+            <div className="grid gap-4 md:grid-cols-2">
+                <Textarea
+                    label="Dấu hiệu nhận diện"
+                    placeholder="Vòng cổ, chip, đặc điểm riêng..."
+                    {...register("identificationNote")}
+                    error={errors.identificationNote?.message}
+                />
                 <Textarea
                     label="Ghi chú đặc biệt"
-                    placeholder="Dị ứng, thói quen, tiền sử bệnh..."
+                    placeholder="Thói quen, tiền sử bệnh..."
                     {...register("specialNote")}
                     error={errors.specialNote?.message}
                 />
-                {/* Placeholder for avatar upload */}
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-5">
-                    <p className="font-medium">Ảnh đại diện</p>
-                    <p className="mt-2 text-sm text-slate-500">
-                        Tính năng này sẽ được cập nhật sau.
-                    </p>
-                </div>
+                <Textarea
+                    label="Dị ứng"
+                    placeholder="Thức ăn, thuốc, mỹ phẩm..."
+                    {...register("allergyNote")}
+                    error={errors.allergyNote?.message}
+                />
+                <Textarea
+                    label="Dinh dưỡng"
+                    placeholder="Khẩu phần, thức ăn quen dùng..."
+                    {...register("nutritionNote")}
+                    error={errors.nutritionNote?.message}
+                />
             </div>
 
-            {createPetMutation.isError && (
-                <p className="text-red-500 text-sm">Có lỗi xảy ra khi lưu thú cưng</p>
+            {isError && (
+                <p className="text-sm text-red-500">Có lỗi xảy ra khi lưu thú cưng</p>
             )}
 
-            <div className="mt-5 flex gap-2">
-                <Button type="submit" disabled={createPetMutation.isPending}>
-                    {createPetMutation.isPending ? "Đang lưu..." : "Lưu thú cưng"}
+            <div className="flex gap-2">
+                <Button type="submit" disabled={isPending}>
+                    {isPending ? "Đang lưu..." : isEditing ? "Cập nhật thú cưng" : "Lưu thú cưng"}
                 </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onCancel}
-                    disabled={createPetMutation.isPending}
-                >
+                <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
                     Hủy
                 </Button>
             </div>

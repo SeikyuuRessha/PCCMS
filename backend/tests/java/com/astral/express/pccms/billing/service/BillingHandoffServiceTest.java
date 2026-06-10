@@ -7,7 +7,7 @@ import com.astral.express.pccms.billing.repository.InvoiceRepository;
 import com.astral.express.pccms.billing.service.impl.BillingHandoffServiceImpl;
 import com.astral.express.pccms.boarding.entity.BoardingBooking;
 import com.astral.express.pccms.boarding.entity.BoardingSession;
-import com.astral.express.pccms.boarding.entity.ServiceOrder;
+import com.astral.express.pccms.appointment.entity.ServiceOrder;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.pet.entity.Pets;
 import com.astral.express.pccms.room.entity.RoomType;
@@ -111,3 +111,4 @@ class BillingHandoffServiceTest {
         assertThat(lineCaptor.getValue().getUnitPriceVnd()).isEqualTo(unitPrice);
     }
 }
+

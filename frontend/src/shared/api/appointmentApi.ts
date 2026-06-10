@@ -38,7 +38,7 @@ export const appointmentApi = {
   },
 
   listOwnerAppointments: async (params?: { page?: number; size?: number }): Promise<PageResponse<AppointmentResponse>> => {
-    const raw = await axiosClient.get<PageResponse<AppointmentResponse> & { data?: PageResponse<AppointmentResponse> }>(
+    const raw = await axiosClient.get<any, PageResponse<AppointmentResponse> & { data?: PageResponse<AppointmentResponse> }>(
       '/v1/appointments',
       { params }
     );
@@ -82,6 +82,10 @@ export const appointmentApi = {
 
   checkIn: (appointmentId: string): Promise<AppointmentResponse> => {
     return axiosClient.post(`/v1/appointments/${appointmentId}/check-in`);
+  },
+
+  startExam: (appointmentId: string): Promise<AppointmentResponse> => {
+    return axiosClient.post(`/v1/appointments/${appointmentId}/start-exam`);
   },
 
   cancel: (appointmentId: string): Promise<AppointmentResponse> => {

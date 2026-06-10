@@ -17,6 +17,13 @@ import com.astral.express.pccms.appointment.dto.response.TimeSlotResponse;
 import com.astral.express.pccms.appointment.dto.response.VetOptionResponse;
 import com.astral.express.pccms.appointment.entity.*;
 import com.astral.express.pccms.appointment.repository.*;
+import com.astral.express.pccms.boarding.entity.BoardingBooking;
+import com.astral.express.pccms.boarding.entity.BoardingStatus;
+import com.astral.express.pccms.boarding.repository.BoardingBookingRepository;
+import com.astral.express.pccms.grooming.repository.GroomingStationRepository;
+import com.astral.express.pccms.schedule.repository.WorkScheduleRepository;
+import com.astral.express.pccms.room.repository.RoomTypeRepository;
+import com.astral.express.pccms.room.entity.RoomType;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
@@ -101,11 +108,18 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         Appointment saved = appointmentRepository.save(appointment);
         return toResponse(saved, null);
-    }
+     }
+ 
+     @Override
+     @Transactional(readOnly = true)
+     public AppointmentResponse getAppointmentById(UUID appointmentId) {
+         Appointment appointment = findAppointmentOrThrow(appointmentId);
+         return toResponse(appointment, findQueueNumber(appointmentId));
+     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public PageResponse<AppointmentResponse> listOwnerAppointments(UUID ownerId, Pageable pageable) {
+     @Override
+     @Transactional(readOnly = true)
+     public PageResponse<AppointmentResponse> listOwnerAppointments(UUID ownerId, Pageable pageable) {
         Page<Appointment> page = appointmentRepository.findByOwnerId(ownerId, pageable);
         return PageResponse.of(page.map(a -> toResponse(a, findQueueNumber(a.getId()))));
     }
@@ -276,6 +290,64 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     @Transactional
+    public AppointmentResponse startExam(UUID appointmentId, UUID vetId) {
+        Appointment appointment = findAppointmentOrThrow(appointmentId);
+        ensureMedicalAppointment(appointment);
+        ensureAssignedVet(appointment, vetId);
+
+        if (appointment.getStatusCode() == AppointmentStatus.COMPLETED
+                || appointment.getStatusCode() == AppointmentStatus.IN_PROGRESS) {
+            return toResponse(appointment, findQueueNumber(appointment.getId()));
+        }
+        if (appointment.getStatusCode() != AppointmentStatus.CHECKED_IN) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
+
+        OffsetDateTime now = OffsetDateTime.now(CLINIC_ZONE);
+        appointment.setStatusCode(AppointmentStatus.IN_PROGRESS);
+        ServiceOrder order = appointment.getServiceOrder();
+        order.setStatusCode(ServiceOrderStatus.IN_PROGRESS);
+        if (order.getActualStartAt() == null) {
+            order.setActualStartAt(now);
+        }
+        order.setUpdatedBy(vetId);
+
+        return toResponse(appointment, findQueueNumber(appointment.getId()));
+    }
+
+    @Override
+    @Transactional
+    public void completeMedicalAppointment(UUID appointmentId, UUID vetId) {
+        if (appointmentId == null) {
+            return;
+        }
+
+        Appointment appointment = findAppointmentOrThrow(appointmentId);
+        ensureMedicalAppointment(appointment);
+        ensureAssignedVet(appointment, vetId);
+
+        if (appointment.getStatusCode() == AppointmentStatus.COMPLETED) {
+            return;
+        }
+        if (appointment.getStatusCode() == AppointmentStatus.CANCELLED
+                || appointment.getStatusCode() == AppointmentStatus.PENDING
+                || appointment.getStatusCode() == AppointmentStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
+
+        OffsetDateTime now = OffsetDateTime.now(CLINIC_ZONE);
+        appointment.setStatusCode(AppointmentStatus.COMPLETED);
+        ServiceOrder order = appointment.getServiceOrder();
+        order.setStatusCode(ServiceOrderStatus.COMPLETED);
+        if (order.getActualStartAt() == null) {
+            order.setActualStartAt(now);
+        }
+        order.setCompletedAt(now);
+        order.setUpdatedBy(vetId);
+    }
+
+    @Override
+    @Transactional
     public AppointmentResponse cancel(UUID appointmentId, UUID actorId, boolean isStaff) {
         Appointment appointment = findAppointmentOrThrow(appointmentId);
 
@@ -378,7 +450,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
 
         List<CustomerLookupResponse.PetSummary> pets = petRepository
-                .findByOwnerIdAndIsActive(owner.getId(), true, PageRequest.of(0, 100))
+                .findByOwner_IdAndIsActive(owner.getId(), true, PageRequest.of(0, 100))
                 .getContent()
                 .stream()
                 .map(p -> new CustomerLookupResponse.PetSummary(p.getId(), p.getName()))
@@ -414,6 +486,22 @@ public class AppointmentServiceImpl implements AppointmentService {
     private Appointment findAppointmentOrThrow(UUID appointmentId) {
         return appointmentRepository.findDetailById(appointmentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_APT_001_NOT_FOUND));
+    }
+
+    private void ensureMedicalAppointment(Appointment appointment) {
+        if (appointment.getAppointmentType() != AppointmentType.MEDICAL) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
+    }
+
+    private void ensureAssignedVet(Appointment appointment, UUID vetId) {
+        Users assignedVet = appointment.getAssignedStaff();
+        if (assignedVet == null) {
+            throw new BusinessException(ErrorCode.ERR_APT_005_NO_VET_AVAILABLE);
+        }
+        if (vetId != null && !assignedVet.getId().equals(vetId)) {
+            throw new BusinessException(ErrorCode.ERR_403_FORBIDDEN);
+        }
     }
 
     private Pets findPetOwnedBy(UUID petId, UUID ownerId) {
@@ -738,8 +826,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         OffsetDateTime checkinAt = toOffsetDateTime(request.checkinDate(), LocalTime.of(14, 0));
         OffsetDateTime checkoutAt = toOffsetDateTime(request.checkoutDate(), LocalTime.of(11, 0));
         long days = ChronoUnit.DAYS.between(request.checkinDate(), request.checkoutDate());
-        BigDecimal estimated = roomType.getBaseDailyPriceVnd()
-                .multiply(BigDecimal.valueOf(Math.max(days, 1)));
+        Long estimated = (roomType.getBaseDailyPriceVnd() != null ? roomType.getBaseDailyPriceVnd() : 0L) * Math.max(days, 1);
 
         ServiceOrder order = buildServiceOrder(pet, service, ownerId, checkinAt, checkoutAt, ServiceCategory.BOARDING);
         order.setBaseAmountVnd(estimated);
@@ -756,7 +843,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         booking.setSpecialCareRequest(request.specialCareRequest());
         booking.setEstimatedPriceVnd(estimated);
         booking.setStatusCode(BoardingStatus.RESERVED);
-        booking.setCreatedBy(ownerId);
+        booking.setCreatedBy(pet.getOwner());
 
         BoardingBooking saved = boardingBookingRepository.save(booking);
         return toBoardingResponse(saved);
@@ -774,7 +861,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Transactional(readOnly = true)
     public List<RoomTypeOptionResponse> listActiveRoomTypes() {
         return roomTypeRepository.findByIsActiveTrueOrderByNameAsc().stream()
-                .map(rt -> new RoomTypeOptionResponse(rt.getId(), rt.getCode(), rt.getName(), rt.getBaseDailyPriceVnd()))
+                .map(rt -> new RoomTypeOptionResponse(rt.getId(), rt.getCode(), rt.getName(), rt.getBaseDailyPriceVnd() != null ? java.math.BigDecimal.valueOf(rt.getBaseDailyPriceVnd()) : java.math.BigDecimal.ZERO))
                 .toList();
     }
 
@@ -832,7 +919,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 booking.getRequestedRoomType().getName(),
                 booking.getExpectedCheckinAt(),
                 booking.getExpectedCheckoutAt(),
-                booking.getEstimatedPriceVnd(),
+                booking.getEstimatedPriceVnd() != null ? java.math.BigDecimal.valueOf(booking.getEstimatedPriceVnd()) : java.math.BigDecimal.ZERO,
                 booking.getStatusCode(),
                 toBoardingStatusLabel(booking.getStatusCode()),
                 booking.getSpecialCareRequest()

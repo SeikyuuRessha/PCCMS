@@ -48,7 +48,7 @@ class BoardingTrackingControllerTest {
         UUID ownerId = UUID.randomUUID();
         given(securityHelper.getCurrentUserId()).willReturn(ownerId);
         given(boardingTrackingService.listActiveStays(ownerId)).willReturn(List.of(
-                new BoardingStayResponse(UUID.randomUUID(), "Milu", "Chó", "Poodle")
+                new BoardingStayResponse(UUID.randomUUID(), "Milu", "ChÃ³", "Poodle")
         ));
 
         mockMvc.perform(get("/v1/boarding/owner/stays"))
@@ -63,14 +63,14 @@ class BoardingTrackingControllerTest {
         given(securityHelper.getCurrentUserId()).willReturn(ownerId);
         given(boardingTrackingService.listCareLogs(ownerId, null)).willReturn(List.of(
                 new CareLogResponse(
-                        UUID.randomUUID(), UUID.randomUUID(), "Milu",
-                        LocalDate.of(2026, 6, 5), "MORNING", "Sáng",
-                        "Ăn tốt", "Bình thường", null, "Ghi chú", List.of()
+                        UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 6, 5),
+                        com.astral.express.pccms.boarding.entity.CarePeriod.MORNING,
+                        "Ä‚n tá»‘t", "BÃ¬nh thÆ°á»ng", null, "Ghi chÃº", UUID.randomUUID(), "StaffName", java.time.OffsetDateTime.now(), List.of()
                 )
         ));
 
         mockMvc.perform(get("/v1/boarding/owner/care-logs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].feedingStatus").value("Ăn tốt"));
+                .andExpect(jsonPath("$.data[0].feedingStatus").value("Ä‚n tá»‘t"));
     }
 }

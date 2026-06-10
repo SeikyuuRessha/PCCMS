@@ -13,6 +13,8 @@ import type {
     WorkScheduleShiftOption,
     WorkScheduleStaffOption,
     WorkScheduleStatus,
+    WeeklySchedulePlanRequest,
+    WeeklySchedulePlanResponse,
 } from "./types";
 
 interface BackendWorkSchedule {
@@ -185,6 +187,9 @@ const validateRequired = (payload: WorkScheduleFormValues) => {
 
 const toPayload = (payload: WorkScheduleFormValues): WorkSchedulePayload => {
     validateRequired(payload);
+    if (!payload.examRoomId && !payload.stationId) {
+        throw new Error("Vui lòng chọn phòng hoặc vị trí làm việc trước khi lưu lịch");
+    }
 
     return {
         staffId: payload.staffId,
@@ -224,11 +229,11 @@ const filterLocally = (items: WorkSchedule[], params: WorkScheduleSearchParams) 
 
 export const getWorkScheduleOptions = async (): Promise<WorkScheduleOptions> => {
     const [staff, shifts, roles, examRooms, groomingStations] = await Promise.all([
-        api.get("/admin/work-schedules/options/staff"),
-        api.get("/admin/work-schedules/options/shifts"),
-        api.get("/admin/work-schedules/options/roles"),
-        api.get("/admin/work-schedules/options/exam-rooms"),
-        api.get("/admin/work-schedules/options/grooming-stations"),
+        api.get("/v1/admin/work-schedules/options/staff"),
+        api.get("/v1/admin/work-schedules/options/shifts"),
+        api.get("/v1/admin/work-schedules/options/roles"),
+        api.get("/v1/admin/work-schedules/options/exam-rooms"),
+        api.get("/v1/admin/work-schedules/options/grooming-stations"),
     ]);
 
     return {
@@ -241,7 +246,7 @@ export const getWorkScheduleOptions = async (): Promise<WorkScheduleOptions> => 
 };
 
 export const getWorkSchedules = async (range: WorkScheduleDateRange = getCurrentWeekRange()) => {
-    const response = await api.get("/admin/work-schedules", {
+    const response = await api.get("/v1/admin/work-schedules", {
         params: { ...range, page: 0, size: 100 },
     });
     const schedules = getPageContent<BackendWorkSchedule>(getApiData<unknown>(response)).map(toSchedule);
@@ -251,7 +256,7 @@ export const getWorkSchedules = async (range: WorkScheduleDateRange = getCurrent
 
 export const searchWorkSchedules = async (params: WorkScheduleSearchParams) => {
     const range = getDateRange(params);
-    const response = await api.get("/admin/work-schedules", {
+    const response = await api.get("/v1/admin/work-schedules", {
         params: { ...range, page: 0, size: 100 },
     });
     const schedules = getPageContent<BackendWorkSchedule>(getApiData<unknown>(response)).map(toSchedule);
@@ -260,7 +265,7 @@ export const searchWorkSchedules = async (params: WorkScheduleSearchParams) => {
 };
 
 export const createWorkSchedule = async (payload: WorkScheduleFormValues) => {
-    const response = await api.post("/admin/work-schedules", toPayload(payload));
+    const response = await api.post("/v1/admin/work-schedules", toPayload(payload));
     const created = toSchedule(getApiData<BackendWorkSchedule>(response), 0);
     schedulesStore = [created, ...schedulesStore];
     return cloneSchedule(created);
@@ -271,7 +276,7 @@ export const updateWorkSchedule = async (id: string, payload: WorkScheduleFormVa
         throw new Error("Chỉ có thể cập nhật lịch đã lưu trên hệ thống");
     }
 
-    const response = await api.put(`/admin/work-schedules/${id}`, toPayload(payload));
+    const response = await api.put(`/v1/admin/work-schedules/${id}`, toPayload(payload));
     const updated = toSchedule(getApiData<BackendWorkSchedule>(response), 0);
     schedulesStore = schedulesStore.map((schedule) => (schedule.id === id ? updated : schedule));
     return cloneSchedule(updated);
@@ -282,8 +287,18 @@ export const cancelWorkSchedule = async (id: string) => {
         throw new Error("Chỉ có thể hủy lịch đã lưu trên hệ thống");
     }
 
-    const response = await api.delete(`/admin/work-schedules/${id}`);
+    const response = await api.delete(`/v1/admin/work-schedules/${id}`);
     const updated = toSchedule(getApiData<BackendWorkSchedule>(response), 0);
     schedulesStore = schedulesStore.map((schedule) => (schedule.id === id ? updated : schedule));
     return cloneSchedule(updated);
+};
+
+export const previewWeeklySchedulePlan = async (payload: WeeklySchedulePlanRequest) => {
+    const response = await api.post("/v1/admin/work-schedules/weekly-plan/preview", payload);
+    return getApiData<WeeklySchedulePlanResponse>(response);
+};
+
+export const applyWeeklySchedulePlan = async (payload: WeeklySchedulePlanRequest) => {
+    const response = await api.post("/v1/admin/work-schedules/weekly-plan/apply", payload);
+    return getApiData<WeeklySchedulePlanResponse>(response);
 };

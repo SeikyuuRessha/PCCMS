@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/admin/rooms")
+@RequestMapping("/v1/admin/rooms")
 @RequiredArgsConstructor
 public class RoomManagementController {
 
@@ -38,8 +38,14 @@ public class RoomManagementController {
     public ApiResponse<PageResponse<RoomResponse>> searchRooms(
             @RequestParam(required = false) UUID roomTypeId,
             @RequestParam(required = false) RoomStatus statusCode,
-            @PageableDefault(size = 20, sort = "created_at", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ApiResponse.success(roomManagementService.searchRooms(roomTypeId, statusCode, pageable));
+    }
+
+    @GetMapping("/{roomId}")
+    @PreAuthorize("hasAuthority('ROOM_MANAGE')")
+    public ApiResponse<RoomResponse> getRoom(@PathVariable UUID roomId) {
+        return ApiResponse.success(roomManagementService.getRoom(roomId));
     }
 
     @PostMapping

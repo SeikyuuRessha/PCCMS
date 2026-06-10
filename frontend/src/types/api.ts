@@ -4,7 +4,7 @@ export interface ApiResponse<T> {
     message: string;
     data: T;
     errorCode?: string;
-    errors?: string[];
+    errors?: string[] | Record<string, string>;
 }
 
 export interface PageResponse<T> {

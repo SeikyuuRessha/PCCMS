@@ -144,6 +144,7 @@ public class AuthService {
         RefreshToken tokenEntity = RefreshToken.builder()
                 .tokenHash(hashToken(refreshToken))
                 .user(user)
+                .issuedAt(OffsetDateTime.now())
                 .expiresAt(OffsetDateTime.now().plusSeconds(jwtUtil.getRefreshExpiration() / 1000))
                 .revokedAt(null)
                 .build();

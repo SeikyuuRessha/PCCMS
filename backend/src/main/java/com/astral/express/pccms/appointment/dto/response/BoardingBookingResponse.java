@@ -1,6 +1,6 @@
 package com.astral.express.pccms.appointment.dto.response;
 
-import com.astral.express.pccms.appointment.entity.BoardingStatus;
+import com.astral.express.pccms.boarding.entity.BoardingStatus;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

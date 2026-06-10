@@ -5,8 +5,8 @@ import com.astral.express.pccms.schedule.dto.response.GroomingStationOptionRespo
 import com.astral.express.pccms.schedule.dto.response.RoleOptionResponse;
 import com.astral.express.pccms.schedule.dto.response.ShiftOptionResponse;
 import com.astral.express.pccms.schedule.dto.response.StaffOptionResponse;
-import com.astral.express.pccms.schedule.repository.ExamRoomRepository;
-import com.astral.express.pccms.schedule.repository.GroomingStationRepository;
+import com.astral.express.pccms.appointment.repository.ExamRoomRepository;
+import com.astral.express.pccms.grooming.repository.GroomingStationRepository;
 import com.astral.express.pccms.schedule.repository.ShiftRepository;
 import com.astral.express.pccms.schedule.service.WorkScheduleOptionService;
 import com.astral.express.pccms.user.entity.Roles;
@@ -33,7 +33,7 @@ public class WorkScheduleOptionServiceImpl implements WorkScheduleOptionService 
     private final GroomingStationRepository groomingStationRepository;
 
     @Override
-    @PreAuthorize("hasAuthority('SCHEDULE_MANAGE')")
+    @PreAuthorize("hasAuthority('SCHEDULE_MANAGE') or hasRole('STAFF') or hasRole('VETERINARIAN')")
     public List<StaffOptionResponse> getStaffOptions() {
         return userRepository.findScheduleStaffOptions(UserStatus.ACTIVE, SCHEDULABLE_ROLE_CODES)
                 .stream()
@@ -93,3 +93,4 @@ public class WorkScheduleOptionServiceImpl implements WorkScheduleOptionService 
                 .toList();
     }
 }
+

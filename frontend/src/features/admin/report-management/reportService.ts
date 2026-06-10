@@ -102,7 +102,7 @@ export function buildReportSummary(
 }
 
 export async function getReportData(params: ReportSearchParams) {
-    const response = await api.get("/admin/reports/summary", {
+    const response = await api.get("/v1/admin/reports/summary", {
         params: {
             fromDate: params.fromDate,
             toDate: params.toDate,

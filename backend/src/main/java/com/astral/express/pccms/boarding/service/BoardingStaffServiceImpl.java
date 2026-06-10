@@ -10,6 +10,10 @@ import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.pet.entity.Pets;
 import com.astral.express.pccms.pet.repository.PetRepository;
+import com.astral.express.pccms.user.entity.Users;
+import com.astral.express.pccms.boarding.entity.CarePeriod;
+import com.astral.express.pccms.boarding.entity.BoardingSession;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +35,7 @@ public class BoardingStaffServiceImpl implements BoardingStaffService {
 
     private final CareLogRepository careLogRepository;
     private final PetRepository petRepository;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -51,7 +56,7 @@ public class BoardingStaffServiceImpl implements BoardingStaffService {
             return List.of();
         }
 
-        UUID petId = logs.get(0).getPetId();
+        UUID petId = logs.get(0).getPet().getId();
         String petName = petRepository.findById(petId).map(Pets::getName).orElse("");
 
         return logs.stream()
@@ -65,15 +70,16 @@ public class BoardingStaffServiceImpl implements BoardingStaffService {
         SessionContext session = assertActiveSession(request.sessionId());
         LocalDate logDate = request.logDate() != null ? request.logDate() : LocalDate.now();
 
+        CarePeriod period = CarePeriod.valueOf(request.periodCode());
         CareLog careLog = careLogRepository
-                .findBySessionIdAndLogDateAndPeriodCode(session.sessionId(), logDate, request.periodCode())
+                .findBySessionIdAndLogDateAndPeriodCode(session.sessionId(), logDate, period)
                 .orElseGet(CareLog::new);
 
-        careLog.setSessionId(session.sessionId());
-        careLog.setPetId(session.petId());
-        careLog.setStaffId(staffId);
+        careLog.setSession(entityManager.getReference(BoardingSession.class, session.sessionId()));
+        careLog.setPet(entityManager.getReference(Pets.class, session.petId()));
+        careLog.setStaff(entityManager.getReference(Users.class, staffId));
         careLog.setLogDate(logDate);
-        careLog.setPeriodCode(request.periodCode());
+        careLog.setPeriodCode(period);
         careLog.setFeedingStatus(request.feedingStatus().trim());
         careLog.setHygieneStatus(request.hygieneStatus().trim());
         careLog.setHealthNote(trimToNull(request.healthNote()));
@@ -160,15 +166,16 @@ public class BoardingStaffServiceImpl implements BoardingStaffService {
     private static CareLogResponse toCareLogResponse(CareLog log, String petName) {
         return new CareLogResponse(
                 log.getId(),
-                log.getPetId(),
-                petName,
+                log.getSession().getId(),
                 log.getLogDate(),
                 log.getPeriodCode(),
-                BoardingPeriodLabels.toPeriodLabel(log.getPeriodCode()),
                 log.getFeedingStatus(),
                 log.getHygieneStatus(),
                 log.getHealthNote(),
                 log.getStaffNote(),
+                log.getStaff().getId(),
+                log.getStaff().getFullName(),
+                log.getCreatedAt(),
                 Collections.emptyList()
         );
     }

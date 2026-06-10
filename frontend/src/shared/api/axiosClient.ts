@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from "axios";
 import toast from "react-hot-toast";
+import { router } from "~/router";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -32,10 +33,15 @@ axiosClient.interceptors.response.use(
     },
     async (error: AxiosError) => {
         if (error.response?.status === 401) {
-            localStorage.removeItem("token");
-            // In a real browser environment, redirect to login
-            if (typeof window !== "undefined") {
-                window.location.href = "/login";
+            const url = error.config?.url || "";
+            const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/register");
+            
+            if (!isAuthEndpoint) {
+                localStorage.removeItem("token");
+                // Use React Router to navigate without reloading the page
+                if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+                    router.navigate("/login");
+                }
             }
         } else if (error.response?.status === 403) {
             toast.error("Không có quyền truy cập");

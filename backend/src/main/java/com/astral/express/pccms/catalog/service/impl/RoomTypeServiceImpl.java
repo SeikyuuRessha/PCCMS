@@ -1,11 +1,11 @@
 package com.astral.express.pccms.catalog.service.impl;
 
-import com.astral.express.pccms.appointment.entity.RoomType;
-import com.astral.express.pccms.appointment.repository.RoomTypeRepository;
+import com.astral.express.pccms.room.entity.RoomType;
+import com.astral.express.pccms.room.repository.RoomTypeRepository;
 import com.astral.express.pccms.catalog.dto.request.CreateRoomTypeRequest;
 import com.astral.express.pccms.catalog.dto.request.UpdateRoomTypeRequest;
 import com.astral.express.pccms.catalog.dto.response.RoomTypeResponse;
-import com.astral.express.pccms.catalog.repository.RoomRepository;
+import com.astral.express.pccms.room.repository.RoomRepository;
 import com.astral.express.pccms.catalog.service.RoomTypeService;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
@@ -26,7 +26,7 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     @Override
     @Transactional
     public RoomTypeResponse create(CreateRoomTypeRequest request) {
-        if (roomTypeRepository.existsByCode(request.code())) {
+        if (roomTypeRepository.existsByCodeAndIsActiveTrue(request.code())) {
             throw new BusinessException(ErrorCode.ERR_ROOM_005_TYPE_CODE_EXISTS);
         }
 
@@ -77,7 +77,7 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         roomType.setCode(request.code());
         roomType.setName(request.name());
         roomType.setDefaultCapacity(request.defaultCapacity());
-        roomType.setBaseDailyPriceVnd(request.baseDailyPriceVnd());
+        roomType.setBaseDailyPriceVnd(request.baseDailyPriceVnd() != null ? request.baseDailyPriceVnd().longValue() : 0L);
         roomType.setDescription(request.description());
         roomType.setIsActive(request.isActive());
     }
@@ -86,7 +86,7 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         roomType.setCode(request.code());
         roomType.setName(request.name());
         roomType.setDefaultCapacity(request.defaultCapacity());
-        roomType.setBaseDailyPriceVnd(request.baseDailyPriceVnd());
+        roomType.setBaseDailyPriceVnd(request.baseDailyPriceVnd() != null ? request.baseDailyPriceVnd().longValue() : 0L);
         roomType.setDescription(request.description());
         roomType.setIsActive(request.isActive());
     }
@@ -109,7 +109,7 @@ public class RoomTypeServiceImpl implements RoomTypeService {
                 roomType.getCode(),
                 roomType.getName(),
                 roomType.getDefaultCapacity(),
-                roomType.getBaseDailyPriceVnd(),
+                roomType.getBaseDailyPriceVnd() != null ? java.math.BigDecimal.valueOf(roomType.getBaseDailyPriceVnd()) : java.math.BigDecimal.ZERO,
                 roomType.getDescription(),
                 roomType.getIsActive()
         );

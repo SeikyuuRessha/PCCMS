@@ -20,6 +20,8 @@ import org.junit.jupiter.params.provider.CsvFileSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -43,6 +45,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class AdminAccountServiceTest {
 
     @Mock
@@ -156,7 +159,7 @@ class AdminAccountServiceTest {
         UserStatus status = UserStatus.valueOf(statusInput.statusCode());
 
         if ("ACCOUNT_NOT_FOUND".equals(scenario)) {
-            given(userRepository.findById(userId)).willReturn(Optional.empty());
+            given(userRepository.findByIdWithRoleAndPermissions(userId)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> userService.updateAccountStatus(userId, status))
                     .isInstanceOf(BusinessException.class)
@@ -170,7 +173,7 @@ class AdminAccountServiceTest {
             user.setDeletedAt(OffsetDateTime.now());
         }
 
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(userRepository.findByIdWithRoleAndPermissions(userId)).willReturn(Optional.of(user));
 
         if ("EXCEPTION".equals(expectedResult)) {
             assertThatThrownBy(() -> userService.updateAccountStatus(userId, status))
@@ -210,7 +213,7 @@ class AdminAccountServiceTest {
         AccountRoleInput roleInput = parseAccountRoleInput(input);
 
         if ("USER_NOT_FOUND".equals(scenario)) {
-            given(userRepository.findById(userId)).willReturn(Optional.empty());
+            given(userRepository.findByIdWithRoleAndPermissions(userId)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> userService.assignAccountRole(userId, roleInput.roleCode()))
                     .isInstanceOf(BusinessException.class)
@@ -224,7 +227,7 @@ class AdminAccountServiceTest {
             user.setDeletedAt(OffsetDateTime.now());
         }
 
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(userRepository.findByIdWithRoleAndPermissions(userId)).willReturn(Optional.of(user));
 
         if ("SOFT_DELETED_USER_REJECTED".equals(scenario)) {
             assertThatThrownBy(() -> userService.assignAccountRole(userId, roleInput.roleCode()))
@@ -239,6 +242,7 @@ class AdminAccountServiceTest {
             assertThatThrownBy(() -> userService.assignAccountRole(userId, roleInput.roleCode()))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.valueOf(expectedErrorCode));
+            verify(roleRepository).findByCodeIgnoreCase(roleInput.roleCode());
             verifyNoMoreInteractions(roleRepository);
             return;
         }

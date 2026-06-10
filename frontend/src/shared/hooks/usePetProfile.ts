@@ -17,8 +17,8 @@ export function useActivePets(ownerId?: string) {
     queryKey: ['pets', { isActive: true, ownerId }],
     queryFn: () =>
       petApi.getPets({
-        isActive: true,
         ownerId,
+        isActive: true,
         size: 100,
       }),
     enabled: hasAccessToken(),

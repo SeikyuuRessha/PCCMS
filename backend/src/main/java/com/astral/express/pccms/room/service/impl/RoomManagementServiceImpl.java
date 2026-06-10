@@ -38,6 +38,11 @@ public class RoomManagementServiceImpl implements RoomManagementService {
     }
 
     @Override
+    public RoomResponse getRoom(UUID roomId) {
+        return toResponse(findRoom(roomId));
+    }
+
+    @Override
     @Transactional
     public RoomResponse createRoom(RoomRequest request) {
         validateCapacity(request.capacity());
@@ -99,7 +104,7 @@ public class RoomManagementServiceImpl implements RoomManagementService {
     }
 
     private Room findRoom(UUID roomId) {
-        return roomRepository.findById(roomId)
+        return roomRepository.findWithRoomTypeById(roomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_404_NOT_FOUND));
     }
 
@@ -116,14 +121,11 @@ public class RoomManagementServiceImpl implements RoomManagementService {
                 room.getRoomCode(),
                 room.getName(),
                 roomType == null ? null : roomType.getId(),
-                roomType == null ? null : roomType.getCode(),
                 roomType == null ? null : roomType.getName(),
                 room.getFloor(),
                 room.getCapacity(),
                 room.getStatusCode(),
-                room.getDescription(),
-                room.getCreatedAt(),
-                room.getUpdatedAt()
+                room.getDescription()
         );
     }
 

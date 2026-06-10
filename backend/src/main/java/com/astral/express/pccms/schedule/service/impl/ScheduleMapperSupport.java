@@ -2,8 +2,8 @@ package com.astral.express.pccms.schedule.service.impl;
 
 import com.astral.express.pccms.schedule.dto.response.ShiftChangeRequestResponse;
 import com.astral.express.pccms.schedule.dto.response.WorkScheduleResponse;
-import com.astral.express.pccms.schedule.entity.ExamRoom;
-import com.astral.express.pccms.schedule.entity.GroomingStation;
+import com.astral.express.pccms.appointment.entity.ExamRoom;
+import com.astral.express.pccms.grooming.entity.GroomingStation;
 import com.astral.express.pccms.schedule.entity.Shift;
 import com.astral.express.pccms.schedule.entity.ShiftChangeRequest;
 import com.astral.express.pccms.schedule.entity.WorkSchedule;
@@ -64,3 +64,4 @@ final class ScheduleMapperSupport {
         return user == null ? null : user.getId();
     }
 }
+

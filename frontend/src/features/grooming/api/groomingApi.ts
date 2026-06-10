@@ -37,12 +37,12 @@ export const groomingApi = {
     },
 
     getTickets: async (
-        statusCode?: GroomingStatus
+        params?: { statusCode?: GroomingStatus; page?: number; size?: number }
     ): Promise<PageResponse<GroomingTicketResponse>> => {
         const response = await axiosClient.get<any, PageEnvelope<GroomingTicketResponse>>(
             "/v1/grooming/tickets",
             {
-                params: statusCode ? { statusCode } : undefined,
+                params,
             }
         );
         return unwrapPage(response);

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { Tag } from "~/components/atoms";
 import { Card, DataTable, EmptyState } from "~/components/molecules";
 import { appointmentApi } from "~/shared/api/appointmentApi";
@@ -59,8 +60,14 @@ export function DoctorQueuePage() {
         }),
         entry.symptomText ?? "—",
         <Tag tone={priorityTone(entry.symptomText)}>{priorityLabel(entry.symptomText)}</Tag>,
-        "Mở bệnh án",
+        <Link
+            to={`/veterinarian/medical-records/appointment/${entry.appointmentId}`}
+            className="text-sm font-semibold text-indigo-600 hover:text-indigo-900"
+        >
+            Mở bệnh án
+        </Link>,
     ]);
+
 
     return (
         <div className="space-y-6">

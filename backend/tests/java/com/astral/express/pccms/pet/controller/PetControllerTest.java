@@ -1,5 +1,6 @@
 package com.astral.express.pccms.pet.controller;
 
+import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.pet.dto.request.UpdatePetRequest;
@@ -13,16 +14,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -45,8 +52,21 @@ class PetControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(petController)
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new com.astral.express.pccms.common.exception.GlobalExceptionHandler())
                 .build();
+    }
+
+    @Test
+    void should_ListPetsWithCurrentUserScope_whenOwnerIdIsOmitted() throws Exception {
+        given(petService.listPets(isNull(), any(Pageable.class)))
+                .willReturn(PageResponse.of(new PageImpl<>(List.of())));
+
+        mockMvc.perform(get("/v1/pets"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        verify(petService).listPets(isNull(), any(Pageable.class));
     }
 
     @Test
@@ -59,7 +79,7 @@ class PetControllerTest {
         );
 
         PetResponse mockResponse = new PetResponse(
-                petId, null, "Milo Updated", speciesId, "Chó", null, null, PetSex.MALE, null, 12,
+                petId, null, "Milo Updated", speciesId, "ChÃ³", null, null, PetSex.MALE, null, 12,
                 BigDecimal.valueOf(5), null, null, null, null, null, true);
         given(petService.updatePet(eq(petId), any(UpdatePetRequest.class))).willReturn(mockResponse);
 
@@ -93,7 +113,7 @@ class PetControllerTest {
     void should_Return403Forbidden_when_CustomerGetsOtherPet() throws Exception {
         UUID petId = UUID.randomUUID();
 
-        // Giả lập Service ném ra lỗi IDOR
+        // Giáº£ láº­p Service nÃ©m ra lá»—i IDOR
         given(petService.getPet(eq(petId)))
                 .willThrow(new BusinessException(ErrorCode.ERR_403_FORBIDDEN));
 

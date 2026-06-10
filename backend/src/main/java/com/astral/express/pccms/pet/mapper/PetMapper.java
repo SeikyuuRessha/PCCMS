@@ -4,6 +4,7 @@ import com.astral.express.pccms.pet.dto.request.CreatePetRequest;
 import com.astral.express.pccms.pet.dto.response.PetResponse;
 import com.astral.express.pccms.pet.entity.Pets;
 import java.util.HashMap;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

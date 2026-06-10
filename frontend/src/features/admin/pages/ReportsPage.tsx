@@ -102,13 +102,27 @@ export function ReportsPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 print:space-y-4">
             <div className="flex flex-col gap-2">
-                <h1 className="text-2xl font-semibold text-slate-900">Báo cáo thống kê</h1>
-                <p className="text-sm text-slate-500">Tổng hợp dữ liệu vận hành, dịch vụ và doanh thu theo tiêu chí thống kê.</p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-slate-900">Báo cáo thống kê</h1>
+                        <p className="text-sm text-slate-500">Tổng hợp dữ liệu vận hành, dịch vụ và doanh thu theo tiêu chí thống kê.</p>
+                    </div>
+                    <div className="print:hidden">
+                        <Button
+                            variant="primary"
+                            onClick={() => window.print()}
+                            disabled={records.length === 0 || loading}
+                        >
+                            Xuất Báo Cáo PDF
+                        </Button>
+                    </div>
+                </div>
             </div>
 
-            <Card title="Tiêu chí thống kê" subtitle="Có thể lọc báo cáo theo nhóm dịch vụ: Khám bệnh, Làm đẹp, Lưu trú hoặc Khác.">
+            <div className="print:hidden">
+                <Card title="Tiêu chí thống kê" subtitle="Có thể lọc báo cáo theo nhóm dịch vụ: Khám bệnh, Làm đẹp, Lưu trú hoặc Khác.">
                 <div className="grid gap-4 lg:grid-cols-5">
                     <Input
                         label="Từ ngày"
@@ -154,6 +168,7 @@ export function ReportsPage() {
                     </Button>
                 </div>
             </Card>
+            </div>
 
             <ReportSummaryCards summary={summary} />
 

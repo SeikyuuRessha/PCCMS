@@ -1,6 +1,6 @@
 package com.astral.express.pccms.report.dto.response;
 
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -15,3 +15,4 @@ public record RevenueSummaryRowResponse(
         Long invoiceCount
 ) {
 }
+

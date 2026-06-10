@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/me/shift-change-requests")
+@RequestMapping("/v1/me/shift-change-requests")
 @RequiredArgsConstructor
 public class ShiftChangeRequestController {
     private final ShiftChangeRequestService shiftChangeRequestService;

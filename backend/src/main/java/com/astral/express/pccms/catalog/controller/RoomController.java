@@ -3,7 +3,7 @@ package com.astral.express.pccms.catalog.controller;
 import com.astral.express.pccms.catalog.dto.request.CreateRoomRequest;
 import com.astral.express.pccms.catalog.dto.request.UpdateRoomRequest;
 import com.astral.express.pccms.catalog.dto.response.RoomResponse;
-import com.astral.express.pccms.catalog.entity.RoomStatus;
+import com.astral.express.pccms.room.entity.RoomStatus;
 import com.astral.express.pccms.catalog.security.CatalogPermissions;
 import com.astral.express.pccms.catalog.service.RoomService;
 import com.astral.express.pccms.common.dto.ApiResponse;

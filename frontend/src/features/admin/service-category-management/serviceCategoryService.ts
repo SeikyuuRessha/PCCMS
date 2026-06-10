@@ -1,5 +1,4 @@
 import api, { getApiData, getPageContent } from "~/api/api";
-import { mockServices } from "./mockServices";
 import type { Service, ServiceFormValues, ServiceSearchParams, ServiceStatus, ServiceType } from "./types";
 
 type BackendServiceCategory = "MEDICAL" | "GROOMING" | "BOARDING" | "OTHER";
@@ -14,8 +13,6 @@ interface BackendService {
     durationMinutes?: number;
     isActive?: boolean;
 }
-
-const fallback = () => mockServices.map((service) => ({ ...service }));
 
 const typeToBackend: Record<ServiceType, BackendServiceCategory> = {
     "Khám bệnh": "MEDICAL",
@@ -65,17 +62,13 @@ function toPayload(payload: ServiceFormValues) {
 }
 
 export const getServices = async () => {
-    try {
-        const response = await api.get("/admin/service-catalog", { params: { isActive: true, page: 0, size: 50 } });
-        return getPageContent<BackendService>(getApiData<unknown>(response)).map(toService);
-    } catch {
-        return fallback();
-    }
+    const response = await api.get("/v1/catalog/services", { params: { isActive: true, page: 0, size: 50 } });
+    return getPageContent<BackendService>(getApiData<unknown>(response)).map(toService);
 };
 
 export const searchServices = async (params: ServiceSearchParams) => {
     try {
-        const response = await api.get("/admin/service-catalog", {
+        const response = await api.get("/v1/catalog/services", {
             params: {
                 keyword: params.keyword || undefined,
                 categoryCode: params.type ? typeToBackend[params.type] : undefined,
@@ -86,20 +79,20 @@ export const searchServices = async (params: ServiceSearchParams) => {
         });
         return getPageContent<BackendService>(getApiData<unknown>(response)).map(toService);
     } catch {
-        return fallback();
+        throw new Error("Không thể tải danh sách dịch vụ. Vui lòng thử lại.");
     }
 };
 
 export const createService = async (payload: ServiceFormValues) => {
-    const response = await api.post("/admin/service-catalog", toPayload(payload));
+    const response = await api.post("/v1/catalog/services", toPayload(payload));
     return toService(getApiData<BackendService>(response));
 };
 
 export const updateService = async (id: string, payload: ServiceFormValues) => {
-    const response = await api.put(`/admin/service-catalog/${id}`, toPayload(payload));
+    const response = await api.put(`/v1/catalog/services/${id}`, toPayload(payload));
     return toService(getApiData<BackendService>(response));
 };
 
 export const deleteService = async (id: string) => {
-    await api.patch(`/admin/service-catalog/${id}/deactivate`);
+    await api.delete(`/v1/catalog/services/${id}`);
 };

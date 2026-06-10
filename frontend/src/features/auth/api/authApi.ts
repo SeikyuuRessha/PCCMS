@@ -3,14 +3,22 @@ import type { LoginRequest, RegisterRequest, AuthResponse } from "../../../types
 
 export const authApi = {
     login: (data: LoginRequest): Promise<AuthResponse> => {
-        return axiosClient.post("/auth/login", data);
+        return axiosClient.post("/v1/auth/login", data);
     },
 
     register: (data: RegisterRequest): Promise<AuthResponse> => {
-        return axiosClient.post("/auth/register", data);
+        return axiosClient.post("/v1/auth/register", data);
     },
 
     refreshToken: (data: { refreshToken: string }): Promise<AuthResponse> => {
-        return axiosClient.post("/auth/refresh", data);
+        return axiosClient.post("/v1/auth/refresh", data);
+    },
+
+    requestPasswordResetOtp: (data: { contact: string }): Promise<void> => {
+        return axiosClient.post("/v1/auth/password-reset/otp", data);
+    },
+
+    confirmPasswordReset: (data: { contact: string; otp: string; newPassword: string }): Promise<void> => {
+        return axiosClient.post("/v1/auth/password-reset/confirm", data);
     },
 };

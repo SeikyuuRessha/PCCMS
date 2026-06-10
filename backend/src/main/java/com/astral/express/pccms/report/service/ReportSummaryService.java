@@ -1,6 +1,6 @@
 package com.astral.express.pccms.report.service;
 
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
 import com.astral.express.pccms.report.dto.response.ReportSummaryResponse;
 import com.astral.express.pccms.report.entity.ReportType;
 
@@ -16,3 +16,4 @@ public interface ReportSummaryService {
             ServiceCategory categoryCode,
             UUID serviceId);
 }
+

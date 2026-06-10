@@ -77,7 +77,7 @@ export interface CreateMedicineCategoryRequest {
 export type UpdateMedicineCategoryRequest = CreateMedicineCategoryRequest;
 
 export interface CreateRoomTypeRequest {
-  code: string;
+  code?: string;
   name: string;
   defaultCapacity: number;
   baseDailyPriceVnd: number;

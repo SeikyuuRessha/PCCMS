@@ -56,11 +56,18 @@ describe("medicalRecordApi", () => {
     });
 
     it("creates prescription successfully", async () => {
-        const mockPrescription = { id: "pres-1", medicalRecordId: "mr-1", items: [] };
+        const mockPrescription = {
+            id: "pres-1",
+            prescriptionCode: "PRE-001",
+            medicalRecordId: "mr-1",
+            vetId: "vet-1",
+            issuedAt: "2026-06-03T08:00:00Z",
+            items: [],
+        };
         vi.mocked(axiosClient.post).mockResolvedValueOnce(mockPrescription);
 
         const data = {
-            items: [{ medicineId: "med-1", quantity: 10, dosageInstruction: "2 pills/day" }],
+            items: [{ medicineId: "med-1", quantity: 10, dosage: "2", instruction: "2 viên/ngày" }],
         };
         const result = await medicalRecordApi.createPrescription("mr-1", data);
         expect(result).toEqual(mockPrescription);
@@ -68,5 +75,14 @@ describe("medicalRecordApi", () => {
             "/v1/medical-records/mr-1/prescriptions",
             data
         );
+    });
+
+    it("lists prescriptions successfully", async () => {
+        vi.mocked(axiosClient.get).mockResolvedValueOnce([]);
+
+        const result = await medicalRecordApi.listPrescriptions("mr-1");
+
+        expect(result).toEqual([]);
+        expect(axiosClient.get).toHaveBeenCalledWith("/v1/medical-records/mr-1/prescriptions");
     });
 });

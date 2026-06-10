@@ -51,6 +51,13 @@ export interface ShiftChangeRequestItem {
     scheduleDisplay?: string;
 }
 
+export interface ShiftTargetStaffOption {
+    id: string;
+    fullName: string;
+    roleCode?: string;
+    roleName?: string;
+}
+
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const isBackendId = (value: string) => uuidPattern.test(value);
@@ -123,23 +130,34 @@ const toShiftChangeRequest = (item: BackendShiftChangeRequest): ShiftChangeReque
 });
 
 export const getMyWorkSchedules = async (fromDate: string, toDate: string) => {
-    const response = await api.get("/me/work-schedules", {
+    const response = await api.get("/v1/me/work-schedules", {
         params: { fromDate, toDate, page: 0, size: 100 },
     });
     return getPageContent<BackendWorkSchedule>(getApiData<unknown>(response)).map(toPersonalSchedule);
 };
 
 export const getMyShiftChangeRequests = async () => {
-    const response = await api.get("/me/shift-change-requests", {
+    const response = await api.get("/v1/me/shift-change-requests", {
         params: { page: 0, size: 100 },
     });
     return getPageContent<BackendShiftChangeRequest>(getApiData<unknown>(response)).map(toShiftChangeRequest);
 };
 
-export const createMyShiftChangeRequest = async (scheduleId: string, reason: string) => {
-    const response = await api.post("/me/shift-change-requests", {
+export const getShiftTargetStaffOptions = async () => {
+    const response = await api.get("/v1/work-schedules/options/staff");
+    return getApiData<ShiftTargetStaffOption[]>(response);
+};
+
+export const createMyShiftChangeRequest = async (scheduleId: string, reason: string, targetStaffId?: string) => {
+    const response = await api.post("/v1/me/shift-change-requests", {
         scheduleId,
         reason,
+        targetStaffId: targetStaffId || undefined,
     });
+    return toShiftChangeRequest(getApiData<BackendShiftChangeRequest>(response));
+};
+
+export const cancelMyShiftChangeRequest = async (requestId: string) => {
+    const response = await api.patch(`/v1/me/shift-change-requests/${requestId}/cancel`);
     return toShiftChangeRequest(getApiData<BackendShiftChangeRequest>(response));
 };

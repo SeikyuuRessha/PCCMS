@@ -44,7 +44,7 @@ public class BoardingMapper {
                 session == null ? null : session.getActualCheckoutAt(),
                 booking.getSpecialCareRequest(),
                 booking.getEstimatedPriceVnd(),
-                booking.getServiceOrder().getFinalAmountVnd(),
+                booking.getServiceOrder().getFinalAmountVnd() == null ? null : booking.getServiceOrder().getFinalAmountVnd().longValue(),
                 booking.getStatusCode(),
                 toInvoiceSummary(invoice));
     }

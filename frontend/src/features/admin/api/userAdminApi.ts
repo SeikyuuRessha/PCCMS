@@ -11,33 +11,31 @@ interface GetUsersParams {
 
 export const userAdminApi = {
     getUsers: async (params?: GetUsersParams): Promise<PageResponse<UserResponse>> => {
-        const users = await axiosClient.get<UserResponse[]>("/users", { params });
-        const content = users as unknown as UserResponse[];
-        return {
-            content,
-            pageNumber: params?.page ?? 1,
-            pageSize: params?.limit ?? content.length,
-            totalElements: content.length,
-            totalPages: 1,
-            isLast: true,
-        };
+        return axiosClient.get<any, PageResponse<UserResponse>>("/v1/admin/accounts", {
+            params: {
+                keyword: params?.search,
+                role: params?.role,
+                page: params?.page != null ? Math.max(0, params.page - 1) : undefined,
+                size: params?.limit,
+            },
+        });
     },
 
     createUser: async (data: CreateUserRequest): Promise<UserResponse> => {
-        const response = await axiosClient.post<UserResponse>("/users", data);
+        const response = await axiosClient.post<UserResponse>("/v1/admin/accounts", data);
         return response as unknown as UserResponse;
     },
 
     updateUser: async (id: string, data: UpdateUserRequest): Promise<UserResponse> => {
-        const response = await axiosClient.put<UserResponse>(`/users/${id}`, data);
+        const response = await axiosClient.put(`/v1/admin/accounts/${id}`, data);
         return response as unknown as UserResponse;
     },
 
     lockUser: async (id: string): Promise<void> => {
-        await axiosClient.patch(`/users/${id}/lock`);
+        await axiosClient.patch(`/v1/admin/accounts/${id}/status`, { statusCode: "LOCKED" });
     },
 
     disableUser: async (id: string): Promise<void> => {
-        await axiosClient.patch(`/users/${id}/disable`);
+        await axiosClient.patch(`/v1/admin/accounts/${id}/status`, { statusCode: "DISABLED" });
     },
 };

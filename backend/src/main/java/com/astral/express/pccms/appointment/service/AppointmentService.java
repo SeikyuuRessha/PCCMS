@@ -29,6 +29,9 @@ public interface AppointmentService {
 
     AppointmentResponse createMedicalAppointment(CreateMedicalAppointmentRequest request, UUID ownerId);
 
+    AppointmentResponse getAppointmentById(UUID appointmentId);
+
+
     PageResponse<AppointmentResponse> listOwnerAppointments(UUID ownerId, Pageable pageable);
 
     List<AppointmentResponse> listTodayAppointments(
@@ -43,6 +46,10 @@ public interface AppointmentService {
     AvailabilitySummaryResponse getAvailabilitySummary(LocalDate date, LocalTime slotStart);
 
     AppointmentResponse checkIn(UUID appointmentId, UUID staffId);
+
+    AppointmentResponse startExam(UUID appointmentId, UUID vetId);
+
+    void completeMedicalAppointment(UUID appointmentId, UUID vetId);
 
     AppointmentResponse cancel(UUID appointmentId, UUID actorId, boolean isStaff);
 

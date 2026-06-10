@@ -10,7 +10,7 @@ import com.astral.express.pccms.grooming.dto.request.GroomingStationRequest;
 import com.astral.express.pccms.grooming.dto.response.GroomingServiceResponse;
 import com.astral.express.pccms.grooming.dto.response.GroomingStationResponse;
 import com.astral.express.pccms.grooming.dto.response.GroomingTicketResponse;
-import com.astral.express.pccms.grooming.entity.GroomingStatus;
+import com.astral.express.pccms.appointment.entity.GroomingStatus;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -54,3 +54,4 @@ public interface GroomingService {
 
     void deactivateStation(UUID id);
 }
+

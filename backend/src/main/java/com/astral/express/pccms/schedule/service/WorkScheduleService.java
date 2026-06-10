@@ -1,7 +1,9 @@
 package com.astral.express.pccms.schedule.service;
 
 import com.astral.express.pccms.common.dto.PageResponse;
+import com.astral.express.pccms.schedule.dto.request.WeeklySchedulePlanRequest;
 import com.astral.express.pccms.schedule.dto.request.WorkScheduleRequest;
+import com.astral.express.pccms.schedule.dto.response.WeeklySchedulePlanResponse;
 import com.astral.express.pccms.schedule.dto.response.WorkScheduleResponse;
 import org.springframework.data.domain.Pageable;
 
@@ -16,4 +18,8 @@ public interface WorkScheduleService {
     WorkScheduleResponse updateSchedule(UUID scheduleId, WorkScheduleRequest request);
 
     WorkScheduleResponse cancelSchedule(UUID scheduleId);
+
+    WeeklySchedulePlanResponse previewWeeklyPlan(WeeklySchedulePlanRequest request);
+
+    WeeklySchedulePlanResponse applyWeeklyPlan(WeeklySchedulePlanRequest request);
 }

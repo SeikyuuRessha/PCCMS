@@ -82,6 +82,9 @@ class PrescriptionServiceTest {
         );
 
         if ("SUCCESS".equals(expectedResult)) {
+            given(prescriptionRepository.save(any(Prescription.class)))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+
             // WHEN
             prescriptionService.createPrescription(recordId, request);
 

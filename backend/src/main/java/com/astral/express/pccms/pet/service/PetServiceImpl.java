@@ -9,19 +9,14 @@ import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.identity.security.SecurityHelper;
-import com.astral.express.pccms.pet.dto.request.CreatePetRequest;
 import com.astral.express.pccms.pet.dto.request.UpdatePetRequest;
-import com.astral.express.pccms.pet.dto.response.PetResponse;
 import com.astral.express.pccms.pet.entity.PetBreeds;
 import com.astral.express.pccms.pet.entity.PetSpecies;
 import com.astral.express.pccms.pet.entity.Pets;
 import com.astral.express.pccms.pet.event.PetDeactivatedEvent;
-import com.astral.express.pccms.pet.mapper.PetMapper;
 import com.astral.express.pccms.pet.repository.PetBreedsRepository;
-import com.astral.express.pccms.pet.repository.PetRepository;
 import com.astral.express.pccms.pet.repository.PetSpeciesRepository;
 import com.astral.express.pccms.user.entity.Users;
-import com.astral.express.pccms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -68,7 +63,7 @@ public class PetServiceImpl implements PetService {
         Pets savedPet = petRepository.save(pet);
         log.info("Created pet with id: {} for owner: {}", savedPet.getId(), ownerId);
 
-        return petMapper.toResponse(savedPet);
+        return petMapper.toResponse(savedPet, java.util.Collections.emptyList());
     }
 
     @Override
@@ -112,7 +107,7 @@ public class PetServiceImpl implements PetService {
         Pets savedPet = petRepository.save(pet);
         log.info("Updated pet with id: {}", savedPet.getId());
 
-        return petMapper.toResponse(savedPet);
+        return petMapper.toResponse(savedPet, java.util.Collections.emptyList());
     }
 
     @Override
@@ -120,16 +115,18 @@ public class PetServiceImpl implements PetService {
     public PetResponse getPet(UUID petId) {
         Pets pet = findPetOrThrow(petId);
         assertCanAccessPet(pet);
-        return petMapper.toResponse(pet);
+        return petMapper.toResponse(pet, java.util.Collections.emptyList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<PetResponse> listPets(UUID ownerId, Boolean isActive, Pageable pageable) {
         UUID resolvedOwnerId = resolveOwnerIdForList(ownerId);
+        Page<Pets> pets = isActive == null
+                ? petRepository.findByOwner_Id(resolvedOwnerId, pageable)
+                : petRepository.findByOwner_IdAndIsActive(resolvedOwnerId, isActive, pageable);
         return PageResponse.of(
-                petRepository.findByOwnerIdAndIsActive(resolvedOwnerId, isActive, pageable)
-                        .map(petMapper::toResponse));
+                pets.map(pet -> petMapper.toResponse(pet, java.util.Collections.emptyList())));
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.astral.express.pccms.appointment.entity;
-
 import com.astral.express.pccms.common.domain.AuditableEntity;
+
 import com.astral.express.pccms.user.entity.Users;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,6 +15,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -25,6 +28,9 @@ import java.util.UUID;
 @Entity
 @Table(name = "appointments")
 @Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Setter
 public class Appointment extends AuditableEntity {
 
@@ -58,6 +64,7 @@ public class Appointment extends AuditableEntity {
     @JoinColumn(name = "exam_room_id")
     private ExamRoom examRoom;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status_code", nullable = false)
@@ -75,3 +82,4 @@ public class Appointment extends AuditableEntity {
     @Column(name = "created_by")
     private UUID createdBy;
 }
+

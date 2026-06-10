@@ -65,9 +65,23 @@ public class MedicineController {
     @PreAuthorize(CatalogPermissions.MEDICINE_READ)
     @GetMapping
     public ApiResponse<PageResponse<MedicineResponse>> getAllMedicines(
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID categoryId,
+            @RequestParam(required = false) Boolean isActive,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        if (keyword != null || isActive != null) {
+            return ApiResponse.success(medicineService.searchMedicines(keyword, categoryId, isActive, pageable));
+        }
         return ApiResponse.success(medicineService.getAllMedicines(categoryId, pageable));
+    }
+
+    @PreAuthorize(CatalogPermissions.MEDICINE_READ)
+    @GetMapping("/suggestions")
+    public ApiResponse<PageResponse<MedicineResponse>> suggestMedicines(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "true") Boolean activeOnly,
+            @PageableDefault(size = 10, sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ApiResponse.success(medicineService.searchMedicines(keyword, null, activeOnly, pageable));
     }
 
     @PreAuthorize(CatalogPermissions.MEDICINE_MANAGE)

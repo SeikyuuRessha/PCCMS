@@ -46,25 +46,26 @@ public class BoardingTrackingServiceImpl implements BoardingTrackingService {
             return List.of();
         }
 
-        List<UUID> petIds = logs.stream().map(CareLog::getPetId).distinct().toList();
+        List<UUID> petIds = logs.stream().map(log -> log.getPet().getId()).distinct().toList();
         Map<UUID, Pets> petsById = petRepository.findAllById(petIds).stream()
                 .collect(Collectors.toMap(Pets::getId, Function.identity()));
 
         return logs.stream()
                 .map(log -> {
-                    Pets pet = petsById.get(log.getPetId());
+                    Pets pet = petsById.get(log.getPet().getId());
                     String petName = pet != null ? pet.getName() : "";
                     return new CareLogResponse(
                             log.getId(),
-                            log.getPetId(),
-                            petName,
+                            log.getSession().getId(),
                             log.getLogDate(),
                             log.getPeriodCode(),
-                            BoardingPeriodLabels.toPeriodLabel(log.getPeriodCode()),
                             log.getFeedingStatus(),
                             log.getHygieneStatus(),
                             log.getHealthNote(),
                             log.getStaffNote(),
+                            log.getStaff().getId(),
+                            log.getStaff().getFullName(),
+                            log.getCreatedAt(),
                             Collections.emptyList()
                     );
                 })

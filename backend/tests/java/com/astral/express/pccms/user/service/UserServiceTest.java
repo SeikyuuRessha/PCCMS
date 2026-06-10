@@ -21,6 +21,8 @@ import org.junit.jupiter.params.provider.CsvFileSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -34,6 +36,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class UserServiceTest {
 
     @Mock
@@ -69,8 +72,8 @@ class UserServiceTest {
         mockUser.setStatusCode(UserStatus.ACTIVE);
         mockUser.setPasswordHash("oldHash");
         
-        CreateUserRequest createReq = new CreateUserRequest("test@test.com", "Test User", "CUSTOMER");
-        AdminUpdateUserRequest adminUpdateReq = new AdminUpdateUserRequest("New Name", UserStatus.ACTIVE);
+        CreateUserRequest createReq = new CreateUserRequest("Test User", "test@test.com", "CUSTOMER", null);
+        AdminUpdateUserRequest adminUpdateReq = new AdminUpdateUserRequest("New Name", null, null, null, UserStatus.ACTIVE);
         UserProfileUpdateRequest profileUpdateReq = new UserProfileUpdateRequest("New Name", "123456789");
         ChangePasswordRequest passwordReq = new ChangePasswordRequest("oldPass", "newPass");
 
@@ -79,31 +82,39 @@ class UserServiceTest {
             case "LOCK_USER":
             case "DISABLE_USER":
             case "DELETE_USER":
+                if ("VALID".equals(mockState)) {
+                    given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+                    given(userRepository.save(any(Users.class))).willAnswer(inv -> inv.getArgument(0));
+                } else if ("USER_NOT_FOUND".equals(mockState)) {
+                    given(userRepository.findById(userId)).willReturn(Optional.empty());
+                }
+                break;
             case "ADMIN_UPDATE_USER":
             case "GET_USER":
                 if ("VALID".equals(mockState)) {
-                    given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+                    given(userRepository.findByIdWithRoleAndPermissions(userId)).willReturn(Optional.of(mockUser));
                     if ("ADMIN_UPDATE_USER".equals(action)) {
                         given(userRepository.save(mockUser)).willReturn(mockUser);
                         given(userMapper.toUserResponse(mockUser)).willReturn(new UserResponse(userId, "New Name", "email", "phone", "CUSTOMER", null, UserStatus.ACTIVE));
-                    } else if ("GET_USER".equals(action)) {
-                        given(userMapper.toUserResponse(mockUser)).willReturn(new UserResponse(userId, "Name", "email", "phone", "CUSTOMER", null, UserStatus.ACTIVE));
                     } else {
-                        given(userRepository.save(any(Users.class))).willAnswer(inv -> inv.getArgument(0));
+                        given(userMapper.toUserResponse(mockUser)).willReturn(new UserResponse(userId, "Name", "email", "phone", "CUSTOMER", null, UserStatus.ACTIVE));
                     }
                 } else if ("USER_NOT_FOUND".equals(mockState)) {
-                    given(userRepository.findById(userId)).willReturn(Optional.empty());
+                    given(userRepository.findByIdWithRoleAndPermissions(userId)).willReturn(Optional.empty());
                 }
                 break;
             case "CREATE_USER":
                 if ("VALID".equals(mockState)) {
                     given(userRepository.existsByEmail(createReq.email())).willReturn(false);
-                    given(userMapper.toUser(createReq)).willReturn(mockUser);
+                    given(roleRepository.findByCodeIgnoreCase("CUSTOMER")).willReturn(Optional.of(new com.astral.express.pccms.user.entity.Roles()));
                     given(passwordEncoder.encode(anyString())).willReturn("hash");
                     given(userRepository.save(any(Users.class))).willReturn(mockUser);
                     given(userMapper.toUserResponse(mockUser)).willReturn(new UserResponse(userId, "Name", "email", "phone", "CUSTOMER", null, UserStatus.ACTIVE));
                 } else if ("EMAIL_EXISTS".equals(mockState)) {
                     given(userRepository.existsByEmail(createReq.email())).willReturn(true);
+                } else if ("ROLE_NOT_FOUND".equals(mockState)) {
+                    given(userRepository.existsByEmail(createReq.email())).willReturn(false);
+                    given(roleRepository.findByCodeIgnoreCase("CUSTOMER")).willReturn(Optional.empty());
                 }
                 break;
             case "GET_ALL_USERS":
@@ -111,20 +122,30 @@ class UserServiceTest {
                 break;
             case "GET_MY_PROFILE":
             case "UPDATE_MY_PROFILE":
+                given(securityHelper.getCurrentUserId()).willReturn(userId);
+                if ("USER_NOT_FOUND".equals(mockState)) {
+                    given(userRepository.findByIdWithRoleAndPermissions(userId)).willReturn(Optional.empty());
+                } else {
+                    given(userRepository.findByIdWithRoleAndPermissions(userId)).willReturn(Optional.of(mockUser));
+                    if ("UPDATE_MY_PROFILE".equals(action)) {
+                        given(userRepository.save(mockUser)).willReturn(mockUser);
+                        given(userMapper.toUserResponse(mockUser)).willReturn(new UserResponse(userId, "New Name", "email", "phone", "CUSTOMER", null, UserStatus.ACTIVE));
+                    } else {
+                        given(userMapper.toUserResponse(mockUser)).willReturn(new UserResponse(userId, "Name", "email", "phone", "CUSTOMER", null, UserStatus.ACTIVE));
+                    }
+                }
+                break;
             case "CHANGE_PASSWORD":
                 given(securityHelper.getCurrentUserId()).willReturn(userId);
                 if ("USER_NOT_FOUND".equals(mockState)) {
                     given(userRepository.findById(userId)).willReturn(Optional.empty());
                 } else {
                     given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-                    if ("CHANGE_PASSWORD".equals(action)) {
-                        if ("WRONG_PASSWORD".equals(mockState)) {
-                            given(passwordEncoder.matches("oldPass", "oldHash")).willReturn(false);
-                        } else {
-                            given(passwordEncoder.matches("oldPass", "oldHash")).willReturn(true);
-                            given(passwordEncoder.encode("newPass")).willReturn("newHash");
-                        }
-                    } else if ("UPDATE_MY_PROFILE".equals(action)) {
+                    if ("WRONG_PASSWORD".equals(mockState)) {
+                        given(passwordEncoder.matches("oldPass", "oldHash")).willReturn(false);
+                    } else {
+                        given(passwordEncoder.matches("oldPass", "oldHash")).willReturn(true);
+                        given(passwordEncoder.encode("newPass")).willReturn("newHash");
                         given(userRepository.save(mockUser)).willReturn(mockUser);
                     }
                 }

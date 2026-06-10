@@ -3,27 +3,27 @@ package com.astral.express.pccms.grooming.service;
 import com.astral.express.pccms.billing.entity.Invoice;
 import com.astral.express.pccms.billing.repository.InvoiceRepository;
 import com.astral.express.pccms.billing.service.BillingHandoffService;
-import com.astral.express.pccms.boarding.entity.ServiceCatalog;
-import com.astral.express.pccms.boarding.entity.ServiceCategory;
-import com.astral.express.pccms.boarding.entity.ServiceOrder;
-import com.astral.express.pccms.boarding.entity.ServiceOrderStatus;
-import com.astral.express.pccms.boarding.repository.ServiceCatalogRepository;
-import com.astral.express.pccms.boarding.repository.ServiceOrderRepository;
+import com.astral.express.pccms.appointment.entity.ServiceCatalog;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceOrder;
+import com.astral.express.pccms.appointment.entity.ServiceOrderStatus;
+import com.astral.express.pccms.appointment.repository.ServiceCatalogRepository;
+import com.astral.express.pccms.appointment.repository.ServiceOrderRepository;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.grooming.dto.request.GroomingBookingCreateRequest;
 import com.astral.express.pccms.grooming.dto.request.GroomingCompleteRequest;
 import com.astral.express.pccms.grooming.dto.request.GroomingConfirmRequest;
-import com.astral.express.pccms.grooming.entity.Appointment;
-import com.astral.express.pccms.grooming.entity.AppointmentStatus;
-import com.astral.express.pccms.grooming.entity.AppointmentType;
+import com.astral.express.pccms.appointment.entity.Appointment;
+import com.astral.express.pccms.appointment.entity.AppointmentStatus;
+import com.astral.express.pccms.appointment.entity.AppointmentType;
 import com.astral.express.pccms.grooming.entity.GroomingStation;
-import com.astral.express.pccms.grooming.entity.GroomingStatus;
-import com.astral.express.pccms.grooming.entity.GroomingTicket;
+import com.astral.express.pccms.appointment.entity.GroomingStatus;
+import com.astral.express.pccms.appointment.entity.GroomingTicket;
 import com.astral.express.pccms.grooming.mapper.GroomingMapper;
-import com.astral.express.pccms.grooming.repository.AppointmentRepository;
+import com.astral.express.pccms.appointment.repository.AppointmentRepository;
 import com.astral.express.pccms.grooming.repository.GroomingStationRepository;
-import com.astral.express.pccms.grooming.repository.GroomingTicketRepository;
+import com.astral.express.pccms.appointment.repository.GroomingTicketRepository;
 import com.astral.express.pccms.grooming.service.impl.GroomingServiceImpl;
 import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.pet.entity.Pets;
@@ -127,15 +127,14 @@ class GroomingServiceTest {
                 .name("Milu")
                 .owner("PET_OTHER_OWNER".equals(mockState) ? otherOwner : owner)
                 .build();
-        ServiceCatalog service = ServiceCatalog.builder()
-                .id(serviceId)
-                .serviceCode("GRM-BATH")
-                .name("Tam say")
-                .categoryCode(ServiceCategory.GROOMING)
-                .basePriceVnd(100000L)
-                .durationMinutes(60)
-                .isActive(true)
-                .build();
+        ServiceCatalog service = new ServiceCatalog();
+        service.setId(serviceId);
+        service.setServiceCode("GRM-BATH");
+        service.setName("Tam say");
+        service.setCategoryCode(ServiceCategory.GROOMING);
+        service.setBasePriceVnd(100000L);
+        service.setDurationMinutes(60);
+        service.setIsActive(true);
 
         if ("CREATE_BOOKING".equals(action)) {
             given(securityHelper.getCurrentUserId()).willReturn(ownerId);
@@ -158,6 +157,8 @@ class GroomingServiceTest {
             if ("VALID".equals(mockState)) {
                 given(serviceOrderRepository.save(any(ServiceOrder.class))).willAnswer(invocation -> {
                     ServiceOrder order = invocation.getArgument(0);
+                    assertThat(order.getRequestedAt()).isNotNull();
+                    assertThat(order.getStatusCode()).isEqualTo(ServiceOrderStatus.REQUESTED);
                     order.setId(UUID.randomUUID());
                     return order;
                 });
@@ -260,29 +261,31 @@ class GroomingServiceTest {
             Pets pet,
             ServiceCatalog service,
             GroomingStatus status) {
-        ServiceOrder serviceOrder = ServiceOrder.builder()
-                .id(UUID.randomUUID())
-                .orderCode("SO-001")
-                .owner(owner)
-                .pet(pet)
-                .service(service)
-                .statusCode(status == GroomingStatus.IN_SERVICE ? ServiceOrderStatus.IN_PROGRESS : ServiceOrderStatus.REQUESTED)
-                .baseAmountVnd(service.getBasePriceVnd())
-                .extraAmountVnd(0L)
-                .build();
-        Appointment appointment = Appointment.builder()
-                .id(UUID.randomUUID())
-                .serviceOrder(serviceOrder)
-                .appointmentType(AppointmentType.GROOMING)
-                .scheduledStartAt(OffsetDateTime.now().plusDays(1))
-                .scheduledEndAt(OffsetDateTime.now().plusDays(1).plusMinutes(60))
-                .statusCode(status == GroomingStatus.IN_SERVICE ? AppointmentStatus.IN_PROGRESS : AppointmentStatus.PENDING)
-                .build();
-        return GroomingTicket.builder()
-                .id(ticketId)
-                .appointment(appointment)
-                .statusCode(status)
-                .ownerNote("Can nhe tay")
-                .build();
+        ServiceOrder serviceOrder = new ServiceOrder();
+        serviceOrder.setId(UUID.randomUUID());
+        serviceOrder.setOrderCode("SO-001");
+        serviceOrder.setOwner(owner);
+        serviceOrder.setPet(pet);
+        serviceOrder.setService(service);
+        serviceOrder.setStatusCode(status == GroomingStatus.IN_SERVICE ? ServiceOrderStatus.IN_PROGRESS : ServiceOrderStatus.REQUESTED);
+        serviceOrder.setBaseAmountVnd(service.getBasePriceVnd());
+        serviceOrder.setExtraAmountVnd(0L);
+        Appointment appointment = new Appointment();
+        appointment.setId(UUID.randomUUID());
+        appointment.setServiceOrder(serviceOrder);
+        appointment.setAppointmentType(AppointmentType.GROOMING);
+        appointment.setScheduledStartAt(OffsetDateTime.now().plusDays(1));
+        appointment.setScheduledEndAt(OffsetDateTime.now().plusDays(1).plusMinutes(60));
+        appointment.setStatusCode(status == GroomingStatus.IN_SERVICE ? AppointmentStatus.IN_PROGRESS : AppointmentStatus.PENDING);
+        GroomingTicket ticket = new GroomingTicket();
+        ticket.setId(ticketId);
+        ticket.setAppointment(appointment);
+        ticket.setStatusCode(status);
+        ticket.setOwnerNote("Can nhe tay");
+        return ticket;
     }
 }
+
+
+
+

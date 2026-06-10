@@ -30,11 +30,6 @@ const weightSchema = z
   .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), PET_MESSAGES.invalidWeight)
   .refine((v) => parseFloat(v) > 0, PET_MESSAGES.invalidWeight);
 
-const optionalWeightSchema = z
-  .string()
-  .optional()
-  .refine((v) => !v || /^\d+(\.\d{1,2})?$/.test(v), PET_MESSAGES.invalidWeight)
-  .refine((v) => !v || parseFloat(v) > 0, PET_MESSAGES.invalidWeight);
 
 const ageMonthsSchema = z
   .string()

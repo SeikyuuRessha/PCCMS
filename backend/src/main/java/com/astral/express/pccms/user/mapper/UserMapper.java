@@ -13,12 +13,10 @@ public interface UserMapper {
     @Mapping(source = "role.code", target = "roleCode")
     UserResponse toUserResponse(Users user);
 
-    @Mapping(source = "roleCode", target = "role.code")
+    @Mapping(target = "role", ignore = true)
+    @Mapping(target = "passwordHash", ignore = true)
+    @Mapping(target = "statusCode", ignore = true)
     Users toUser(CreateUserRequest request);
-
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(source = "roleCode", target = "role.code")
-    void updateFromAdmin(AdminUpdateUserRequest request, @MappingTarget Users user);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateProfile(UserProfileUpdateRequest request, @MappingTarget Users user);

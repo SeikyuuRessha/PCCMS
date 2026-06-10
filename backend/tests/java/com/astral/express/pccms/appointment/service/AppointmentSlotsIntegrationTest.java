@@ -16,7 +16,9 @@ class AppointmentSlotsIntegrationTest {
 
     @Test
     void should_ReturnSlots_when_FutureDate() {
-        assertThatCode(() -> appointmentService.getAvailableSlots(LocalDate.of(2026, 6, 8), null))
+        LocalDate futureDate = LocalDate.now().plusDays(1);
+
+        assertThatCode(() -> appointmentService.getAvailableSlots(futureDate, null))
                 .doesNotThrowAnyException();
     }
 }

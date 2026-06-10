@@ -1,8 +1,8 @@
 package com.astral.express.pccms.grooming.dto.response;
 
-import com.astral.express.pccms.boarding.entity.ServiceOrderStatus;
-import com.astral.express.pccms.grooming.entity.AppointmentStatus;
-import com.astral.express.pccms.grooming.entity.GroomingStatus;
+import com.astral.express.pccms.appointment.entity.ServiceOrderStatus;
+import com.astral.express.pccms.appointment.entity.AppointmentStatus;
+import com.astral.express.pccms.appointment.entity.GroomingStatus;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -41,3 +41,5 @@ public record GroomingTicketResponse(
         GroomingInvoiceSummaryResponse invoice
 ) {
 }
+
+

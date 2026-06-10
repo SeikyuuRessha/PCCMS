@@ -1,9 +1,9 @@
 import { type ReactNode } from "react";
-import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
+import { createBrowserRouter, Navigate, Link } from "react-router-dom";
 import { useAuth } from "~/features/auth/context/AuthContext";
 import type { RoleKey } from "~/types/navigation";
 import { recordAuthFailure } from "~/shared/auth/authSession";
-import { hasAccessToken } from "~/shared/auth/tokenStorage";
+
 
 // Layouts
 import { DashboardLayout } from "~/components/layouts";
@@ -15,13 +15,15 @@ import { LoginPage, RegisterPage, ForgotPasswordPage } from "~/features/auth";
 import {
     OwnerDashboard,
     PetProfilesPage,
+    OwnerAppointmentsPage,
     UnifiedBookingPage,
     GroomingBookingPage,
     GroomingTrackingPage,
     BoardingTrackingPage,
     PaymentsPage,
-    ProfilePage,
 } from "~/features/owner";
+import { ProfilePage } from "~/shared/pages/ProfilePage";
+
 import {
     ReceptionDashboard,
     AppointmentReceptionPage,
@@ -29,14 +31,15 @@ import {
     BoardingLogPage,
 } from "~/features/reception";
 import { MySchedulePage as ReceptionMySchedulePage } from "~/features/reception/pages/MySchedulePage";
-import { DoctorDashboard, DoctorQueuePage, MedicalRecordPage } from "~/features/doctor";
+import { DoctorDashboard, DoctorQueuePage, MedicalRecordPage, MedicalRecordListPage } from "~/features/doctor";
+
 import { MySchedulePage as DoctorMySchedulePage } from "~/features/doctor/pages/MySchedulePage";
 import {
     AdminDashboard,
     AccountsPage,
     CatalogPage,
     RoomsPage,
-    SchedulePage,
+    WorkSchedulePage,
     ReportsPage,
 } from "~/features/admin";
 
@@ -48,7 +51,10 @@ function normalizeRole(roleCode?: string): RoleKey {
         customer: "owner",
         staff: "staff",
         receptionist: "staff",
+        reception: "staff",
         veterinarian: "veterinarian",
+        vet: "veterinarian",
+        doctor: "veterinarian",
         admin: "admin",
     };
     return aliases[key] ?? "public";
@@ -61,7 +67,7 @@ function AuthGuard({ children, requiredRole }: { children: ReactNode; requiredRo
         return <Navigate to="/login" replace />;
     }
 
-    const currentRole = user?.roleCode?.toLowerCase() || "public";
+    const currentRole = normalizeRole(user?.roleCode);
 
     if (currentRole !== requiredRole) {
         recordAuthFailure({
@@ -84,12 +90,7 @@ function RootRedirect() {
 export const router = createBrowserRouter([
     {
         path: "/",
-        element: (
-            <Navigate
-                to={!isAuthenticated() ? "/login" : `/${getStoredRole()}`}
-                replace
-            />
-        ),
+        element: <RootRedirect />,
     },
 
     // Auth routes
@@ -113,6 +114,7 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: <OwnerDashboard /> },
             { path: "pets", element: <PetProfilesPage /> },
+            { path: "appointments", element: <OwnerAppointmentsPage /> },
             { path: "book", element: <UnifiedBookingPage /> },
             { path: "grooming/book", element: <GroomingBookingPage /> },
             { path: "grooming/tracking", element: <GroomingTrackingPage /> },
@@ -127,9 +129,7 @@ export const router = createBrowserRouter([
         path: "/staff",
         element: (
             <AuthGuard requiredRole="staff">
-                <ReceptionMockProvider>
-                    <DashboardLayout />
-                </ReceptionMockProvider>
+                <DashboardLayout />
             </AuthGuard>
         ),
         children: [
@@ -138,6 +138,7 @@ export const router = createBrowserRouter([
             { path: "grooming-board", element: <GroomingBoardPage /> },
             { path: "boarding-log", element: <BoardingLogPage /> },
             { path: "my-schedule", element: <ReceptionMySchedulePage /> },
+            { path: "profile", element: <ProfilePage /> },
         ],
     },
     {
@@ -150,8 +151,11 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: <DoctorDashboard /> },
             { path: "queue", element: <DoctorQueuePage /> },
-            { path: "medical-record", element: <MedicalRecordPage /> },
+            { path: "medical-records", element: <MedicalRecordListPage /> },
+            { path: "medical-records/:id", element: <MedicalRecordPage /> },
+            { path: "medical-records/appointment/:appointmentId", element: <MedicalRecordPage /> },
             { path: "my-schedule", element: <DoctorMySchedulePage /> },
+            { path: "profile", element: <ProfilePage /> },
         ],
     },
     {
@@ -166,8 +170,9 @@ export const router = createBrowserRouter([
             { path: "accounts", element: <AccountsPage /> },
             { path: "catalog", element: <CatalogPage /> },
             { path: "rooms", element: <RoomsPage /> },
-            { path: "schedule", element: <SchedulePage /> },
+            { path: "schedule", element: <WorkSchedulePage /> },
             { path: "reports", element: <ReportsPage /> },
+            { path: "profile", element: <ProfilePage /> },
         ],
     },
 
@@ -178,5 +183,24 @@ export const router = createBrowserRouter([
     { path: "/reception/boarding-log", element: <Navigate to="/staff/boarding-log" replace /> },
     { path: "/doctor", element: <Navigate to="/veterinarian" replace /> },
     { path: "/doctor/queue", element: <Navigate to="/veterinarian/queue" replace /> },
-    { path: "/doctor/medical-record", element: <Navigate to="/veterinarian/medical-record" replace /> },
+    { path: "/doctor/medical-record", element: <Navigate to="/veterinarian/medical-records" replace /> },
+    { path: "/veterinarian/medical-record", element: <Navigate to="/veterinarian/medical-records" replace /> },
+
+
+    // Catch-all 404 route
+    { 
+        path: "*", 
+        element: (
+            <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6">
+                <h1 className="mb-4 text-6xl font-bold text-slate-900">404</h1>
+                <h2 className="mb-2 text-xl font-semibold text-slate-700">Trang không tồn tại</h2>
+                <p className="mb-8 max-w-md text-center text-slate-500">
+                    Đường dẫn bạn đang truy cập chưa được phát triển hoặc không tồn tại. Vui lòng kiểm tra lại!
+                </p>
+                <Link to="/" className="rounded-lg bg-primary-600 px-6 py-2.5 font-medium text-white transition hover:bg-primary-700">
+                    Về trang chủ
+                </Link>
+            </div>
+        )
+    }
 ]);

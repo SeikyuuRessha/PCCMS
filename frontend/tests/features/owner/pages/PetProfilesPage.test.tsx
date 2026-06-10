@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -6,6 +6,12 @@ import { PetProfilesPage } from "~/features/owner/pages/PetProfilesPage";
 import { petApi } from "~/shared/api/petApi";
 
 vi.mock("~/shared/api/petApi");
+vi.mock("~/shared/api/petCatalogApi", () => ({
+    petCatalogApi: {
+        getSpecies: vi.fn().mockResolvedValue([{ id: "species-1", name: "CHÓ" }]),
+        getBreedsBySpecies: vi.fn().mockResolvedValue([{ id: "breed-1", name: "Poodle" }]),
+    }
+}));
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -25,8 +31,10 @@ const mockPet = {
     id: "pet-1",
     ownerId: "owner-1",
     name: "Milu",
-    speciesId: "CHÓ",
-    breedId: "Poodle",
+    speciesId: "species-1",
+    speciesName: "CHÓ",
+    breedId: "breed-1",
+    breedName: "Poodle",
     sex: "MALE" as const,
     birthDate: "2023-01-01",
     estimatedAgeMonths: 24,
@@ -53,6 +61,10 @@ describe("PetProfilesPage", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         queryClient.clear();
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     it("renders loading state initially", () => {
@@ -146,7 +158,10 @@ describe("PetProfilesPage", () => {
         const nameInput = screen.getByPlaceholderText("Milu");
         await userEvent.type(nameInput, "Milu");
 
-        // Mặc định Loài là mảng [CHÓ, MÈO, THỎ, CHIM], the first option is CHÓ, so it's already selected.
+        // Wait for species options to load
+        await screen.findByRole("option", { name: "CHÓ" });
+        const speciesSelect = screen.getByLabelText(/Loài/i);
+        await userEvent.selectOptions(speciesSelect, "species-1");
 
         const submitButton = screen.getByRole("button", { name: "Lưu thú cưng" });
         await userEvent.click(submitButton);
@@ -155,8 +170,66 @@ describe("PetProfilesPage", () => {
             expect(petApi.createPet).toHaveBeenCalledWith(
                 expect.objectContaining({
                     name: "Milu",
+                    speciesId: "species-1",
                 })
             );
+        });
+    });
+
+    it("opens edit modal and updates a pet", async () => {
+        vi.mocked(petApi.getPets).mockResolvedValueOnce({
+            content: [mockPet],
+            pageNumber: 1,
+            pageSize: 20,
+            totalElements: 1,
+            totalPages: 1,
+            isLast: true,
+        });
+        vi.mocked(petApi.updatePet).mockResolvedValueOnce({ ...mockPet, weightKg: 6 });
+
+        renderComponent();
+
+        await screen.findByText("Milu");
+        await userEvent.click(screen.getByRole("button", { name: "Chỉnh sửa" }));
+
+        expect(screen.getByText("Chỉnh sửa hồ sơ thú cưng")).toBeInTheDocument();
+
+        const weightInput = screen.getByLabelText(/Cân nặng/i);
+        await userEvent.clear(weightInput);
+        await userEvent.type(weightInput, "6");
+        await userEvent.click(screen.getByRole("button", { name: "Cập nhật thú cưng" }));
+
+        await waitFor(() => {
+            expect(petApi.updatePet).toHaveBeenCalledWith(
+                "pet-1",
+                expect.objectContaining({
+                    name: "Milu",
+                    speciesId: "species-1",
+                    weightKg: 6,
+                })
+            );
+        });
+    });
+
+    it("confirms and hides a pet profile", async () => {
+        vi.spyOn(window, "confirm").mockReturnValue(true);
+        vi.mocked(petApi.getPets).mockResolvedValueOnce({
+            content: [mockPet],
+            pageNumber: 1,
+            pageSize: 20,
+            totalElements: 1,
+            totalPages: 1,
+            isLast: true,
+        });
+        vi.mocked(petApi.deletePet).mockResolvedValueOnce();
+
+        renderComponent();
+
+        await screen.findByText("Milu");
+        await userEvent.click(screen.getByRole("button", { name: "Ẩn hồ sơ Milu" }));
+
+        await waitFor(() => {
+            expect(petApi.deletePet).toHaveBeenCalledWith("pet-1");
         });
     });
 });

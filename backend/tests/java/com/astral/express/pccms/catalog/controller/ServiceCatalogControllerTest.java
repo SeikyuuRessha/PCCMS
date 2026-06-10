@@ -4,7 +4,7 @@ import com.astral.express.pccms.catalog.service.ServiceCatalogService;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.common.exception.GlobalExceptionHandler;
 import com.astral.express.pccms.catalog.dto.response.ServiceCatalogResponse;
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +32,7 @@ class ServiceCatalogControllerTest {
     private MockMvc mockMvc;
 
     @Mock
-    private ServiceCatalogService serviceCatalogService;
+    private com.astral.express.pccms.catalog.service.ServiceCatalogAdminService serviceCatalogAdminService;
 
     @InjectMocks
     private ServiceCatalogController serviceCatalogController;
@@ -56,12 +56,12 @@ class ServiceCatalogControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/admin/service-catalog")
+        mockMvc.perform(post("/v1/catalog/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 
     @Test
@@ -75,38 +75,23 @@ class ServiceCatalogControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/admin/service-catalog")
+        mockMvc.perform(post("/v1/catalog/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 
     @Test
-    void should_DeactivateService_when_PatchDeactivateEndpointCalled() throws Exception {
+    void should_DeleteService_when_DeleteEndpointCalled() throws Exception {
         UUID serviceId = UUID.randomUUID();
-        ServiceCatalogResponse response = new ServiceCatalogResponse(
-                serviceId,
-                "SVC-DEACT",
-                "Deactivate Service",
-                ServiceCategory.GROOMING,
-                "test",
-                BigDecimal.valueOf(12000),
-                30,
-                false,
-                null,
-                null,
-                null,
-                null
-        );
-        given(serviceCatalogService.deactivateService(serviceId)).willReturn(response);
 
-        mockMvc.perform(patch("/admin/service-catalog/{serviceId}/deactivate", serviceId))
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/v1/catalog/services/{serviceId}", serviceId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.isActive").value(false));
+                .andExpect(jsonPath("$.success").value(true));
 
-        verify(serviceCatalogService).deactivateService(serviceId);
+        verify(serviceCatalogAdminService).delete(serviceId);
     }
 }
+

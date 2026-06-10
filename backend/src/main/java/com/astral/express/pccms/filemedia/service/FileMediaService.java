@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface FileMediaService {
     UploadedFileResponse uploadOwnerVisibleImage(MultipartFile file, UUID uploadedByUserId);
+    UploadedFileResponse uploadOwnerVisibleMedia(MultipartFile file, UUID uploadedByUserId);
 }

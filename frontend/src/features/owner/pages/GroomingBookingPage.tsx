@@ -11,6 +11,7 @@ import { Card, EmptyState, SummaryRow } from "~/components/molecules";
 import { groomingApi } from "~/features/grooming/api/groomingApi";
 import { petApi } from "~/shared/api/petApi";
 import { parseApiError } from "~/shared/utils/errorHandlers";
+import { clinicTodayIso } from "~/shared/utils/dateGuards";
 
 const groomingBookingSchema = z.object({
     petId: z.string().min(1, "Chọn thú cưng"),
@@ -73,6 +74,7 @@ export function GroomingBookingPage() {
     const selectedServiceId = watch("serviceId");
     const scheduledDate = watch("scheduledDate");
     const scheduledTime = watch("scheduledTime");
+    const todayIso = clinicTodayIso();
     const scheduledStartAt = useMemo(
         () => combineLocalDateTime(scheduledDate, scheduledTime),
         [scheduledDate, scheduledTime]
@@ -191,6 +193,7 @@ export function GroomingBookingPage() {
                             <Input
                                 type="date"
                                 label="Ngày hẹn"
+                                min={todayIso}
                                 error={errors.scheduledDate?.message}
                                 {...register("scheduledDate")}
                             />

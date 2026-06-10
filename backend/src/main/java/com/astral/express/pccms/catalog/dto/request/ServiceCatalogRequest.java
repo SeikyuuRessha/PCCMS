@@ -1,12 +1,11 @@
 package com.astral.express.pccms.catalog.dto.request;
 
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record ServiceCatalogRequest(
@@ -25,7 +24,7 @@ public record ServiceCatalogRequest(
 
         @NotNull
         @Min(0)
-        BigDecimal basePriceVnd,
+        Long basePriceVnd,
 
         Integer durationMinutes,
 
@@ -36,3 +35,4 @@ public record ServiceCatalogRequest(
         LocalDate effectiveTo
 ) {
 }
+

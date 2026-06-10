@@ -1,12 +1,14 @@
 package com.astral.express.pccms.identity.security;
 
+import com.astral.express.pccms.user.entity.UserStatus;
+
 import com.astral.express.pccms.identity.service.CustomUserDetails;
 import com.astral.express.pccms.identity.service.CustomUserDetailsService;
 import com.astral.express.pccms.identity.service.TokenBlacklistService;
 import com.astral.express.pccms.user.entity.Permission;
 import com.astral.express.pccms.user.entity.Roles;
-import com.astral.express.pccms.user.entity.UserStatus;
 import com.astral.express.pccms.user.entity.Users;
+import com.astral.express.pccms.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.RedisConnectionFailureException;
@@ -43,11 +45,12 @@ class JwtAuthenticationFilterTest {
         CustomUserDetails userDetails = new CustomUserDetails(user);
         CustomUserDetailsService userDetailsService = mock(CustomUserDetailsService.class);
         TokenBlacklistService tokenBlacklistService = mock(TokenBlacklistService.class);
-        given(userDetailsService.loadUserById(user.getId())).willReturn(userDetails);
+        UserRepository userRepository = mock(UserRepository.class);
+        given(userDetailsService.loadUserByUsername(user.getEmail())).willReturn(userDetails);
         given(tokenBlacklistService.isBlacklisted(jwtUtil.extractJti(token))).willReturn(false);
 
         JwtAuthenticationFilter filter =
-                new JwtAuthenticationFilter(jwtUtil, userDetailsService, tokenBlacklistService);
+                new JwtAuthenticationFilter(jwtUtil, userDetailsService, tokenBlacklistService, userRepository);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/admin/accounts");
         request.addHeader("Authorization", "Bearer " + token);
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -72,12 +75,13 @@ class JwtAuthenticationFilterTest {
         CustomUserDetails userDetails = new CustomUserDetails(user);
         CustomUserDetailsService userDetailsService = mock(CustomUserDetailsService.class);
         TokenBlacklistService tokenBlacklistService = mock(TokenBlacklistService.class);
-        given(userDetailsService.loadUserById(user.getId())).willReturn(userDetails);
+        UserRepository userRepository = mock(UserRepository.class);
+        given(userDetailsService.loadUserByUsername(user.getEmail())).willReturn(userDetails);
         given(tokenBlacklistService.isBlacklisted(jwtUtil.extractJti(token)))
                 .willThrow(new RedisConnectionFailureException("redis unavailable"));
 
         JwtAuthenticationFilter filter =
-                new JwtAuthenticationFilter(jwtUtil, userDetailsService, tokenBlacklistService);
+                new JwtAuthenticationFilter(jwtUtil, userDetailsService, tokenBlacklistService, userRepository);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/admin/accounts");
         request.addHeader("Authorization", "Bearer " + token);
         MockHttpServletResponse response = new MockHttpServletResponse();

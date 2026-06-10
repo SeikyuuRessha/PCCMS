@@ -2,11 +2,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { server } from "@tests/mocks/server";
 import { http, HttpResponse } from "msw";
 import axiosClient from "~/shared/api/axiosClient";
+import { router } from "~/router";
 import toast from "react-hot-toast";
 
 vi.mock("react-hot-toast", () => ({
     default: {
         error: vi.fn(),
+    },
+}));
+
+vi.mock("~/router", () => ({
+    router: {
+        navigate: vi.fn(),
     },
 }));
 
@@ -37,15 +44,15 @@ describe("axiosClient", () => {
         expect(response).toEqual({ id: 1, name: "Test" });
     });
 
-    it("redirects to /login and clears token on 401", async () => {
+    it("redirects to /login and clears token on 401 (non-auth endpoints)", async () => {
         localStorage.setItem("token", "expired-token");
 
-        // mock window.location.href
+        // mock window.location.href to ensure it is NOT changed
         const originalLocation = window.location;
         // @ts-ignore
         delete window.location;
         // @ts-ignore
-        window.location = { href: "" };
+        window.location = { href: "http://localhost/protected" };
 
         server.use(
             http.get("*/test-401", () => {
@@ -55,10 +62,22 @@ describe("axiosClient", () => {
 
         await expect(axiosClient.get("/test-401")).rejects.toThrow();
         expect(localStorage.getItem("token")).toBeNull();
-        expect(window.location.href).toBe("/login");
+        expect(window.location.href).toBe("http://localhost/protected"); // Should NOT change
+        expect(router.navigate).toHaveBeenCalledWith("/login");
 
         // @ts-ignore
         window.location = originalLocation;
+    });
+
+    it("does not navigate to /login if 401 is from an auth endpoint", async () => {
+        server.use(
+            http.post("*/auth/login", () => {
+                return new HttpResponse(null, { status: 401 });
+            })
+        );
+
+        await expect(axiosClient.post("/auth/login")).rejects.toThrow();
+        expect(router.navigate).not.toHaveBeenCalled();
     });
 
     it("shows toast error on 403", async () => {

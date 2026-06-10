@@ -11,6 +11,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,9 +45,9 @@ public class GlobalExceptionHandler {
         });
 
         ErrorResponse errorResponse = ErrorResponse.builder()
-                .code(ErrorCode.ERR_VALIDATION_FAILED.getHttpStatus())
-                .message(ErrorCode.ERR_VALIDATION_FAILED.getMessage())
-                .errorCode(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode())
+                .code(ErrorCode.ERR_400_BAD_REQUEST.getHttpStatus())
+                .message(ErrorCode.ERR_400_BAD_REQUEST.getMessage())
+                .errorCode(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode())
                 .errors(errors)
                 .build();
 

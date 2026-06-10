@@ -24,7 +24,9 @@ import java.util.UUID;
 public class FileMediaServiceImpl implements FileMediaService {
 
     private static final long MAX_IMAGE_SIZE_BYTES = 5L * 1024L * 1024L;
+    private static final long MAX_OWNER_VISIBLE_MEDIA_SIZE_BYTES = 20L * 1024L * 1024L;
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+    private static final Set<String> ALLOWED_VIDEO_TYPES = Set.of("video/mp4", "video/webm", "video/quicktime");
 
     private final CloudMediaStorageService cloudMediaStorageService;
     private final FileAssetRepository fileAssetRepository;
@@ -34,10 +36,20 @@ public class FileMediaServiceImpl implements FileMediaService {
     @Transactional
     public UploadedFileResponse uploadOwnerVisibleImage(MultipartFile file, UUID uploadedByUserId) {
         validateImage(file);
+        return uploadOwnerVisibleValidated(file, uploadedByUserId);
+    }
 
+    @Override
+    @Transactional
+    public UploadedFileResponse uploadOwnerVisibleMedia(MultipartFile file, UUID uploadedByUserId) {
+        validateOwnerVisibleMedia(file);
+        return uploadOwnerVisibleValidated(file, uploadedByUserId);
+    }
+
+    private UploadedFileResponse uploadOwnerVisibleValidated(MultipartFile file, UUID uploadedByUserId) {
         Users uploadedBy = userRepository.findById(uploadedByUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
-        CloudMediaStorageService.StoredMedia storedMedia = cloudMediaStorageService.uploadImage(file, "pccms/care-logs");
+        CloudMediaStorageService.StoredMedia storedMedia = cloudMediaStorageService.uploadImage(file, "care-logs");
 
         FileAsset fileAsset = FileAsset.builder()
                 .originalName(file.getOriginalFilename() == null ? "care-log-image" : file.getOriginalFilename())
@@ -60,6 +72,19 @@ public class FileMediaServiceImpl implements FileMediaService {
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType)) {
+            throw new BusinessException(ErrorCode.ERR_FILE_001_INVALID_IMAGE);
+        }
+    }
+
+    private void validateOwnerVisibleMedia(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.ERR_FILE_001_INVALID_IMAGE);
+        }
+        if (file.getSize() > MAX_OWNER_VISIBLE_MEDIA_SIZE_BYTES) {
+            throw new BusinessException(ErrorCode.ERR_FILE_001_INVALID_IMAGE);
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || (!ALLOWED_IMAGE_TYPES.contains(contentType) && !ALLOWED_VIDEO_TYPES.contains(contentType))) {
             throw new BusinessException(ErrorCode.ERR_FILE_001_INVALID_IMAGE);
         }
     }

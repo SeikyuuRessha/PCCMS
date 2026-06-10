@@ -6,15 +6,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.math.BigDecimal;
+
 
 public record UpdateServiceCatalogRequest(
         @NotBlank @Size(max = 60) String serviceCode,
         @NotBlank @Size(max = 160) String name,
         @NotNull ServiceCategory categoryCode,
         String description,
-        @NotNull @Min(0) BigDecimal basePriceVnd,
+        @NotNull @Min(0) Long basePriceVnd,
         @Min(1) Integer durationMinutes,
         @NotNull Boolean isActive
 ) {
 }
+

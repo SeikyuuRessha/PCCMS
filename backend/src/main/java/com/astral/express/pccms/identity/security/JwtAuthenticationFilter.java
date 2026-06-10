@@ -1,6 +1,9 @@
 package com.astral.express.pccms.identity.security;
 
+import com.astral.express.pccms.common.exception.BusinessException;
+import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.identity.service.CustomUserDetails;
+import com.astral.express.pccms.identity.service.CustomUserDetailsService;
 import com.astral.express.pccms.identity.service.TokenBlacklistService;
 import com.astral.express.pccms.user.entity.Users;
 import com.astral.express.pccms.user.repository.UserRepository;
@@ -74,7 +77,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (isTokenAccepted(jwt, userDetails, userIdStr)) {
                 String jti = jwtUtil.extractJti(jwt);
-                if (isTokenBlacklisted(jti)) {
+                boolean isBlacklisted = false;
+                try { 
+                    isBlacklisted = tokenBlacklistService.isBlacklisted(jti);
+                } catch (org.springframework.data.redis.RedisConnectionFailureException ex) {
+                    // Log warning, allow request if redis is down
+                    System.err.println("Redis unavailable, proceeding without blacklist check: " + ex.getMessage());
+                }
+                
+                if (isBlacklisted) {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     response.getWriter().write("{\"error\": \"Token revoked\", \"message\": \"This token has been invalidated\"}");

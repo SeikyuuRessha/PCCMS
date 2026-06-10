@@ -1,5 +1,4 @@
 import api, { getApiData, getPageContent } from "~/api/api";
-import { mockAccounts } from "./mockAccounts";
 import type { Account, AccountRole, AccountSearchParams, AccountStatus } from "./types";
 
 type BackendAccountStatus = "UNVERIFIED" | "ACTIVE" | "LOCKED" | "DISABLED";
@@ -16,6 +15,26 @@ interface BackendAccount {
     statusCode: BackendAccountStatus;
     createdAt?: string;
     updatedAt?: string;
+}
+
+interface AccountCredentialResponse {
+    account: BackendAccount;
+    temporaryPassword: string;
+    emailSent?: boolean;
+}
+
+export interface AccountCredential {
+    account: Account;
+    temporaryPassword: string;
+    emailSent: boolean;
+}
+
+export interface AccountPayload {
+    fullName: string;
+    email: string;
+    phone: string;
+    roleCode: string;
+    statusCode?: BackendAccountStatus;
 }
 
 const roleToBackend: Record<AccountRole, string> = {
@@ -58,8 +77,6 @@ const statusFromBackend = (status: BackendAccountStatus): AccountStatus => {
     }
 };
 
-const fallbackAccounts = () => mockAccounts.map((account) => ({ ...account, roles: [...account.roles] }));
-
 function toAccount(account: BackendAccount): Account {
     const roles = account.roles?.length
         ? account.roles.map(roleFromBackend)
@@ -78,7 +95,7 @@ function toAccount(account: BackendAccount): Account {
     };
 }
 
-export const getAllAccounts = async () => fallbackAccounts();
+export const getAllAccounts = async () => searchAccounts({});
 
 export const searchAccounts = async (params: AccountSearchParams) => {
     const keyword = [params.fullName, params.email, params.phone]
@@ -90,23 +107,16 @@ export const searchAccounts = async (params: AccountSearchParams) => {
         role: params.role ? roleToBackend[params.role] : undefined,
         status: params.status ? statusToBackend[params.status] : undefined,
         page: 0,
-        size: 20,
+        size: 50,
     };
 
-    try {
-        const response = await api.get("/admin/accounts", { params: query });
-        const payload = getApiData<unknown>(response);
-        return getPageContent<BackendAccount>(payload).map(toAccount);
-    } catch (error) {
-        if (import.meta.env.DEV) {
-            return fallbackAccounts();
-        }
-        throw error;
-    }
+    const response = await api.get("/v1/admin/accounts", { params: query });
+    const payload = getApiData<unknown>(response);
+    return getPageContent<BackendAccount>(payload).map(toAccount);
 };
 
 export const updateAccountStatus = async (accountId: string, status: AccountStatus) => {
-    const response = await api.patch(`/admin/accounts/${accountId}/status`, {
+    const response = await api.patch(`/v1/admin/accounts/${accountId}/status`, {
         statusCode: statusToBackend[status],
     });
     return toAccount(getApiData<BackendAccount>(response));
@@ -114,6 +124,27 @@ export const updateAccountStatus = async (accountId: string, status: AccountStat
 
 export const updateAccountRoles = async (accountId: string, roles: AccountRole[]) => {
     const roleCode = roleToBackend[roles[0] ?? "staff"];
-    const response = await api.patch(`/admin/accounts/${accountId}/role`, { roleCode });
+    const response = await api.patch(`/v1/admin/accounts/${accountId}/role`, { roleCode });
     return toAccount(getApiData<BackendAccount>(response));
+};
+
+const toCredential = (response: AccountCredentialResponse): AccountCredential => ({
+    account: toAccount(response.account),
+    temporaryPassword: response.temporaryPassword,
+    emailSent: response.emailSent ?? false,
+});
+
+export const createAccount = async (payload: AccountPayload) => {
+    const response = await api.post("/v1/admin/accounts", payload);
+    return toCredential(getApiData<AccountCredentialResponse>(response));
+};
+
+export const updateAccount = async (accountId: string, payload: AccountPayload) => {
+    const response = await api.put(`/v1/admin/accounts/${accountId}`, payload);
+    return toAccount(getApiData<BackendAccount>(response));
+};
+
+export const resetAccountPassword = async (accountId: string) => {
+    const response = await api.post(`/v1/admin/accounts/${accountId}/password/reset`);
+    return toCredential(getApiData<AccountCredentialResponse>(response));
 };

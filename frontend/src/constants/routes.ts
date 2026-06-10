@@ -6,6 +6,7 @@ export const ROUTES = {
     OWNER: {
         DASHBOARD: "/owner",
         PETS: "/owner/pets",
+        APPOINTMENTS: "/owner/appointments",
         BOOKING: "/owner/book",
         BOARDING_TRACKING: "/owner/boarding/tracking",
         PAYMENTS: "/owner/payments",
@@ -20,7 +21,7 @@ export const ROUTES = {
     DOCTOR: {
         DASHBOARD: "/veterinarian",
         QUEUE: "/veterinarian/queue",
-        MEDICAL_RECORD: "/veterinarian/medical-record",
+        MEDICAL_RECORD: "/veterinarian/medical-records",
     },
     ADMIN: {
         DASHBOARD: "/admin",

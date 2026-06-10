@@ -45,24 +45,24 @@ class ReportSummaryControllerTest {
     @Test
     void should_ReturnValidationFailed_when_TC_RPT_004_missingDateRange() throws Exception {
         given(reportSummaryService.getSummary(null, null, ReportType.REVENUE, null, null))
-                .willThrow(new BusinessException(ErrorCode.ERR_VALIDATION_FAILED));
+                .willThrow(new BusinessException(ErrorCode.ERR_400_BAD_REQUEST));
 
-        mockMvc.perform(get("/admin/reports/summary")
+        mockMvc.perform(get("/v1/admin/reports/summary")
                         .param("reportType", "REVENUE"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 
     @Test
     void should_ReturnValidationFailed_when_invalidDateBinding() throws Exception {
-        mockMvc.perform(get("/admin/reports/summary")
+        mockMvc.perform(get("/v1/admin/reports/summary")
                         .param("fromDate", "not-a-date")
                         .param("toDate", "2026-04-30")
                         .param("reportType", "REVENUE"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_VALIDATION_FAILED.getErrorCode()));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ERR_400_BAD_REQUEST.getErrorCode()));
     }
 
     @Test
@@ -72,7 +72,7 @@ class ReportSummaryControllerTest {
                 LocalDate.class,
                 LocalDate.class,
                 com.astral.express.pccms.report.entity.ReportType.class,
-                com.astral.express.pccms.catalog.entity.ServiceCategory.class,
+                com.astral.express.pccms.appointment.entity.ServiceCategory.class,
                 java.util.UUID.class
         );
 
@@ -82,3 +82,4 @@ class ReportSummaryControllerTest {
         assertThat(preAuthorize.value()).isEqualTo("hasAuthority('REPORT_VIEW')");
     }
 }
+

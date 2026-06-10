@@ -2,7 +2,7 @@ package com.astral.express.pccms.catalog.service;
 
 import com.astral.express.pccms.catalog.dto.request.ServiceCatalogRequest;
 import com.astral.express.pccms.catalog.dto.response.ServiceCatalogResponse;
-import com.astral.express.pccms.catalog.entity.ServiceCategory;
+import com.astral.express.pccms.appointment.entity.ServiceCategory;
 import com.astral.express.pccms.common.dto.PageResponse;
 import org.springframework.data.domain.Pageable;
 
@@ -21,3 +21,4 @@ public interface ServiceCatalogService {
 
     ServiceCatalogResponse deactivateService(UUID serviceId);
 }
+

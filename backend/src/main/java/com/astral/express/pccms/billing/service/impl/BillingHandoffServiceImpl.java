@@ -8,11 +8,11 @@ import com.astral.express.pccms.billing.repository.InvoiceRepository;
 import com.astral.express.pccms.billing.service.BillingHandoffService;
 import com.astral.express.pccms.boarding.entity.BoardingBooking;
 import com.astral.express.pccms.boarding.entity.BoardingSession;
-import com.astral.express.pccms.boarding.entity.ServiceOrder;
+import com.astral.express.pccms.appointment.entity.ServiceOrder;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
-import com.astral.express.pccms.grooming.entity.Appointment;
-import com.astral.express.pccms.grooming.entity.GroomingTicket;
+import com.astral.express.pccms.appointment.entity.Appointment;
+import com.astral.express.pccms.appointment.entity.GroomingTicket;
 import com.astral.express.pccms.user.entity.Users;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -76,7 +76,7 @@ public class BillingHandoffServiceImpl implements BillingHandoffService {
     }
 
     private Invoice createNewGroomingInvoice(ServiceOrder serviceOrder, Appointment appointment, GroomingTicket ticket, Users createdBy) {
-        Long unitPrice = serviceOrder.getService().getBasePriceVnd();
+        Long unitPrice = serviceOrder.getService().getBasePriceVnd() == null ? null : serviceOrder.getService().getBasePriceVnd().longValue();
         Long totalAmount = unitPrice;
 
         Invoice invoice = Invoice.builder()

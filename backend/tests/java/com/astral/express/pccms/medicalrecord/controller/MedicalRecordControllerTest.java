@@ -82,9 +82,9 @@ class MedicalRecordControllerTest {
     @Test
     void should_ReturnBadRequest_when_UpdateWithInvalidVitals() throws Exception {
         UUID recordId = UUID.randomUUID();
-        // Temperature below 30.0 -> @DecimalMin should fail
+        // Negative temperature is physically impossible and should fail.
         UpdateMedicalRecordRequest request = new UpdateMedicalRecordRequest(
-                BigDecimal.valueOf(20.0), 120, 30, BigDecimal.valueOf(5.0),
+                BigDecimal.valueOf(-1.0), 120, 30, BigDecimal.valueOf(5.0),
                 "120/80", 98, "Pink", BigDecimal.valueOf(1.5),
                 "Fever", "Rest"
         );
