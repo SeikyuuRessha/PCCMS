@@ -44,6 +44,7 @@ export function MedicalRecordListPage() {
             hour: "2-digit",
             minute: "2-digit",
         }),
+        record.petName || record.petId,
         record.preliminaryDiagnosis || "—",
         <Link
             to={`/veterinarian/medical-records/${record.id}`}
@@ -61,6 +62,7 @@ export function MedicalRecordListPage() {
                         "Mã bệnh án",
                         "Trạng thái",
                         "Ngày tạo",
+                        "Thú cưng",
                         "Chẩn đoán sơ bộ",
                         "Hành động",
                     ]}

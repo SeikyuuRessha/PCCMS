@@ -14,6 +14,7 @@ import { Modal } from "~/components/molecules/Modal";
 import { catalogApi } from "~/features/admin/api/catalogApi";
 import { createMedicine, deleteMedicine, getMedicines, updateMedicine } from "~/features/admin/medicine-management/medicineService";
 import type { Medicine, MedicineFormValues } from "~/features/admin/medicine-management/types";
+import { MedicineUsageTemplateModal } from "./MedicineUsageTemplateModal";
 import { createService, deleteService, getServices, updateService } from "~/features/admin/service-category-management/serviceCategoryService";
 import type { Service, ServiceFormValues } from "~/features/admin/service-category-management/types";
 import type { MedicineCategoryResponse } from "~/types/catalog";
@@ -72,6 +73,7 @@ export function CatalogPage() {
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [medCatModal, setMedCatModal] = useState<"create" | "edit" | null>(null);
     const [editingMedCat, setEditingMedCat] = useState<MedicineCategoryResponse | null>(null);
+    const [templateMedicine, setTemplateMedicine] = useState<Medicine | null>(null);
 
     const medicinesQuery = useQuery({ queryKey: ["admin", "medicines"], queryFn: getMedicines });
     const servicesQuery = useQuery({ queryKey: ["admin", "services"], queryFn: getServices });
@@ -311,6 +313,7 @@ export function CatalogPage() {
                                 medicine.note ? <Tag tone="amber">Ngừng áp dụng</Tag> : <Tag tone="green">Đang áp dụng</Tag>,
                                 <div key={medicine.id} className="flex gap-1">
                                     <Button variant="outline" className="h-auto px-2 py-1 text-xs" onClick={() => openEditMedicine(medicine)}>Sửa</Button>
+                                    <Button variant="outline" className="h-auto px-2 py-1 text-xs" onClick={() => setTemplateMedicine(medicine)}>Mẫu liều</Button>
                                     <Button
                                         variant="outline"
                                         className="h-auto border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50"
@@ -467,6 +470,8 @@ export function CatalogPage() {
                     </div>
                 </form>
             </Modal>
+
+            <MedicineUsageTemplateModal medicine={templateMedicine} onClose={() => setTemplateMedicine(null)} />
         </div>
     );
 }

@@ -31,7 +31,7 @@ import {
     BoardingLogPage,
 } from "~/features/reception";
 import { MySchedulePage as ReceptionMySchedulePage } from "~/features/reception/pages/MySchedulePage";
-import { DoctorDashboard, DoctorQueuePage, MedicalRecordPage, MedicalRecordListPage } from "~/features/doctor";
+import { DoctorDashboard, DoctorQueuePage, MedicalRecordPage, MedicalRecordListPage, PrescriptionPage } from "~/features/doctor";
 
 import { MySchedulePage as DoctorMySchedulePage } from "~/features/doctor/pages/MySchedulePage";
 import {
@@ -153,6 +153,7 @@ export const router = createBrowserRouter([
             { path: "queue", element: <DoctorQueuePage /> },
             { path: "medical-records", element: <MedicalRecordListPage /> },
             { path: "medical-records/:id", element: <MedicalRecordPage /> },
+            { path: "medical-records/:id/prescriptions", element: <PrescriptionPage /> },
             { path: "medical-records/appointment/:appointmentId", element: <MedicalRecordPage /> },
             { path: "my-schedule", element: <DoctorMySchedulePage /> },
             { path: "profile", element: <ProfilePage /> },

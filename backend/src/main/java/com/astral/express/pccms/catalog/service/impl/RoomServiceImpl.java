@@ -18,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
@@ -30,11 +32,14 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional
     public RoomResponse create(CreateRoomRequest request) {
-        ensureUniqueCode(request.roomCode(), null);
+        String code = (request.roomCode() == null || request.roomCode().isBlank()) 
+            ? generateRoomCode() 
+            : request.roomCode();
+        ensureUniqueCode(code, null);
         ensureUniqueName(request.name(), null);
 
         Room room = new Room();
-        applyRequest(room, request);
+        applyRequest(room, request, code);
         return toResponse(roomRepository.save(room));
     }
 
@@ -44,10 +49,14 @@ public class RoomServiceImpl implements RoomService {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ROOM_001_NOT_FOUND));
 
-        ensureUniqueCode(request.roomCode(), id);
+        String code = (request.roomCode() == null || request.roomCode().isBlank()) 
+            ? room.getRoomCode() 
+            : request.roomCode();
+
+        ensureUniqueCode(code, id);
         ensureUniqueName(request.name(), id);
 
-        applyRequest(room, request);
+        applyRequest(room, request, code);
         return toResponse(roomRepository.save(room));
     }
 
@@ -87,8 +96,8 @@ public class RoomServiceImpl implements RoomService {
         roomRepository.save(room);
     }
 
-    private void applyRequest(Room room, CreateRoomRequest request) {
-        room.setRoomCode(request.roomCode());
+    private void applyRequest(Room room, CreateRoomRequest request, String code) {
+        room.setRoomCode(code);
         room.setName(request.name());
         room.setRoomType(resolveRoomType(request.roomTypeId()));
         room.setCapacity(request.capacity());
@@ -97,8 +106,8 @@ public class RoomServiceImpl implements RoomService {
         room.setDescription(request.description());
     }
 
-    private void applyRequest(Room room, UpdateRoomRequest request) {
-        room.setRoomCode(request.roomCode());
+    private void applyRequest(Room room, UpdateRoomRequest request, String code) {
+        room.setRoomCode(code);
         room.setName(request.name());
         room.setRoomType(resolveRoomType(request.roomTypeId()));
         room.setCapacity(request.capacity());
@@ -152,5 +161,9 @@ public class RoomServiceImpl implements RoomService {
             case MAINTENANCE -> "Bảo trì";
             case INACTIVE -> "Ngừng áp dụng";
         };
+    }
+
+    private String generateRoomCode() {
+        return "ROOM" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
     }
 }

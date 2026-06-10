@@ -30,7 +30,7 @@ const statusTone: Record<RoomStatus, "green" | "blue" | "amber" | "red"> = {
 };
 
 const roomSchema = z.object({
-    roomCode: z.string().trim().min(1, "Vui lòng nhập số/mã phòng").max(60),
+    roomCode: z.string().trim().max(60).optional().default(""),
     name: z.string().trim().min(1, "Vui lòng nhập tên phòng").max(120),
     roomTypeId: z.string().min(1, "Vui lòng chọn loại phòng"),
     floor: z.coerce.number().int().min(1, "Tầng phải lớn hơn 0"),
@@ -338,7 +338,9 @@ export function RoomsPage() {
             <Modal isOpen={roomModalMode !== null} onClose={closeRoomModal} title={roomModalTitle}>
                 <form className="space-y-4" onSubmit={roomForm.handleSubmit((values) => saveRoomMutation.mutate(values))}>
                     <div className="grid gap-4 md:grid-cols-2">
-                        <Input label="Mã phòng" readOnly={roomReadOnly} {...roomForm.register("roomCode")} error={roomForm.formState.errors.roomCode?.message} />
+                        {roomModalMode !== "create" && (
+                            <Input label="Mã phòng" readOnly={true} {...roomForm.register("roomCode")} />
+                        )}
                         <Input label="Tên phòng" readOnly={roomReadOnly} {...roomForm.register("name")} error={roomForm.formState.errors.name?.message} />
                         <div className="flex flex-col gap-1.5">
                             <label className="text-[13px] font-medium text-slate-700" htmlFor="room-type-id">Loại phòng</label>

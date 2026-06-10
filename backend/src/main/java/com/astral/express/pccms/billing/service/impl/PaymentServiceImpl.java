@@ -96,10 +96,15 @@ public class PaymentServiceImpl implements PaymentService {
                 .invoice(invoice)
                 .amountVnd(request.amountVnd())
                 .methodCode(request.methodCode())
-                .statusCode(PaymentStatus.PENDING)
+                .statusCode(PaymentStatus.SUCCEEDED)
+                .paidAt(OffsetDateTime.now())
                 .note(note)
                 .build();
-        return toResponse(paymentRepository.save(payment));
+        Payment savedPayment = paymentRepository.save(payment);
+        
+        applySucceededPayment(invoice, request.amountVnd());
+        
+        return toResponse(savedPayment);
     }
 
     @Override

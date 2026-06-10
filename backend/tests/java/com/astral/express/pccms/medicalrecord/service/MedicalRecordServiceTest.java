@@ -11,7 +11,12 @@ import com.astral.express.pccms.medicalrecord.repository.MedicalRecordRepository
 import com.astral.express.pccms.medicalrecord.event.MedicalRecordFinalizedEvent;
 import com.astral.express.pccms.appointment.service.AppointmentService;
 import com.astral.express.pccms.appointment.dto.response.AppointmentResponse;
+import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.medicalrecord.service.impl.MedicalRecordServiceImpl;
+import com.astral.express.pccms.pet.repository.PetRepository;
+import com.astral.express.pccms.user.repository.UserRepository;
+import com.astral.express.pccms.pet.entity.Pets;
+import com.astral.express.pccms.user.entity.Users;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +54,15 @@ class MedicalRecordServiceTest {
     @Mock
     private AppointmentService appointmentService;
 
+    @Mock
+    private PetRepository petRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private SecurityHelper securityHelper;
+
     @InjectMocks
     private MedicalRecordServiceImpl medicalRecordService;
 
@@ -83,8 +97,10 @@ class MedicalRecordServiceTest {
         );
 
         if ("VALID".equals(expectedResult)) {
+            given(petRepository.findById(any())).willReturn(Optional.of(new Pets()));
+            given(userRepository.findById(any())).willReturn(Optional.of(new Users()));
             MedicalRecordResponse mockResponse = new MedicalRecordResponse(
-                    recordId, "MR-123", null, null, null, RecordStatus.DRAFT,
+                    recordId, "MR-123", null, null, "Pet Name", null, "Vet Name", RecordStatus.DRAFT,
                     request.temperatureC(), request.heartRateBpm(), request.respiratoryRateBpm(),
                     request.weightKg(), request.bloodPressure(), request.spo2Percent(),
                     request.mucousMembraneColor(), request.capillaryRefillSeconds(),
@@ -134,9 +150,11 @@ class MedicalRecordServiceTest {
             );
 
             if ("VALID".equals(expectedResult)) {
+                given(petRepository.findById(any())).willReturn(Optional.of(new Pets()));
+                given(userRepository.findById(any())).willReturn(Optional.of(new Users()));
                 given(medicalRecordRepository.save(any(MedicalRecord.class))).willReturn(record);
                 given(medicalRecordMapper.toResponse(any(MedicalRecord.class))).willReturn(new MedicalRecordResponse(
-                        recordId, "MR-123", null, null, null, RecordStatus.DRAFT,
+                        recordId, "MR-123", null, null, "Pet Name", null, "Vet Name", RecordStatus.DRAFT,
                         request.temperatureC(), request.heartRateBpm(), request.respiratoryRateBpm(),
                         request.weightKg(), request.bloodPressure(), request.spo2Percent(),
                         request.mucousMembraneColor(), request.capillaryRefillSeconds(),
@@ -164,9 +182,11 @@ class MedicalRecordServiceTest {
             );
 
             if ("VALID".equals(expectedResult)) {
+                given(petRepository.findById(any())).willReturn(Optional.of(new Pets()));
+                given(userRepository.findById(any())).willReturn(Optional.of(new Users()));
                 given(medicalRecordRepository.save(any(MedicalRecord.class))).willReturn(record);
                 given(medicalRecordMapper.toResponse(any(MedicalRecord.class))).willReturn(new MedicalRecordResponse(
-                        recordId, "MR-123", null, null, null, RecordStatus.FINALIZED,
+                        recordId, "MR-123", null, null, "Pet Name", null, "Vet Name", RecordStatus.FINALIZED,
                         record.getTemperatureC(), null, null, null, null, null, null, null,
                         record.getPreliminaryDiagnosis(), request.finalDiagnosis(), request.treatmentNote(),
                         request.followUpAt(), OffsetDateTime.now(), null, null
@@ -210,9 +230,11 @@ class MedicalRecordServiceTest {
             record.setTemperatureC(BigDecimal.valueOf(38.5)); // At least one vital sign required
 
             given(medicalRecordRepository.findById(recordId)).willReturn(Optional.of(record));
+            given(petRepository.findById(any())).willReturn(Optional.of(new Pets()));
+            given(userRepository.findById(any())).willReturn(Optional.of(new Users()));
             given(medicalRecordRepository.save(any(MedicalRecord.class))).willReturn(record);
             given(medicalRecordMapper.toResponse(any(MedicalRecord.class))).willReturn(
-                    new MedicalRecordResponse(recordId, "MR-001", petId, vetId, null,
+                    new MedicalRecordResponse(recordId, "MR-001", null, petId, "Pet Name", vetId, "Vet Name",
                             RecordStatus.FINALIZED, null, null, null, null, null, null, null, null,
                             null, "Final diagnosis", null, null, OffsetDateTime.now(), null, null)
             );
@@ -244,12 +266,14 @@ class MedicalRecordServiceTest {
         record.setRecordStatus(RecordStatus.DRAFT);
 
         MedicalRecordResponse mockResponse = new MedicalRecordResponse(
-                recordId, "MR-123", null, null, null, RecordStatus.DRAFT,
+                recordId, "MR-123", null, null, "Pet Name", null, "Vet Name", RecordStatus.DRAFT,
                 null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null
         );
 
         given(medicalRecordRepository.findById(recordId)).willReturn(Optional.of(record));
+        given(petRepository.findById(any())).willReturn(Optional.of(new Pets()));
+        given(userRepository.findById(any())).willReturn(Optional.of(new Users()));
         given(medicalRecordMapper.toResponse(record)).willReturn(mockResponse);
 
         // WHEN
@@ -274,12 +298,14 @@ class MedicalRecordServiceTest {
         );
 
         MedicalRecordResponse mockResponse = new MedicalRecordResponse(
-                UUID.randomUUID(), "MR-AP0001", appointmentId, petId, vetId, RecordStatus.DRAFT,
+                UUID.randomUUID(), "MR-AP0001", appointmentId, petId, "Pet Name", vetId, "Vet Name", RecordStatus.DRAFT,
                 null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null
         );
 
         given(medicalRecordRepository.findByAppointmentId(appointmentId)).willReturn(Optional.empty());
+        given(petRepository.findById(any())).willReturn(Optional.of(new Pets()));
+        given(userRepository.findById(any())).willReturn(Optional.of(new Users()));
         given(appointmentService.getAppointmentById(appointmentId)).willReturn(mockAppointment);
         given(medicalRecordRepository.save(any(MedicalRecord.class))).willAnswer(inv -> inv.getArgument(0));
         given(medicalRecordMapper.toResponse(any(MedicalRecord.class))).willReturn(mockResponse);

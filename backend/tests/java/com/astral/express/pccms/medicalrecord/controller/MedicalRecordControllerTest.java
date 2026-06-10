@@ -62,7 +62,7 @@ class MedicalRecordControllerTest {
         );
 
         MedicalRecordResponse mockResponse = new MedicalRecordResponse(
-                recordId, "MR-001", null, null, null, RecordStatus.DRAFT,
+                recordId, "MR-001", null, null, "Pet Name", null, "Vet Name", RecordStatus.DRAFT,
                 BigDecimal.valueOf(38.0), 120, 30, BigDecimal.valueOf(5.0),
                 "120/80", 98, "Pink", BigDecimal.valueOf(1.5),
                 "Fever", null, "Rest", null, null, null, null
@@ -106,7 +106,7 @@ class MedicalRecordControllerTest {
         );
 
         MedicalRecordResponse mockResponse = new MedicalRecordResponse(
-                recordId, "MR-001", null, null, null, RecordStatus.FINALIZED,
+                recordId, "MR-001", null, null, "Pet Name", null, "Vet Name", RecordStatus.FINALIZED,
                 BigDecimal.valueOf(38.0), 120, 30, BigDecimal.valueOf(5.0),
                 "120/80", 98, "Pink", BigDecimal.valueOf(1.5),
                 "Fever", "Confirmed Infection", "Continue antibiotics", 

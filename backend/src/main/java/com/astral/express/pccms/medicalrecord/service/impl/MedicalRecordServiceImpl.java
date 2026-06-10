@@ -14,6 +14,10 @@ import com.astral.express.pccms.appointment.service.AppointmentService;
 import com.astral.express.pccms.appointment.dto.response.AppointmentResponse;
 import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.medicalrecord.service.MedicalRecordService;
+import com.astral.express.pccms.pet.entity.Pets;
+import com.astral.express.pccms.pet.repository.PetRepository;
+import com.astral.express.pccms.user.entity.Users;
+import com.astral.express.pccms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -30,13 +34,13 @@ import java.util.UUID;
 @Slf4j
 @Transactional(readOnly = true)
 public class MedicalRecordServiceImpl implements MedicalRecordService {
-
-
     private final MedicalRecordRepository medicalRecordRepository;
     private final MedicalRecordMapper medicalRecordMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final AppointmentService appointmentService;
     private final SecurityHelper securityHelper;
+    private final PetRepository petRepository;
+    private final UserRepository userRepository;
 
 
     @Override
@@ -67,7 +71,7 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
         record.setPreliminaryDiagnosis(request.preliminaryDiagnosis());
         record.setTreatmentNote(request.treatmentNote());
 
-        return medicalRecordMapper.toResponse(medicalRecordRepository.save(record));
+        return enrichResponse(medicalRecordMapper.toResponse(medicalRecordRepository.save(record)));
     }
 
     @Override
@@ -110,7 +114,7 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
                 savedRecord.getVetId()
         ));
 
-        return medicalRecordMapper.toResponse(savedRecord);
+        return enrichResponse(medicalRecordMapper.toResponse(savedRecord));
     }
 
     private void validateVitals(BigDecimal temperature, Integer heartRate, Integer respiratoryRate, Integer spo2, BigDecimal weight) {
@@ -146,7 +150,7 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
     public MedicalRecordResponse getMedicalRecordById(UUID recordId) {
         MedicalRecord record = medicalRecordRepository.findById(recordId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_400_BAD_REQUEST));
-        return medicalRecordMapper.toResponse(record);
+        return enrichResponse(medicalRecordMapper.toResponse(record));
     }
 
     @Override
@@ -159,6 +163,7 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
         }
         return records.stream()
                 .map(medicalRecordMapper::toResponse)
+                .map(this::enrichResponse)
                 .toList();
     }
 
@@ -182,7 +187,7 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
                             .recordStatus(RecordStatus.DRAFT)
                             .build();
 
-                    return medicalRecordMapper.toResponse(medicalRecordRepository.save(record));
+                    return enrichResponse(medicalRecordMapper.toResponse(medicalRecordRepository.save(record)));
                 });
     }
 
@@ -192,5 +197,41 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
 
     private UUID currentUserIdOrNull() {
         return securityHelper == null ? null : securityHelper.getCurrentUserId();
+    }
+
+    private MedicalRecordResponse enrichResponse(MedicalRecordResponse response) {
+        String petName = petRepository.findById(response.petId())
+                .map(Pets::getName)
+                .orElse("Unknown Pet");
+
+        String vetName = userRepository.findById(response.vetId())
+                .map(Users::getFullName)
+                .orElse("Unknown Vet");
+
+        return new MedicalRecordResponse(
+                response.id(),
+                response.recordCode(),
+                response.appointmentId(),
+                response.petId(),
+                petName,
+                response.vetId(),
+                vetName,
+                response.recordStatus(),
+                response.temperatureC(),
+                response.heartRateBpm(),
+                response.respiratoryRateBpm(),
+                response.weightKg(),
+                response.bloodPressure(),
+                response.spo2Percent(),
+                response.mucousMembraneColor(),
+                response.capillaryRefillSeconds(),
+                response.preliminaryDiagnosis(),
+                response.finalDiagnosis(),
+                response.treatmentNote(),
+                response.followUpAt(),
+                response.lockedAt(),
+                response.createdAt(),
+                response.updatedAt()
+        );
     }
 }

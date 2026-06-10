@@ -124,3 +124,37 @@ export const updateMedicine = async (id: string, payload: MedicineFormValues) =>
 export const deleteMedicine = async (id: string) => {
     await api.delete(`/v1/medicines/${id}`);
 };
+
+export interface MedicineUsageTemplate {
+    id: string;
+    medicineId: string;
+    label: string;
+    dosage?: string;
+    frequency?: string;
+    durationDays?: number;
+    instruction: string;
+    isDefault: boolean;
+    sortOrder: number;
+    isActive: boolean;
+}
+
+export const getMedicineUsageTemplates = async (medicineId: string) => {
+    const response = await api.get(`/v1/medicines/${medicineId}/usage-templates`);
+    return getApiData<MedicineUsageTemplate[]>(response);
+};
+
+export type MedicineUsageTemplatePayload = Omit<MedicineUsageTemplate, "id" | "medicineId" | "isActive"> & { isActive?: boolean };
+
+export const createMedicineUsageTemplate = async (medicineId: string, payload: MedicineUsageTemplatePayload) => {
+    const response = await api.post(`/v1/medicines/${medicineId}/usage-templates`, payload);
+    return getApiData<MedicineUsageTemplate>(response);
+};
+
+export const updateMedicineUsageTemplate = async (medicineId: string, templateId: string, payload: MedicineUsageTemplatePayload) => {
+    const response = await api.put(`/v1/medicines/${medicineId}/usage-templates/${templateId}`, payload);
+    return getApiData<MedicineUsageTemplate>(response);
+};
+
+export const deleteMedicineUsageTemplate = async (medicineId: string, templateId: string) => {
+    await api.delete(`/v1/medicines/${medicineId}/usage-templates/${templateId}`);
+};

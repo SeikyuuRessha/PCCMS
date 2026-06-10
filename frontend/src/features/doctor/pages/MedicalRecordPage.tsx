@@ -11,42 +11,13 @@ import { medicalRecordApi } from "~/shared/api/medicalRecordApi";
 import { petApi } from "~/shared/api/petApi";
 import { parseApiError } from "~/shared/utils/errorHandlers";
 import { VitalSignsForm, vitalSignsSchema } from "../components/VitalSignsForm";
-import { PrescriptionTable, prescriptionFormSchema } from "../components/PrescriptionTable";
 
 const fullRecordSchema = z.object({
     vitalSigns: vitalSignsSchema,
-    prescription: prescriptionFormSchema,
 });
 
 type FullRecordFormValues = z.infer<typeof fullRecordSchema>;
 
-function buildDosage(item: FullRecordFormValues["prescription"]["items"][number]) {
-    const parts = [item.dosage, item.frequency, item.durationDays].map(Number);
-    if (parts.every((value) => Number.isFinite(value) && value > 0)) {
-        return `${parts[0]} x ${parts[1]} x ${parts[2]}`;
-    }
-    return item.dosage ? String(item.dosage) : "";
-}
-
-function toPrescriptionRequest(data: FullRecordFormValues) {
-    return {
-        items: data.prescription.items
-            .filter((item) => item.medicineId && item.quantity > 0 && item.instruction)
-            .map((item) => ({
-                medicineId: item.medicineId,
-                dosage: buildDosage(item),
-                quantity: item.quantity,
-                instruction: item.instruction,
-            })),
-    };
-}
-
-function validatePrescriptionForFinalize(data: FullRecordFormValues) {
-    const incompleteItem = data.prescription.items.find((item) => !item.medicineId || !item.quantity || !item.instruction);
-    if (incompleteItem) {
-        throw new Error("Vui lòng hoàn tất hoặc xóa dòng thuốc chưa đầy đủ trước khi chốt bệnh án");
-    }
-}
 
 function formatAge(months?: number) {
     if (months == null) return "-";
@@ -90,7 +61,6 @@ export function MedicalRecordPage() {
         resolver: zodResolver(fullRecordSchema) as any,
         defaultValues: {
             vitalSigns: {},
-            prescription: { items: [] },
         },
     });
 
@@ -110,7 +80,6 @@ export function MedicalRecordPage() {
                 finalDiagnosis: record.finalDiagnosis,
                 treatmentNote: record.treatmentNote,
             },
-            prescription: { items: [] },
         });
     }, [record, methods]);
 
@@ -125,13 +94,8 @@ export function MedicalRecordPage() {
         mutationFn: async (data: FullRecordFormValues) => {
             if (!recordId) throw new Error("Thiếu mã bệnh án");
             await medicalRecordApi.updateMedicalRecord(recordId, data.vitalSigns as any);
-            const prescriptionRequest = toPrescriptionRequest(data);
-            if (prescriptionRequest.items.length > 0) {
-                await medicalRecordApi.createPrescription(recordId, prescriptionRequest);
-            }
         },
         onSuccess: async () => {
-            methods.setValue("prescription.items", []);
             toast.success("Đã lưu nháp bệnh án");
             await invalidateRecord();
         },
@@ -141,19 +105,13 @@ export function MedicalRecordPage() {
     const finalizeMutation = useMutation({
         mutationFn: async (data: FullRecordFormValues) => {
             if (!recordId) throw new Error("Thiếu mã bệnh án");
-            validatePrescriptionForFinalize(data);
             await medicalRecordApi.updateMedicalRecord(recordId, data.vitalSigns as any);
-            const prescriptionRequest = toPrescriptionRequest(data);
-            if (prescriptionRequest.items.length > 0) {
-                await medicalRecordApi.createPrescription(recordId, prescriptionRequest);
-            }
             await medicalRecordApi.finalizeMedicalRecord(recordId, {
                 finalDiagnosis: data.vitalSigns.finalDiagnosis || "",
                 treatmentNote: data.vitalSigns.treatmentNote,
             });
         },
         onSuccess: async () => {
-            methods.setValue("prescription.items", []);
             toast.success("Đã chốt bệnh án");
             await invalidateRecord();
         },
@@ -178,9 +136,19 @@ export function MedicalRecordPage() {
 
     return (
         <FormProvider {...methods}>
-            <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold">Chi tiết bệnh án: {record.recordCode}</h2>
-                {isFinalized && <Tag tone="green">Đã chốt</Tag>}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <h2 className="text-xl font-bold">Chi tiết bệnh án: {record.recordCode}</h2>
+                    {isFinalized && <Tag tone="green">Đã chốt</Tag>}
+                </div>
+                {isFinalized && (
+                    <Link
+                        to={`/veterinarian/medical-records/${recordId}/prescriptions`}
+                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                    >
+                        Kê đơn thuốc
+                    </Link>
+                )}
             </div>
 
             <div className="mb-6">
@@ -221,8 +189,6 @@ export function MedicalRecordPage() {
                 />
 
                 <div className="space-y-6">
-                    <PrescriptionTable disabled={isFinalized} />
-
                     <Card title="Đơn thuốc đã tạo">
                         {prescriptions.length === 0 ? (
                             <p className="text-sm text-slate-500">Chưa có đơn thuốc.</p>
@@ -232,7 +198,7 @@ export function MedicalRecordPage() {
                                     <div key={prescription.id} className="rounded-md border border-slate-200 p-3">
                                         <div className="mb-2 flex items-center justify-between gap-3">
                                             <div className="font-medium text-slate-900">{prescription.prescriptionCode}</div>
-                                            <div className="text-xs text-slate-500">{new Date(prescription.issuedAt).toLocaleString("vi-VN")}</div>
+                                            <div className="text-xs text-slate-500">{new Date(prescription.createdAt).toLocaleString("vi-VN")}</div>
                                         </div>
                                         <div className="space-y-2">
                                             {prescription.items.map((item) => (

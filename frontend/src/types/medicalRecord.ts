@@ -15,7 +15,9 @@ export interface MedicalRecordResponse {
     recordCode: string;
     appointmentId: string;
     petId: string;
+    petName?: string;
     vetId: string;
+    vetName?: string;
     recordStatus: RecordStatus;
     temperatureC: number;
     heartRateBpm: number;

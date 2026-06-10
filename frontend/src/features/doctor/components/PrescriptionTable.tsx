@@ -9,9 +9,9 @@ import { medicineApi, type MedicineSuggestion } from "~/shared/api/medicineApi";
 export const prescriptionItemSchema = z.object({
     medicineId: z.string().min(1, "Vui lòng chọn thuốc từ danh sách"),
     medicineName: z.string().optional(),
-    dosage: z.coerce.number().min(0).optional(),
-    frequency: z.coerce.number().min(0).optional(),
-    durationDays: z.coerce.number().min(0).optional(),
+    quantity: z.coerce.number().min(1, "Số lượng phải >= 1"),
+    instruction: z.string().min(1, "Vui lòng nhập hoặc chọn hướng dẫn"),
+    dosage: z.string().optional(),
     quantity: z.coerce.number().min(1, "Số lượng phải >= 1"),
     instruction: z.string().min(1, "Vui lòng nhập hướng dẫn"),
 });
@@ -41,6 +41,24 @@ function MedicinePicker({
     const [open, setOpen] = useState(false);
     const [suggestions, setSuggestions] = useState<MedicineSuggestion[]>([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+    const [templates, setTemplates] = useState<any[]>([]);
+    
+    // Fetch templates when a medicine is selected
+    const selectedMedicineId = useWatch({ name: `prescription.items.${index}.medicineId` });
+    useEffect(() => {
+        if (selectedMedicineId) {
+            fetch(`/api/v1/medicines/${selectedMedicineId}/usage-templates`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                }
+            })
+            .then(res => res.json())
+            .then(data => setTemplates(data.data || []))
+            .catch(() => setTemplates([]));
+        } else {
+            setTemplates([]);
+        }
+    }, [selectedMedicineId]);
 
     useEffect(() => {
         setKeyword(selectedName);
@@ -94,7 +112,7 @@ function MedicinePicker({
     };
 
     return (
-        <div className="relative w-64">
+        <div className="relative w-72">
             <input type="hidden" {...register(`prescription.items.${index}.medicineId`)} />
             <Input
                 value={keyword}
@@ -133,6 +151,28 @@ function MedicinePicker({
                     )}
                 </div>
             )}
+            
+            {/* Show Templates below the input if a medicine is selected and has templates */}
+            {selectedMedicineId && templates.length > 0 && !disabled && (
+                <div className="mt-2 text-xs border border-indigo-200 bg-indigo-50 rounded-md p-2 shadow-sm">
+                    <p className="font-semibold text-indigo-800 mb-1">Mẫu liều khuyến nghị:</p>
+                    <div className="space-y-1">
+                        {templates.map(t => (
+                            <button
+                                key={t.id}
+                                type="button"
+                                className="block w-full text-left p-1.5 hover:bg-indigo-100 rounded text-indigo-700 font-medium transition"
+                                onClick={() => {
+                                    setValue(`prescription.items.${index}.instruction`, t.instruction, { shouldValidate: true, shouldDirty: true });
+                                    setValue(`prescription.items.${index}.dosage`, t.label, { shouldValidate: true, shouldDirty: true });
+                                }}
+                            >
+                                {t.label}: <span className="font-normal text-indigo-600">{t.instruction}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -150,28 +190,13 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
         name: "prescription.items",
     });
 
-    const watchItems = useWatch({ control, name: "prescription.items" }) || [];
 
-    useEffect(() => {
-        watchItems.forEach((item: any, index: number) => {
-            const dosage = Number(item.dosage);
-            const frequency = Number(item.frequency);
-            const durationDays = Number(item.durationDays);
-
-            if (dosage > 0 && frequency > 0 && durationDays > 0) {
-                const calculated = dosage * frequency * durationDays;
-                if (calculated !== item.quantity) {
-                    setValue(`prescription.items.${index}.quantity`, calculated);
-                }
-            }
-        });
-    }, [watchItems, setValue]);
 
     return (
         <Card title="Kê đơn thuốc">
             <div className="space-y-6">
                 <DataTable
-                    columns={["Thuốc", "Liều x Lần x Ngày", "Tổng số lượng", "Hướng dẫn", ""]}
+                    columns={["Thuốc", "Số lượng", "Mẫu Liều", "Hướng dẫn", ""]}
                     rows={fields.map((field, index) => {
                         const itemErrors = (errors.prescription as any)?.items?.[index];
                         return [
@@ -181,18 +206,14 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
                                 disabled={disabled}
                                 error={itemErrors?.medicineId?.message}
                             />,
-                            <div key={`calc-${field.id}`} className="flex items-center gap-2">
-                                <Input type="number" min="0" className="w-16" placeholder="Liều" disabled={disabled} {...register(`prescription.items.${index}.dosage`, { valueAsNumber: true })} />
-                                <span>x</span>
-                                <Input type="number" min="0" className="w-16" placeholder="Lần" disabled={disabled} {...register(`prescription.items.${index}.frequency`, { valueAsNumber: true })} />
-                                <span>x</span>
-                                <Input type="number" min="0" className="w-16" placeholder="Ngày" disabled={disabled} {...register(`prescription.items.${index}.durationDays`, { valueAsNumber: true })} />
-                            </div>,
                             <div key={`quantity-${field.id}`} className="w-24">
                                 <Input type="number" min="1" disabled={disabled} {...register(`prescription.items.${index}.quantity`, { valueAsNumber: true })} error={itemErrors?.quantity?.message} />
                             </div>,
-                            <div key={`instruction-${field.id}`} className="w-56">
-                                <Textarea rows={2} disabled={disabled} {...register(`prescription.items.${index}.instruction`)} error={itemErrors?.instruction?.message} />
+                            <div key={`dosage-${field.id}`} className="w-40">
+                                <Input disabled={disabled} placeholder="VD: Liều cao..." {...register(`prescription.items.${index}.dosage`)} error={itemErrors?.dosage?.message} />
+                            </div>,
+                            <div key={`instruction-${field.id}`} className="w-64">
+                                <Textarea rows={2} disabled={disabled} placeholder="Nhập hướng dẫn dùng..." {...register(`prescription.items.${index}.instruction`)} error={itemErrors?.instruction?.message} />
                             </div>,
                             <div key={`action-${field.id}`} className="flex justify-center">
                                 <Button type="button" variant="ghost" disabled={disabled} onClick={() => remove(index)} className="h-auto p-2 text-red-500 hover:bg-red-50 hover:text-red-700">
@@ -214,9 +235,7 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
                                 medicineName: "",
                                 quantity: 1,
                                 instruction: "",
-                                dosage: 0,
-                                frequency: 0,
-                                durationDays: 0,
+                                dosage: "",
                             })
                         }
                     >

@@ -137,7 +137,7 @@ export function PaymentsPage() {
                         <div className="flex justify-end gap-3">
                             <Button variant="outline" onClick={() => setSelectedInvoice(null)} disabled={paymentMutation.isPending}>Hủy</Button>
                             <Button onClick={() => paymentMutation.mutate()} disabled={paymentMutation.isPending || remainingAmount(selectedInvoice) <= 0}>
-                                {paymentMutation.isPending ? "Đang gửi..." : "Gửi xác nhận"}
+                                {paymentMutation.isPending ? "Đang xử lý..." : "Thanh toán"}
                             </Button>
                         </div>
                     </div>

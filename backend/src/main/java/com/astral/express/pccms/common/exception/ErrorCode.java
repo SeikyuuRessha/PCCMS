@@ -30,6 +30,8 @@ public enum ErrorCode {
     ERR_MED_008_MEDICINE_IN_USE("ERR_MED_008_MEDICINE_IN_USE", 400, "Medicine is in use"),
     ERR_MED_009_CATEGORY_NAME_EXISTS("ERR_MED_009_CATEGORY_NAME_EXISTS", 400, "Medicine category name already exists"),
     ERR_MED_010_CATEGORY_IN_USE("ERR_MED_010_CATEGORY_IN_USE", 400, "Medicine category is in use"),
+    ERR_MED_011_TEMPLATE_NOT_FOUND("ERR_MED_011_TEMPLATE_NOT_FOUND", 404, "Medicine usage template not found"),
+    ERR_MED_012_TEMPLATE_NAME_EXISTS("ERR_MED_012_TEMPLATE_NAME_EXISTS", 400, "Medicine usage template name already exists for this medicine"),
     ERR_VACC_001_INVALID_DUE_DATE("ERR_VACC_001_INVALID_DUE_DATE", 400, "Invalid next due date"),
 
     // Medical Record
