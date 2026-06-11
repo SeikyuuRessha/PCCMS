@@ -3,13 +3,12 @@ package com.astral.express.pccms.schedule.service;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import com.astral.express.pccms.schedule.dto.response.WorkScheduleResponse;
 import com.astral.express.pccms.schedule.entity.ScheduleStatus;
 import com.astral.express.pccms.schedule.entity.Shift;
 import com.astral.express.pccms.schedule.entity.WorkSchedule;
 import com.astral.express.pccms.schedule.repository.WorkScheduleRepository;
-import com.astral.express.pccms.schedule.service.impl.PersonalScheduleServiceImpl;
 import com.astral.express.pccms.user.entity.Users;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -38,10 +37,10 @@ class PersonalScheduleServiceTest {
     private WorkScheduleRepository workScheduleRepository;
 
     @Mock
-    private SecurityHelper securityHelper;
+    private SecurityContextService SecurityContextService;
 
     @InjectMocks
-    private PersonalScheduleServiceImpl personalScheduleService;
+    private PersonalScheduleService personalScheduleService;
 
     @ParameterizedTest(name = "[{1}] {3}")
     @CsvFileSource(resources = "/testcases/personal-schedule.csv", numLinesToSkip = 1)
@@ -71,7 +70,7 @@ class PersonalScheduleServiceTest {
     }
 
     private void assertListSuccess(PersonalScheduleCsvInput csv, PageRequest pageable) {
-        given(securityHelper.getCurrentUserId()).willReturn(CURRENT_USER_ID);
+        given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
         given(workScheduleRepository.findByStaffIdAndWorkDateBetween(CURRENT_USER_ID, csv.fromDate(), csv.toDate(), pageable))
                 .willReturn(new PageImpl<>(List.of(schedule()), pageable, 1));
 
@@ -83,7 +82,7 @@ class PersonalScheduleServiceTest {
     }
 
     private void assertEmptySuccess(PersonalScheduleCsvInput csv, PageRequest pageable) {
-        given(securityHelper.getCurrentUserId()).willReturn(CURRENT_USER_ID);
+        given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
         given(workScheduleRepository.findByStaffIdAndWorkDateBetween(CURRENT_USER_ID, csv.fromDate(), csv.toDate(), pageable))
                 .willReturn(new PageImpl<>(List.of(), pageable, 0));
 
@@ -99,10 +98,10 @@ class PersonalScheduleServiceTest {
             ErrorCode errorCode,
             PageRequest pageable) {
         if ("Unauthenticated request rejected".equals(scenario)) {
-            given(securityHelper.getCurrentUserId()).willReturn(null);
+            given(SecurityContextService.getCurrentUserId()).willReturn(null);
         } else if ("User cannot view another staff schedule".equals(scenario)
                 || "Invalid date range rejected".equals(scenario)) {
-            given(securityHelper.getCurrentUserId()).willReturn(CURRENT_USER_ID);
+            given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
         }
 
         if ("User cannot view another staff schedule".equals(scenario)) {
@@ -181,3 +180,4 @@ class PersonalScheduleServiceTest {
     private record PersonalScheduleCsvInput(UUID staffId, LocalDate fromDate, LocalDate toDate) {
     }
 }
+

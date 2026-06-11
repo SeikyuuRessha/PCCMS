@@ -11,7 +11,6 @@ import com.astral.express.pccms.schedule.entity.Shift;
 import com.astral.express.pccms.appointment.repository.ExamRoomRepository;
 import com.astral.express.pccms.grooming.repository.GroomingStationRepository;
 import com.astral.express.pccms.schedule.repository.ShiftRepository;
-import com.astral.express.pccms.schedule.service.impl.WorkScheduleOptionServiceImpl;
 import com.astral.express.pccms.user.entity.Roles;
 import com.astral.express.pccms.user.entity.UserStatus;
 import com.astral.express.pccms.user.entity.Users;
@@ -50,7 +49,7 @@ class WorkScheduleOptionServiceTest {
     private GroomingStationRepository groomingStationRepository;
 
     @InjectMocks
-    private WorkScheduleOptionServiceImpl workScheduleOptionService;
+    private WorkScheduleOptionService workScheduleOptionService;
 
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.CsvFileSource(resources = "/testcases/work-schedule-option-testcases.csv", numLinesToSkip = 1)
@@ -148,4 +147,5 @@ class WorkScheduleOptionServiceTest {
         return UUID.fromString("00000000-0000-0000-0000-" + String.format("%012d", Long.parseLong(value)));
     }
 }
+
 

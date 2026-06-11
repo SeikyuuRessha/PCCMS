@@ -2,7 +2,7 @@ package com.astral.express.pccms.schedule.service;
 
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import com.astral.express.pccms.schedule.dto.request.ShiftChangeRequestCreateRequest;
 import com.astral.express.pccms.schedule.dto.response.ShiftChangeRequestResponse;
 import com.astral.express.pccms.schedule.entity.ScheduleStatus;
@@ -12,7 +12,6 @@ import com.astral.express.pccms.schedule.entity.ShiftRequestStatus;
 import com.astral.express.pccms.schedule.entity.WorkSchedule;
 import com.astral.express.pccms.schedule.repository.ShiftChangeRequestRepository;
 import com.astral.express.pccms.schedule.repository.WorkScheduleRepository;
-import com.astral.express.pccms.schedule.service.impl.ShiftChangeRequestServiceImpl;
 import com.astral.express.pccms.user.entity.Users;
 import com.astral.express.pccms.user.repository.UserRepository;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,10 +51,10 @@ class ShiftChangeRequestServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private SecurityHelper securityHelper;
+    private SecurityContextService SecurityContextService;
 
     @InjectMocks
-    private ShiftChangeRequestServiceImpl shiftChangeRequestService;
+    private ShiftChangeRequestService shiftChangeRequestService;
 
     @ParameterizedTest(name = "[{1}] {3}")
     @CsvFileSource(resources = "/testcases/shift-change-request.csv", numLinesToSkip = 1)
@@ -97,7 +96,7 @@ class ShiftChangeRequestServiceTest {
     void should_ReturnOnlyCurrentUserRequests_when_GetMyRequests() {
         PageRequest pageable = PageRequest.of(0, 20);
         ShiftChangeRequest request = request(id("10"), CURRENT_USER_ID);
-        given(securityHelper.getCurrentUserId()).willReturn(CURRENT_USER_ID);
+        given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
         given(shiftChangeRequestRepository.findByRequestedById(eq(CURRENT_USER_ID), eq(pageable)))
                 .willReturn(new PageImpl<>(List.of(request), pageable, 1));
 
@@ -108,7 +107,7 @@ class ShiftChangeRequestServiceTest {
     }
 
     private void assertCreateSuccess(ShiftRequestCsvInput csv) {
-        given(securityHelper.getCurrentUserId()).willReturn(CURRENT_USER_ID);
+        given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
         WorkSchedule schedule = schedule(csv.scheduleId(), CURRENT_USER_ID, ScheduleStatus.ASSIGNED, LocalDate.now().plusDays(1));
         given(workScheduleRepository.findById(csv.scheduleId())).willReturn(Optional.of(schedule));
         if (csv.targetStaffId() != null) {
@@ -127,7 +126,7 @@ class ShiftChangeRequestServiceTest {
 
     private void assertCancelSuccess(ShiftRequestCsvInput csv) {
         ShiftChangeRequest request = request(csv.requestId(), CURRENT_USER_ID);
-        given(securityHelper.getCurrentUserId()).willReturn(CURRENT_USER_ID);
+        given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
         given(shiftChangeRequestRepository.findById(csv.requestId())).willReturn(Optional.of(request));
         given(shiftChangeRequestRepository.save(request)).willReturn(request);
 
@@ -137,7 +136,7 @@ class ShiftChangeRequestServiceTest {
     }
 
     private void assertFailure(String scenario, ShiftRequestCsvInput csv, ErrorCode errorCode) {
-        given(securityHelper.getCurrentUserId()).willReturn(CURRENT_USER_ID);
+        given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
         if ("Schedule not found rejected".equals(scenario)) {
             given(workScheduleRepository.findById(csv.scheduleId())).willReturn(Optional.empty());
         } else {
@@ -257,3 +256,4 @@ class ShiftChangeRequestServiceTest {
     ) {
     }
 }
+

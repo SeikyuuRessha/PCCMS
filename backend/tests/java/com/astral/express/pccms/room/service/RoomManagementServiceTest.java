@@ -10,7 +10,6 @@ import com.astral.express.pccms.room.entity.RoomStatus;
 import com.astral.express.pccms.room.entity.RoomType;
 import com.astral.express.pccms.room.repository.RoomRepository;
 import com.astral.express.pccms.room.repository.RoomTypeRepository;
-import com.astral.express.pccms.room.service.impl.RoomManagementServiceImpl;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -42,7 +41,7 @@ class RoomManagementServiceTest {
     private RoomTypeRepository roomTypeRepository;
 
     @InjectMocks
-    private RoomManagementServiceImpl roomManagementService;
+    private RoomManagementService roomManagementService;
 
     @ParameterizedTest(name = "[{1}] {3}")
     @CsvFileSource(resources = "/testcases/room-management.csv", numLinesToSkip = 1)
@@ -248,3 +247,4 @@ class RoomManagementServiceTest {
     ) {
     }
 }
+
