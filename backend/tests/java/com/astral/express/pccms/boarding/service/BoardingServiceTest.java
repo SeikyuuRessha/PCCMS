@@ -18,13 +18,12 @@ import com.astral.express.pccms.boarding.repository.CareLogRepository;
 import com.astral.express.pccms.boarding.repository.RoomAllocationRepository;
 import com.astral.express.pccms.appointment.repository.ServiceCatalogRepository;
 import com.astral.express.pccms.appointment.repository.ServiceOrderRepository;
-import com.astral.express.pccms.boarding.service.impl.BoardingServiceImpl;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.filemedia.repository.FileAssetRepository;
 import com.astral.express.pccms.filemedia.repository.FileLinkRepository;
 import com.astral.express.pccms.filemedia.service.FileMediaService;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import com.astral.express.pccms.pet.entity.Pets;
 import com.astral.express.pccms.pet.repository.PetRepository;
 import com.astral.express.pccms.room.entity.RoomType;
@@ -56,7 +55,7 @@ import static org.mockito.Mockito.verify;
 class BoardingServiceTest {
 
     @Mock
-    private SecurityHelper securityHelper;
+    private SecurityContextService SecurityContextService;
 
     @Mock
     private UserRepository userRepository;
@@ -106,12 +105,12 @@ class BoardingServiceTest {
     @Mock
     private InvoiceRepository invoiceRepository;
 
-    private BoardingServiceImpl boardingService;
+    private BoardingService boardingService;
 
     @BeforeEach
     void setUp() {
-        boardingService = new BoardingServiceImpl(
-                securityHelper,
+        boardingService = new BoardingService(
+                SecurityContextService,
                 userRepository,
                 petRepository,
                 roomTypeRepository,
@@ -165,7 +164,7 @@ class BoardingServiceTest {
                 .isActive(true)
                 .build();
 
-        given(securityHelper.getCurrentUserId()).willReturn(ownerId);
+        given(SecurityContextService.getCurrentUserId()).willReturn(ownerId);
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
         given(petRepository.findById(petId)).willReturn(Optional.of(pet));
         given(roomTypeRepository.findByIdAndIsActiveTrue(roomTypeId)).willReturn(Optional.of(roomType));
@@ -228,6 +227,7 @@ class BoardingServiceTest {
         };
     }
 }
+
 
 
 

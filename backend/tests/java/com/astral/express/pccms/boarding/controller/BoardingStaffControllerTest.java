@@ -2,7 +2,7 @@ package com.astral.express.pccms.boarding.controller;
 
 import com.astral.express.pccms.boarding.dto.response.StaffBoardingStayResponse;
 import com.astral.express.pccms.boarding.service.BoardingStaffService;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +29,7 @@ class BoardingStaffControllerTest {
     private BoardingStaffService boardingStaffService;
 
     @Mock
-    private SecurityHelper securityHelper;
+    private SecurityContextService SecurityContextService;
 
     @InjectMocks
     private BoardingStaffController boardingStaffController;

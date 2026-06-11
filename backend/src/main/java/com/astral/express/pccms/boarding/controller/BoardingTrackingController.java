@@ -4,7 +4,7 @@ import com.astral.express.pccms.boarding.dto.response.BoardingStayResponse;
 import com.astral.express.pccms.boarding.dto.response.CareLogResponse;
 import com.astral.express.pccms.boarding.service.BoardingTrackingService;
 import com.astral.express.pccms.common.dto.ApiResponse;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,12 +21,12 @@ import java.util.UUID;
 public class BoardingTrackingController {
 
     private final BoardingTrackingService boardingTrackingService;
-    private final SecurityHelper securityHelper;
+    private final SecurityContextService SecurityContextService;
 
     @GetMapping("/stays")
     @PreAuthorize("hasAuthority('BOARDING_READ')")
     public ApiResponse<List<BoardingStayResponse>> listActiveStays() {
-        UUID ownerId = securityHelper.getCurrentUserId();
+        UUID ownerId = SecurityContextService.getCurrentUserId();
         return ApiResponse.success(boardingTrackingService.listActiveStays(ownerId));
     }
 
@@ -34,7 +34,7 @@ public class BoardingTrackingController {
     @PreAuthorize("hasAuthority('BOARDING_READ')")
     public ApiResponse<List<CareLogResponse>> listCareLogs(
             @RequestParam(required = false) UUID petId) {
-        UUID ownerId = securityHelper.getCurrentUserId();
+        UUID ownerId = SecurityContextService.getCurrentUserId();
         return ApiResponse.success(boardingTrackingService.listCareLogs(ownerId, petId));
     }
 }

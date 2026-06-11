@@ -5,7 +5,7 @@ import com.astral.express.pccms.boarding.dto.response.CareLogResponse;
 import com.astral.express.pccms.boarding.dto.response.StaffBoardingStayResponse;
 import com.astral.express.pccms.boarding.service.BoardingStaffService;
 import com.astral.express.pccms.common.dto.ApiResponse;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -27,7 +27,7 @@ import java.util.UUID;
 public class BoardingStaffController {
 
     private final BoardingStaffService boardingStaffService;
-    private final SecurityHelper securityHelper;
+    private final SecurityContextService SecurityContextService;
 
     @GetMapping("/stays")
     @PreAuthorize("hasAuthority('BOARDING_READ')")
@@ -46,7 +46,7 @@ public class BoardingStaffController {
     @PostMapping("/care-logs")
     @PreAuthorize("hasAuthority('BOARDING_UPDATE')")
     public ApiResponse<CareLogResponse> upsertCareLog(@Valid @RequestBody UpsertCareLogRequest request) {
-        UUID staffId = securityHelper.getCurrentUserId();
+        UUID staffId = SecurityContextService.getCurrentUserId();
         return ApiResponse.success(boardingStaffService.upsertCareLog(staffId, request));
     }
 }

@@ -3,7 +3,7 @@ package com.astral.express.pccms.boarding.controller;
 import com.astral.express.pccms.boarding.dto.response.BoardingStayResponse;
 import com.astral.express.pccms.boarding.dto.response.CareLogResponse;
 import com.astral.express.pccms.boarding.service.BoardingTrackingService;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +31,7 @@ class BoardingTrackingControllerTest {
     private BoardingTrackingService boardingTrackingService;
 
     @Mock
-    private SecurityHelper securityHelper;
+    private SecurityContextService SecurityContextService;
 
     @InjectMocks
     private BoardingTrackingController boardingTrackingController;
@@ -46,7 +46,7 @@ class BoardingTrackingControllerTest {
     @Test
     void should_ReturnActiveStays() throws Exception {
         UUID ownerId = UUID.randomUUID();
-        given(securityHelper.getCurrentUserId()).willReturn(ownerId);
+        given(SecurityContextService.getCurrentUserId()).willReturn(ownerId);
         given(boardingTrackingService.listActiveStays(ownerId)).willReturn(List.of(
                 new BoardingStayResponse(UUID.randomUUID(), "Milu", "ChÃ³", "Poodle")
         ));
@@ -60,7 +60,7 @@ class BoardingTrackingControllerTest {
     @Test
     void should_ReturnCareLogs() throws Exception {
         UUID ownerId = UUID.randomUUID();
-        given(securityHelper.getCurrentUserId()).willReturn(ownerId);
+        given(SecurityContextService.getCurrentUserId()).willReturn(ownerId);
         given(boardingTrackingService.listCareLogs(ownerId, null)).willReturn(List.of(
                 new CareLogResponse(
                         UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 6, 5),

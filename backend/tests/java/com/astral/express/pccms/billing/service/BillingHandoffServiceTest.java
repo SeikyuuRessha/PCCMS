@@ -4,7 +4,6 @@ import com.astral.express.pccms.billing.entity.Invoice;
 import com.astral.express.pccms.billing.entity.InvoiceLine;
 import com.astral.express.pccms.billing.repository.InvoiceLineRepository;
 import com.astral.express.pccms.billing.repository.InvoiceRepository;
-import com.astral.express.pccms.billing.service.impl.BillingHandoffServiceImpl;
 import com.astral.express.pccms.boarding.entity.BoardingBooking;
 import com.astral.express.pccms.boarding.entity.BoardingSession;
 import com.astral.express.pccms.appointment.entity.ServiceOrder;
@@ -41,7 +40,7 @@ class BillingHandoffServiceTest {
     private InvoiceLineRepository invoiceLineRepository;
 
     @InjectMocks
-    private BillingHandoffServiceImpl billingHandoffService;
+    private BillingHandoffService billingHandoffService;
 
     @ParameterizedTest(name = "[{0}] {1}")
     @CsvFileSource(resources = "/testcases/boarding-billing-handoff.csv", numLinesToSkip = 1)
@@ -111,4 +110,5 @@ class BillingHandoffServiceTest {
         assertThat(lineCaptor.getValue().getUnitPriceVnd()).isEqualTo(unitPrice);
     }
 }
+
 

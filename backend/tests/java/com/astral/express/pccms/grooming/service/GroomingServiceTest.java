@@ -25,8 +25,7 @@ import com.astral.express.pccms.appointment.repository.AppointmentRepository;
 import com.astral.express.pccms.grooming.repository.GroomingStationRepository;
 import com.astral.express.pccms.appointment.repository.GroomingTicketRepository;
 import com.astral.express.pccms.appointment.service.RoomAvailabilityChecker;
-import com.astral.express.pccms.grooming.service.impl.GroomingServiceImpl;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import com.astral.express.pccms.pet.entity.Pets;
 import com.astral.express.pccms.pet.repository.PetRepository;
 import com.astral.express.pccms.user.entity.Users;
@@ -57,7 +56,7 @@ import static org.mockito.Mockito.doThrow;
 class GroomingServiceTest {
 
     @Mock
-    private SecurityHelper securityHelper;
+    private SecurityContextService SecurityContextService;
 
     @Mock
     private UserRepository userRepository;
@@ -89,12 +88,12 @@ class GroomingServiceTest {
     @Mock
     private RoomAvailabilityChecker roomAvailabilityChecker;
 
-    private GroomingServiceImpl groomingService;
+    private GroomingService groomingService;
 
     @BeforeEach
     void setUp() {
-        groomingService = new GroomingServiceImpl(
-                securityHelper,
+        groomingService = new GroomingService(
+                SecurityContextService,
                 userRepository,
                 petRepository,
                 serviceCatalogRepository,
@@ -143,7 +142,7 @@ class GroomingServiceTest {
         service.setIsActive(true);
 
         if ("CREATE_BOOKING".equals(action)) {
-            given(securityHelper.getCurrentUserId()).willReturn(ownerId);
+            given(SecurityContextService.getCurrentUserId()).willReturn(ownerId);
             given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
             given(petRepository.findById(petId)).willReturn(Optional.of(pet));
             if (!"PET_OTHER_OWNER".equals(mockState)) {
@@ -190,7 +189,7 @@ class GroomingServiceTest {
                     .name("Bàn spa 1")
                     .isActive(true)
                     .build();
-            given(securityHelper.getCurrentUserId()).willReturn(staff.getId());
+            given(SecurityContextService.getCurrentUserId()).willReturn(staff.getId());
             given(userRepository.findById(staff.getId())).willReturn(Optional.of(staff));
             given(groomingTicketRepository.findLockedWithDetailsById(ticketId)).willReturn(Optional.of(ticket));
             given(groomingStationRepository.findWithLockById(stationId)).willReturn(Optional.of(station));
@@ -208,7 +207,7 @@ class GroomingServiceTest {
                     .totalAmountVnd(100000L)
                     .paidAmountVnd(0L)
                     .build();
-            given(securityHelper.getCurrentUserId()).willReturn(staff.getId());
+            given(SecurityContextService.getCurrentUserId()).willReturn(staff.getId());
             given(userRepository.findById(staff.getId())).willReturn(Optional.of(staff));
             given(groomingTicketRepository.findLockedWithDetailsById(ticketId)).willReturn(Optional.of(ticket));
             given(groomingTicketRepository.save(any(GroomingTicket.class))).willAnswer(invocation -> invocation.getArgument(0));
@@ -307,7 +306,7 @@ class GroomingServiceTest {
         service.setDurationMinutes(60);
         service.setBasePriceVnd(100000L);
 
-        given(securityHelper.getCurrentUserId()).willReturn(ownerId);
+        given(SecurityContextService.getCurrentUserId()).willReturn(ownerId);
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
         given(petRepository.findById(petId)).willReturn(Optional.of(pet));
         given(serviceCatalogRepository.findByIdAndCategoryCodeAndIsActiveTrue(serviceId, ServiceCategory.GROOMING)).willReturn(Optional.of(service));
@@ -327,6 +326,7 @@ class GroomingServiceTest {
         verify(groomingTicketRepository, never()).save(any());
     }
 }
+
 
 
 
