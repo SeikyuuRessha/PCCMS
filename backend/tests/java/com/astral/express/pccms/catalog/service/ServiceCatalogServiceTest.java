@@ -5,7 +5,6 @@ import com.astral.express.pccms.catalog.dto.response.ServiceCatalogResponse;
 import com.astral.express.pccms.appointment.entity.ServiceCatalog;
 import com.astral.express.pccms.appointment.entity.ServiceCategory;
 import com.astral.express.pccms.appointment.repository.ServiceCatalogRepository;
-import com.astral.express.pccms.catalog.service.impl.ServiceCatalogServiceImpl;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
@@ -47,7 +46,7 @@ class ServiceCatalogServiceTest {
     private ServiceCatalogRepository serviceCatalogRepository;
 
     @InjectMocks
-    private ServiceCatalogServiceImpl serviceCatalogService;
+    private ServiceCatalogService serviceCatalogService;
 
     @ParameterizedTest(name = "[{1}] {3}")
     @CsvFileSource(resources = "/testcases/service-catalog-management.csv", numLinesToSkip = 1)
@@ -281,3 +280,4 @@ class ServiceCatalogServiceTest {
     ) {
     }
 }
+

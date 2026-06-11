@@ -4,7 +4,6 @@ import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.medicalrecord.dto.request.CreateVaccinationRequest;
 import com.astral.express.pccms.medicalrecord.entity.VaccinationRecord;
 import com.astral.express.pccms.medicalrecord.repository.VaccinationRecordRepository;
-import com.astral.express.pccms.medicalrecord.service.impl.VaccinationRecordServiceImpl;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -29,7 +28,7 @@ class VaccinationRecordServiceTest {
     private VaccinationRecordRepository vaccinationRecordRepository;
 
     @InjectMocks
-    private VaccinationRecordServiceImpl vaccinationRecordService;
+    private VaccinationRecordService vaccinationRecordService;
 
     @Captor
     private ArgumentCaptor<VaccinationRecord> captor;
@@ -74,3 +73,4 @@ class VaccinationRecordServiceTest {
         }
     }
 }
+

@@ -87,4 +87,69 @@ public class MedicalRecord extends AuditableEntity {
 
     @Column(name = "locked_at")
     private OffsetDateTime lockedAt;
+
+    public void updateVitals(BigDecimal temperatureC, Integer heartRateBpm, Integer respiratoryRateBpm,
+                             Integer spo2Percent, BigDecimal weightKg, String bloodPressure,
+                             String mucousMembraneColor, BigDecimal capillaryRefillSeconds,
+                             String preliminaryDiagnosis, String treatmentNote) {
+        if (this.recordStatus != RecordStatus.DRAFT) {
+            throw new com.astral.express.pccms.common.exception.BusinessException(com.astral.express.pccms.common.exception.ErrorCode.ERR_MR_006_RECORD_NOT_DRAFT);
+        }
+        
+        if (temperatureC != null && temperatureC.compareTo(BigDecimal.ZERO) < 0) {
+            throw new com.astral.express.pccms.common.exception.BusinessException(com.astral.express.pccms.common.exception.ErrorCode.ERR_MR_001_INVALID_TEMPERATURE);
+        }
+        if (heartRateBpm != null && heartRateBpm < 0) {
+            throw new com.astral.express.pccms.common.exception.BusinessException(com.astral.express.pccms.common.exception.ErrorCode.ERR_MR_002_INVALID_HEART_RATE);
+        }
+        if (respiratoryRateBpm != null && respiratoryRateBpm < 0) {
+            throw new com.astral.express.pccms.common.exception.BusinessException(com.astral.express.pccms.common.exception.ErrorCode.ERR_MR_003_INVALID_RESPIRATORY_RATE);
+        }
+        if (spo2Percent != null && (spo2Percent < 0 || spo2Percent > 100)) {
+            throw new com.astral.express.pccms.common.exception.BusinessException(com.astral.express.pccms.common.exception.ErrorCode.ERR_MR_004_INVALID_SPO2);
+        }
+        if (weightKg != null && weightKg.compareTo(BigDecimal.ZERO) < 0) {
+            throw new com.astral.express.pccms.common.exception.BusinessException(com.astral.express.pccms.common.exception.ErrorCode.ERR_MR_005_INVALID_WEIGHT);
+        }
+
+        this.temperatureC = temperatureC;
+        this.heartRateBpm = heartRateBpm;
+        this.respiratoryRateBpm = respiratoryRateBpm;
+        this.spo2Percent = spo2Percent;
+        this.weightKg = weightKg;
+        this.bloodPressure = bloodPressure;
+        this.mucousMembraneColor = mucousMembraneColor;
+        this.capillaryRefillSeconds = capillaryRefillSeconds;
+        this.preliminaryDiagnosis = preliminaryDiagnosis;
+        this.treatmentNote = treatmentNote;
+    }
+
+    public void finalizeRecord(String finalDiagnosis, String treatmentNote, OffsetDateTime followUpAt) {
+        if (this.recordStatus != RecordStatus.DRAFT) {
+            throw new com.astral.express.pccms.common.exception.BusinessException(com.astral.express.pccms.common.exception.ErrorCode.ERR_MR_006_RECORD_NOT_DRAFT);
+        }
+        if (finalDiagnosis == null || finalDiagnosis.trim().isEmpty()) {
+            throw new com.astral.express.pccms.common.exception.BusinessException(com.astral.express.pccms.common.exception.ErrorCode.ERR_MR_007_MISSING_FINAL_DIAGNOSIS);
+        }
+        if (!hasAtLeastOneVitalSign()) {
+            throw new com.astral.express.pccms.common.exception.BusinessException(com.astral.express.pccms.common.exception.ErrorCode.ERR_MR_008_MISSING_VITAL_SIGNS);
+        }
+
+        this.finalDiagnosis = finalDiagnosis;
+        this.treatmentNote = treatmentNote;
+        this.followUpAt = followUpAt;
+        this.recordStatus = RecordStatus.FINALIZED;
+        this.lockedAt = OffsetDateTime.now();
+    }
+
+    private boolean hasAtLeastOneVitalSign() {
+        return this.temperatureC != null
+                || this.heartRateBpm != null
+                || this.respiratoryRateBpm != null
+                || this.spo2Percent != null
+                || this.weightKg != null
+                || this.bloodPressure != null
+                || this.capillaryRefillSeconds != null
+                || this.mucousMembraneColor != null;
+    }
 }

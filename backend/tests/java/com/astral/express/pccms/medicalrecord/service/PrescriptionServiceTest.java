@@ -8,7 +8,6 @@ import com.astral.express.pccms.medicalrecord.entity.Prescription;
 import com.astral.express.pccms.medicalrecord.entity.RecordStatus;
 import com.astral.express.pccms.medicalrecord.repository.MedicalRecordRepository;
 import com.astral.express.pccms.medicalrecord.repository.PrescriptionRepository;
-import com.astral.express.pccms.medicalrecord.service.impl.PrescriptionServiceImpl;
 import com.astral.express.pccms.medicine.entity.Medicine;
 import com.astral.express.pccms.medicine.repository.MedicineRepository;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +43,7 @@ class PrescriptionServiceTest {
     private PrescriptionRepository prescriptionRepository;
 
     @InjectMocks
-    private PrescriptionServiceImpl prescriptionService;
+    private PrescriptionService prescriptionService;
 
     @Captor
     private ArgumentCaptor<Prescription> prescriptionCaptor;
@@ -110,3 +109,4 @@ class PrescriptionServiceTest {
         }
     }
 }
+

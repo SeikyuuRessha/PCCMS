@@ -6,7 +6,6 @@ import com.astral.express.pccms.medicalrecord.dto.request.CreateHealthAlertReque
 import com.astral.express.pccms.medicalrecord.entity.AlertSeverity;
 import com.astral.express.pccms.medicalrecord.entity.HealthAlert;
 import com.astral.express.pccms.medicalrecord.repository.HealthAlertRepository;
-import com.astral.express.pccms.medicalrecord.service.impl.HealthAlertServiceImpl;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -31,7 +30,7 @@ class HealthAlertServiceTest {
     private HealthAlertRepository healthAlertRepository;
 
     @InjectMocks
-    private HealthAlertServiceImpl healthAlertService;
+    private HealthAlertService healthAlertService;
 
     @Captor
     private ArgumentCaptor<HealthAlert> captor;
@@ -77,3 +76,4 @@ class HealthAlertServiceTest {
         }
     }
 }
+

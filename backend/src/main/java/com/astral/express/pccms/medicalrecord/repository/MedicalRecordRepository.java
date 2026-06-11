@@ -13,6 +13,67 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, UU
     List<MedicalRecord> findByVetIdOrderByCreatedAtDesc(UUID vetId);
     List<MedicalRecord> findAllByOrderByCreatedAtDesc();
     Optional<MedicalRecord> findByAppointmentId(UUID appointmentId);
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT new com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordResponse(
+            m.id, m.recordCode, m.appointmentId, m.petId, COALESCE(p.name, 'Unknown Pet'), m.vetId, COALESCE(u.fullName, 'Unknown Vet'),
+            m.recordStatus, m.temperatureC, m.heartRateBpm, m.respiratoryRateBpm, m.weightKg,
+            m.bloodPressure, m.spo2Percent, m.mucousMembraneColor, m.capillaryRefillSeconds,
+            m.preliminaryDiagnosis, m.finalDiagnosis, m.treatmentNote,
+            m.followUpAt, m.lockedAt, m.createdAt, m.updatedAt
+        )
+        FROM MedicalRecord m
+        LEFT JOIN Pets p ON m.petId = p.id
+        LEFT JOIN Users u ON m.vetId = u.id
+        WHERE m.vetId = :vetId
+        ORDER BY m.createdAt DESC
+    """)
+    List<com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordResponse> findResponsesByVetId(@org.springframework.data.repository.query.Param("vetId") UUID vetId);
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT new com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordResponse(
+            m.id, m.recordCode, m.appointmentId, m.petId, COALESCE(p.name, 'Unknown Pet'), m.vetId, COALESCE(u.fullName, 'Unknown Vet'),
+            m.recordStatus, m.temperatureC, m.heartRateBpm, m.respiratoryRateBpm, m.weightKg,
+            m.bloodPressure, m.spo2Percent, m.mucousMembraneColor, m.capillaryRefillSeconds,
+            m.preliminaryDiagnosis, m.finalDiagnosis, m.treatmentNote,
+            m.followUpAt, m.lockedAt, m.createdAt, m.updatedAt
+        )
+        FROM MedicalRecord m
+        LEFT JOIN Pets p ON m.petId = p.id
+        LEFT JOIN Users u ON m.vetId = u.id
+        ORDER BY m.createdAt DESC
+    """)
+    List<com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordResponse> findAllResponses();
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT new com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordResponse(
+            m.id, m.recordCode, m.appointmentId, m.petId, COALESCE(p.name, 'Unknown Pet'), m.vetId, COALESCE(u.fullName, 'Unknown Vet'),
+            m.recordStatus, m.temperatureC, m.heartRateBpm, m.respiratoryRateBpm, m.weightKg,
+            m.bloodPressure, m.spo2Percent, m.mucousMembraneColor, m.capillaryRefillSeconds,
+            m.preliminaryDiagnosis, m.finalDiagnosis, m.treatmentNote,
+            m.followUpAt, m.lockedAt, m.createdAt, m.updatedAt
+        )
+        FROM MedicalRecord m
+        LEFT JOIN Pets p ON m.petId = p.id
+        LEFT JOIN Users u ON m.vetId = u.id
+        WHERE m.id = :id
+    """)
+    Optional<com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordResponse> findResponseById(@org.springframework.data.repository.query.Param("id") UUID id);
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT new com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordResponse(
+            m.id, m.recordCode, m.appointmentId, m.petId, COALESCE(p.name, 'Unknown Pet'), m.vetId, COALESCE(u.fullName, 'Unknown Vet'),
+            m.recordStatus, m.temperatureC, m.heartRateBpm, m.respiratoryRateBpm, m.weightKg,
+            m.bloodPressure, m.spo2Percent, m.mucousMembraneColor, m.capillaryRefillSeconds,
+            m.preliminaryDiagnosis, m.finalDiagnosis, m.treatmentNote,
+            m.followUpAt, m.lockedAt, m.createdAt, m.updatedAt
+        )
+        FROM MedicalRecord m
+        LEFT JOIN Pets p ON m.petId = p.id
+        LEFT JOIN Users u ON m.vetId = u.id
+        WHERE m.appointmentId = :appointmentId
+    """)
+    Optional<com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordResponse> findResponseByAppointmentId(@org.springframework.data.repository.query.Param("appointmentId") UUID appointmentId);
 }
 
 

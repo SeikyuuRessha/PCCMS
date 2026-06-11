@@ -11,7 +11,6 @@ import com.astral.express.pccms.medicine.entity.MedicineCategory;
 import com.astral.express.pccms.medicine.mapper.MedicineMapper;
 import com.astral.express.pccms.medicine.repository.MedicineCategoryRepository;
 import com.astral.express.pccms.medicine.repository.MedicineRepository;
-import com.astral.express.pccms.medicine.service.impl.MedicineServiceImpl;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -44,7 +43,7 @@ class MedicineServiceTest {
     private com.astral.express.pccms.medicalrecord.repository.PrescriptionItemRepository prescriptionItemRepository;
 
     @InjectMocks
-    private MedicineServiceImpl medicineService;
+    private MedicineService medicineService;
 
     @ParameterizedTest(name = "[{0}] {1}: {8}")
     @CsvFileSource(resources = "/testcases/medicine-service.csv", numLinesToSkip = 1)
@@ -134,3 +133,4 @@ class MedicineServiceTest {
         }
     }
 }
+
