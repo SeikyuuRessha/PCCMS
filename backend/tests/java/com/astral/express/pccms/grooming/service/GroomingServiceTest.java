@@ -24,6 +24,7 @@ import com.astral.express.pccms.grooming.mapper.GroomingMapper;
 import com.astral.express.pccms.appointment.repository.AppointmentRepository;
 import com.astral.express.pccms.grooming.repository.GroomingStationRepository;
 import com.astral.express.pccms.appointment.repository.GroomingTicketRepository;
+import com.astral.express.pccms.appointment.service.RoomAvailabilityChecker;
 import com.astral.express.pccms.grooming.service.impl.GroomingServiceImpl;
 import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.pet.entity.Pets;
@@ -50,6 +51,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 class GroomingServiceTest {
@@ -84,6 +86,9 @@ class GroomingServiceTest {
     @Mock
     private InvoiceRepository invoiceRepository;
 
+    @Mock
+    private RoomAvailabilityChecker roomAvailabilityChecker;
+
     private GroomingServiceImpl groomingService;
 
     @BeforeEach
@@ -99,7 +104,8 @@ class GroomingServiceTest {
                 groomingStationRepository,
                 billingHandoffService,
                 invoiceRepository,
-                new GroomingMapper());
+                new GroomingMapper(),
+                roomAvailabilityChecker);
     }
 
     @ParameterizedTest(name = "[{0}] {1}: {6}")
@@ -283,6 +289,42 @@ class GroomingServiceTest {
         ticket.setStatusCode(status);
         ticket.setOwnerNote("Can nhe tay");
         return ticket;
+    }
+
+    @org.junit.jupiter.api.Test
+    void should_RejectGroomingBooking_When_GroomingSlotFull() {
+        // GIVEN
+        UUID petId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID serviceId = UUID.randomUUID();
+        OffsetDateTime futureStart = OffsetDateTime.now().plusDays(1);
+        GroomingBookingCreateRequest request = new GroomingBookingCreateRequest(petId, serviceId, futureStart, "Need help");
+
+        Users owner = Users.builder().id(ownerId).fullName("Owner").build();
+        Pets pet = Pets.builder().id(petId).name("Milu").owner(owner).build();
+        ServiceCatalog service = new ServiceCatalog();
+        service.setId(serviceId);
+        service.setDurationMinutes(60);
+        service.setBasePriceVnd(100000L);
+
+        given(securityHelper.getCurrentUserId()).willReturn(ownerId);
+        given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+        given(petRepository.findById(petId)).willReturn(Optional.of(pet));
+        given(serviceCatalogRepository.findByIdAndCategoryCodeAndIsActiveTrue(serviceId, ServiceCategory.GROOMING)).willReturn(Optional.of(service));
+
+        OffsetDateTime expectedEnd = futureStart.plusMinutes(60);
+
+        doThrow(new BusinessException(ErrorCode.ERR_APT_009_SLOT_FULL))
+                .when(roomAvailabilityChecker).requireGroomingSlotAvailable(futureStart, expectedEnd);
+
+        // WHEN & THEN
+        assertThatThrownBy(() -> groomingService.createBooking(request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ERR_APT_009_SLOT_FULL);
+
+        verify(serviceOrderRepository, never()).save(any());
+        verify(appointmentRepository, never()).save(any());
+        verify(groomingTicketRepository, never()).save(any());
     }
 }
 

@@ -31,6 +31,7 @@ import com.astral.express.pccms.grooming.mapper.GroomingMapper;
 import com.astral.express.pccms.appointment.repository.AppointmentRepository;
 import com.astral.express.pccms.grooming.repository.GroomingStationRepository;
 import com.astral.express.pccms.appointment.repository.GroomingTicketRepository;
+import com.astral.express.pccms.appointment.service.RoomAvailabilityChecker;
 import com.astral.express.pccms.grooming.service.GroomingService;
 import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.pet.entity.Pets;
@@ -73,6 +74,7 @@ public class GroomingServiceImpl implements GroomingService {
     private final BillingHandoffService billingHandoffService;
     private final InvoiceRepository invoiceRepository;
     private final GroomingMapper groomingMapper;
+    private final RoomAvailabilityChecker roomAvailabilityChecker;
 
     @Override
     public List<GroomingServiceResponse> listActiveServices() {
@@ -106,6 +108,7 @@ public class GroomingServiceImpl implements GroomingService {
         validateStartTime(request.scheduledStartAt());
 
         OffsetDateTime scheduledEndAt = request.scheduledStartAt().plusMinutes(service.getDurationMinutes());
+        roomAvailabilityChecker.requireGroomingSlotAvailable(request.scheduledStartAt(), scheduledEndAt);
         ensureOwnerBookingNotDuplicated(owner.getId(), pet.getId(), service.getId(), request.scheduledStartAt(), scheduledEndAt);
         ServiceOrder serviceOrder = new ServiceOrder();
         serviceOrder.setOrderCode(generateCode("SO"));

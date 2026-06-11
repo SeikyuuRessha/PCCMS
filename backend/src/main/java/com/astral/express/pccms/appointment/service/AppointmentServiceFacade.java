@@ -28,6 +28,8 @@ import com.astral.express.pccms.pet.entity.Pets;
 import com.astral.express.pccms.pet.repository.PetRepository;
 import com.astral.express.pccms.user.entity.Users;
 import com.astral.express.pccms.user.repository.UserRepository;
+import com.astral.express.pccms.boarding.service.BoardingService;
+import com.astral.express.pccms.grooming.service.GroomingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,8 +46,6 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AppointmentServiceFacade {
-
-
     private static final LocalTime CLINIC_OPEN = LocalTime.of(8, 0);
     private static final LocalTime CLINIC_CLOSE = LocalTime.of(17, 0);
     private static final int DEFAULT_SLOT_MINUTES = 30;
@@ -66,8 +66,8 @@ public class AppointmentServiceFacade {
     private final VetAvailabilityChecker vetAvailabilityChecker;
     private final RoomAvailabilityChecker roomAvailabilityChecker;
     private final CreateMedicalAppointmentUseCase createMedicalAppointmentUseCase;
-    private final CreateGroomingAppointmentUseCase createGroomingAppointmentUseCase;
-    private final CreateBoardingBookingUseCase createBoardingBookingUseCase;
+    private final GroomingService groomingService;
+    private final BoardingService boardingService;
     private final QuickCheckInUseCase quickCheckInUseCase;
 
     @Transactional
@@ -418,8 +418,17 @@ public class AppointmentServiceFacade {
 
     @Transactional
     public AppointmentResponse createGroomingAppointment(CreateGroomingAppointmentRequest request, UUID ownerId) {
-        Appointment saved = createGroomingAppointmentUseCase.createGroomingAppointment(request, ownerId);
-        return assembler.toResponse(saved, null);
+        var createRequest = new com.astral.express.pccms.grooming.dto.request.GroomingBookingCreateRequest(
+                request.petId(),
+                serviceCatalogRepository.findByServiceCodeAndIsActiveTrue(request.serviceCode())
+                        .map(ServiceCatalog::getId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.ERR_APT_006_SERVICE_NOT_FOUND)),
+                ClinicDateTime.toOffsetDateTime(request.appointmentDate(), request.slotStart()),
+                request.ownerNote()
+        );
+        var ticketResponse = groomingService.createBooking(createRequest);
+        GroomingTicket ticket = groomingTicketRepository.findById(ticketResponse.id()).orElseThrow();
+        return assembler.toResponse(ticket.getAppointment(), null);
     }
 
     @Transactional(readOnly = true)
@@ -469,8 +478,16 @@ public class AppointmentServiceFacade {
 
     @Transactional
     public BoardingBookingResponse createBoardingBooking(CreateBoardingBookingRequest request, UUID ownerId) {
-        BoardingBooking saved = createBoardingBookingUseCase.createBoardingBooking(request, ownerId);
-        return assembler.toBoardingResponse(saved);
+        var createRequest = new com.astral.express.pccms.boarding.dto.request.BoardingBookingCreateRequest(
+                request.petId(),
+                request.roomTypeId(),
+                ClinicDateTime.toOffsetDateTime(request.checkinDate(), LocalTime.of(14, 0)),
+                ClinicDateTime.toOffsetDateTime(request.checkoutDate(), LocalTime.of(11, 0)),
+                request.specialCareRequest()
+        );
+        var dedicatedResponse = boardingService.createBooking(createRequest);
+        BoardingBooking booking = boardingBookingRepository.findById(dedicatedResponse.id()).orElseThrow();
+        return assembler.toBoardingResponse(booking);
     }
 
     @Transactional(readOnly = true)
