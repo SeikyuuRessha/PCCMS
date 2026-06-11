@@ -17,7 +17,7 @@ import com.astral.express.pccms.appointment.dto.response.TimeSlotResponse;
 import com.astral.express.pccms.appointment.dto.response.VetOptionResponse;
 import com.astral.express.pccms.appointment.entity.AppointmentStatus;
 import com.astral.express.pccms.appointment.entity.ServiceCategory;
-import com.astral.express.pccms.appointment.service.AppointmentService;
+import com.astral.express.pccms.appointment.service.AppointmentServiceFacade;
 import com.astral.express.pccms.common.dto.ApiResponse;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.identity.security.SecurityHelper;
@@ -49,7 +49,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AppointmentController {
 
-    private final AppointmentService appointmentService;
+    private final AppointmentServiceFacade appointmentService;
     private final SecurityHelper securityHelper;
 
     @PostMapping

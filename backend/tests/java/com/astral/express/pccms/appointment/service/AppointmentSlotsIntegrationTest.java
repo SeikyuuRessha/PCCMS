@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class AppointmentSlotsIntegrationTest {
 
     @Autowired
-    private AppointmentService appointmentService;
+    private AppointmentServiceFacade appointmentService;
 
     @Test
     void should_ReturnSlots_when_FutureDate() {

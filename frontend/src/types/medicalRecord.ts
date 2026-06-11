@@ -54,3 +54,4 @@ export interface FinalizeMedicalRecordRequest {
     treatmentNote?: string;
     followUpAt?: string;
 }
+

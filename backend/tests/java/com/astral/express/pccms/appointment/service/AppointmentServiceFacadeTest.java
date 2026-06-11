@@ -39,7 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AppointmentServiceTest {
+class AppointmentServiceFacadeTest {
 
     @Mock private AppointmentRepository appointmentRepository;
     @Mock private ServiceOrderRepository serviceOrderRepository;
@@ -55,7 +55,7 @@ class AppointmentServiceTest {
     @Mock private UserRepository userRepository;
 
     @InjectMocks
-    private AppointmentServiceImpl appointmentService;
+    private AppointmentServiceFacade appointmentService;
 
     @ParameterizedTest
     @org.junit.jupiter.params.provider.CsvFileSource(resources = "/testcases/appointment-service-testcases.csv", numLinesToSkip = 1)

@@ -9,7 +9,7 @@ import com.astral.express.pccms.medicalrecord.entity.RecordStatus;
 import com.astral.express.pccms.medicalrecord.mapper.MedicalRecordMapper;
 import com.astral.express.pccms.medicalrecord.repository.MedicalRecordRepository;
 import com.astral.express.pccms.medicalrecord.event.MedicalRecordFinalizedEvent;
-import com.astral.express.pccms.appointment.service.AppointmentService;
+import com.astral.express.pccms.appointment.service.AppointmentServiceFacade;
 import com.astral.express.pccms.appointment.dto.response.AppointmentResponse;
 import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.medicalrecord.service.impl.MedicalRecordServiceImpl;
@@ -52,7 +52,7 @@ class MedicalRecordServiceTest {
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
-    private AppointmentService appointmentService;
+    private AppointmentServiceFacade appointmentService;
 
     @Mock
     private PetRepository petRepository;

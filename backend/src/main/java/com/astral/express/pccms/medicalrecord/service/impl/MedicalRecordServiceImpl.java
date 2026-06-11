@@ -10,7 +10,7 @@ import com.astral.express.pccms.medicalrecord.entity.RecordStatus;
 import com.astral.express.pccms.medicalrecord.mapper.MedicalRecordMapper;
 import com.astral.express.pccms.medicalrecord.repository.MedicalRecordRepository;
 import com.astral.express.pccms.medicalrecord.event.MedicalRecordFinalizedEvent;
-import com.astral.express.pccms.appointment.service.AppointmentService;
+import com.astral.express.pccms.appointment.service.AppointmentServiceFacade;
 import com.astral.express.pccms.appointment.dto.response.AppointmentResponse;
 import com.astral.express.pccms.identity.security.SecurityHelper;
 import com.astral.express.pccms.medicalrecord.service.MedicalRecordService;
@@ -37,7 +37,7 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
     private final MedicalRecordRepository medicalRecordRepository;
     private final MedicalRecordMapper medicalRecordMapper;
     private final ApplicationEventPublisher eventPublisher;
-    private final AppointmentService appointmentService;
+    private final AppointmentServiceFacade appointmentService;
     private final SecurityHelper securityHelper;
     private final PetRepository petRepository;
     private final UserRepository userRepository;

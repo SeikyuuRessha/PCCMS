@@ -10,8 +10,8 @@ import { Modal } from "~/components/molecules/Modal";
 import { DataTable } from "~/components/molecules/DataTable";
 import { EmptyState } from "~/components/molecules/EmptyState";
 import { Tag } from "~/components/atoms/Tag";
+import type { MedicineUsageTemplate } from "~/features/admin/medicine-management/medicineService";
 import {
-    MedicineUsageTemplate,
     createMedicineUsageTemplate,
     deleteMedicineUsageTemplate,
     getMedicineUsageTemplates,
@@ -153,7 +153,7 @@ export function MedicineUsageTemplateModal({ medicine, onClose }: Props) {
     }
 
     return (
-        <Modal isOpen={true} onClose={onClose} title={`Mẫu Liều - ${medicine.name}`} className="max-w-3xl">
+        <Modal isOpen={true} onClose={onClose} title={`Mẫu Liều - ${medicine.name}`}>
             <div className="space-y-4 pt-2">
                 <div className="flex justify-between items-center">
                     <p className="text-sm text-slate-500">Quản lý các mẫu liều dùng cho thuốc này để kê đơn nhanh hơn.</p>

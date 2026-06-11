@@ -124,7 +124,7 @@ export function PrescriptionPage() {
                                     <div key={prescription.id} className="rounded-md border border-slate-200 p-3 bg-white shadow-sm">
                                         <div className="mb-2 flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
                                             <div className="font-semibold text-slate-900">{prescription.prescriptionCode}</div>
-                                            <div className="text-xs text-slate-500">{new Date(prescription.createdAt).toLocaleString("vi-VN")}</div>
+                                            <div className="text-xs text-slate-500">{new Date(prescription.issuedAt).toLocaleString("vi-VN")}</div>
                                         </div>
                                         <div className="space-y-2">
                                             {prescription.items.map((item) => (

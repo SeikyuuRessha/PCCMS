@@ -5,7 +5,7 @@ import type { UserResponse } from "../../../types";
 interface AuthContextType {
     isAuthenticated: boolean;
     user: UserResponse | null;
-    login: (token: string, refreshToken: string, user: UserResponse) => void;
+    login: (token: string, user: UserResponse) => void;
     logout: () => void;
 }
 
@@ -32,7 +32,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         setIsAuthenticated(true);
                     } else {
                         localStorage.removeItem("token");
-                        localStorage.removeItem("refreshToken");
                         localStorage.removeItem("user");
                     }
                 } catch (error) {
@@ -46,9 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         initAuth();
     }, []);
 
-    const login = (token: string, refreshToken: string, userData: UserResponse) => {
+    const login = (token: string, userData: UserResponse) => {
         localStorage.setItem("token", token);
-        localStorage.setItem("refreshToken", refreshToken);
         localStorage.setItem("user", JSON.stringify(userData));
         setUser(userData);
         setIsAuthenticated(true);
@@ -56,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = () => {
         localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
         setUser(null);
         setIsAuthenticated(false);

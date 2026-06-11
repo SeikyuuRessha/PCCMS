@@ -25,7 +25,7 @@ export function RegisterPage() {
     const mutation = useMutation({
         mutationFn: authApi.register,
         onSuccess: (data) => {
-            login(data.token, data.refreshToken, data.user);
+            login(data.token, data.user);
             toast.success("Đăng ký tài khoản thành công!");
 
             const role = data.user.roleCode.toLowerCase();

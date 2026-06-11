@@ -10,8 +10,8 @@ export const authApi = {
         return axiosClient.post("/v1/auth/register", data);
     },
 
-    refreshToken: (data: { refreshToken: string }): Promise<AuthResponse> => {
-        return axiosClient.post("/v1/auth/refresh", data);
+    refreshToken: (): Promise<AuthResponse> => {
+        return axiosClient.post("/v1/auth/refresh");
     },
 
     requestPasswordResetOtp: (data: { contact: string }): Promise<void> => {

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -198,7 +198,7 @@ export function MedicalRecordPage() {
                                     <div key={prescription.id} className="rounded-md border border-slate-200 p-3">
                                         <div className="mb-2 flex items-center justify-between gap-3">
                                             <div className="font-medium text-slate-900">{prescription.prescriptionCode}</div>
-                                            <div className="text-xs text-slate-500">{new Date(prescription.createdAt).toLocaleString("vi-VN")}</div>
+                                            <div className="text-xs text-slate-500">{new Date(prescription.issuedAt).toLocaleString("vi-VN")}</div>
                                         </div>
                                         <div className="space-y-2">
                                             {prescription.items.map((item) => (

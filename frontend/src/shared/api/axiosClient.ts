@@ -12,6 +12,29 @@ const axiosClient = axios.create({
     },
 });
 
+const tokenRefreshClient = axios.create({
+    baseURL: API_BASE_URL,
+    withCredentials: true,
+    headers: {
+        "Content-Type": "application/json",
+    },
+});
+
+let isRefreshing = false;
+let failedQueue: { resolve: (token: string) => void; reject: (error: any) => void }[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else if (token) {
+            prom.resolve(token);
+        }
+    });
+
+    failedQueue = [];
+};
+
 axiosClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = localStorage.getItem("token");
@@ -32,16 +55,55 @@ axiosClient.interceptors.response.use(
         return response.data;
     },
     async (error: AxiosError) => {
-        if (error.response?.status === 401) {
-            const url = error.config?.url || "";
-            const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/register");
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+            const url = originalRequest.url || "";
+            const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/register") || url.includes("/auth/refresh");
             
-            if (!isAuthEndpoint) {
+            if (isAuthEndpoint) {
+                return Promise.reject(error);
+            }
+
+            if (isRefreshing) {
+                return new Promise(function (resolve, reject) {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then((token) => {
+                        originalRequest.headers.set("Authorization", `Bearer ${token}`);
+                        return axiosClient(originalRequest);
+                    })
+                    .catch((err) => {
+                        return Promise.reject(err);
+                    });
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                const response = await tokenRefreshClient.post("/v1/auth/refresh");
+                const newToken = response.data?.data?.token || response.data?.token;
+
+                if (newToken) {
+                    localStorage.setItem("token", newToken);
+                    axiosClient.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
+                    originalRequest.headers.set("Authorization", `Bearer ${newToken}`);
+                    processQueue(null, newToken);
+                    return axiosClient(originalRequest);
+                } else {
+                    throw new Error("No token returned from refresh endpoint");
+                }
+            } catch (refreshError) {
+                processQueue(refreshError, null);
                 localStorage.removeItem("token");
-                // Use React Router to navigate without reloading the page
+                localStorage.removeItem("user");
                 if (typeof window !== "undefined" && window.location.pathname !== "/login") {
                     router.navigate("/login");
                 }
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
             }
         } else if (error.response?.status === 403) {
             toast.error("Không có quyền truy cập");

@@ -21,7 +21,7 @@ function TestComponent() {
             <div data-testid="user-role">{user?.roleCode || "None"}</div>
             <button
                 onClick={() =>
-                    login("valid-token", "refresh", { id: "1", roleCode: "OWNER" } as any)
+                    login("valid-token", { id: "1", roleCode: "OWNER" } as any)
                 }
             >
                 Login
@@ -56,7 +56,6 @@ describe("AuthContext", () => {
         expect(screen.getByTestId("auth-status")).toHaveTextContent("Auth");
         expect(screen.getByTestId("user-role")).toHaveTextContent("OWNER");
         expect(localStorage.getItem("token")).toBe("valid-token");
-        expect(localStorage.getItem("refreshToken")).toBe("refresh");
     });
 
     it("logs out and clears state", async () => {

@@ -9,11 +9,9 @@ import { medicineApi, type MedicineSuggestion } from "~/shared/api/medicineApi";
 export const prescriptionItemSchema = z.object({
     medicineId: z.string().min(1, "Vui lòng chọn thuốc từ danh sách"),
     medicineName: z.string().optional(),
-    quantity: z.coerce.number().min(1, "Số lượng phải >= 1"),
-    instruction: z.string().min(1, "Vui lòng nhập hoặc chọn hướng dẫn"),
     dosage: z.string().optional(),
     quantity: z.coerce.number().min(1, "Số lượng phải >= 1"),
-    instruction: z.string().min(1, "Vui lòng nhập hướng dẫn"),
+    instruction: z.string().min(1, "Vui lòng nhập hoặc chọn hướng dẫn"),
 });
 
 export const prescriptionFormSchema = z.object({
@@ -181,7 +179,6 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
     const {
         control,
         register,
-        setValue,
         formState: { errors },
     } = useFormContext<any>();
 

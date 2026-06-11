@@ -2,6 +2,7 @@ package com.astral.express.pccms.appointment.service;
 
 import com.astral.express.pccms.appointment.dto.request.CreateMedicalAppointmentRequest;
 import com.astral.express.pccms.appointment.entity.AppointmentStatus;
+import com.astral.express.pccms.appointment.service.AppointmentServiceFacade;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class AppointmentCreateIntegrationTest {
 
     @Autowired
-    private AppointmentService appointmentService;
+    private AppointmentServiceFacade appointmentService;
 
     @org.junit.jupiter.api.Disabled("Relies on hardcoded UUIDs and missing seed data")
     @Test

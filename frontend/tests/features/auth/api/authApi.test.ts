@@ -72,7 +72,7 @@ describe("authApi", () => {
             })
         );
 
-        const res = await authApi.refreshToken({ refreshToken: "old-refresh" });
+        const res = await authApi.refreshToken();
         expect(res.token).toBe("new-token");
     });
 });
