@@ -2,7 +2,7 @@ package com.astral.express.pccms.pet.service;
 
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import com.astral.express.pccms.pet.dto.request.CreatePetRequest;
 import com.astral.express.pccms.pet.entity.PetSex;
 import com.astral.express.pccms.pet.entity.PetSpecies;
@@ -59,7 +59,7 @@ class PetServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private SecurityHelper securityHelper;
+    private SecurityContextService SecurityContextService;
 
     @Mock
     private PetMapper petMapper;
@@ -91,7 +91,7 @@ class PetServiceTest {
         pet.setSpecies(species);
         pet.setIsActive(true);
 
-        given(securityHelper.getCurrentUserId()).willReturn(ownerId);
+        given(SecurityContextService.getCurrentUserId()).willReturn(ownerId);
         given(petRepository.findByOwner_Id(ownerId, pageable))
                 .willReturn(new PageImpl<>(List.of(pet), pageable, 1));
         given(petMapper.toResponse(eq(pet), anyList())).willReturn(
@@ -156,11 +156,11 @@ class PetServiceTest {
 
         if (!"CREATE_PET".equals(action)) {
             given(petRepository.findById(petId)).willReturn(Optional.of(mockPet));
-            given(securityHelper.getCurrentUserId()).willReturn(currentUserId);
+            given(SecurityContextService.getCurrentUserId()).willReturn(currentUserId);
         }
 
         if ("CREATE_PET".equals(action) && "SUCCESS".equals(expectedResult)) {
-            given(securityHelper.getCurrentUserId()).willReturn(currentUserId);
+            given(SecurityContextService.getCurrentUserId()).willReturn(currentUserId);
             given(userRepository.findById(currentUserId)).willReturn(Optional.of(owner));
             given(petSpeciesRepository.findByIdAndIsActiveTrue(speciesId)).willReturn(Optional.of(species));
             given(petMapper.toEntity(createRequest)).willReturn(new Pets());

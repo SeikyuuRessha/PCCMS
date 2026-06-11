@@ -4,7 +4,7 @@ import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.common.helper.PasswordGenerator;
 import com.astral.express.pccms.identity.repository.RefreshTokenRepository;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import com.astral.express.pccms.notification.service.EmailService;
 import com.astral.express.pccms.user.dto.request.AdminUpdateUserRequest;
 import com.astral.express.pccms.user.dto.request.ChangePasswordRequest;
@@ -46,7 +46,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final SecurityHelper securityHelper;
+    private final SecurityContextService SecurityContextService;
     private final RefreshTokenRepository refreshTokenRepository;
 
     // ==================== ADMIN OPERATIONS ====================
@@ -360,7 +360,7 @@ public class UserService {
 
     @PreAuthorize("isAuthenticated()")
     public UserResponse getMyProfile() {
-        UUID userId = securityHelper.getCurrentUserId();
+        UUID userId = SecurityContextService.getCurrentUserId();
         Users user = userRepository.findByIdWithRoleAndPermissions(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
         return userMapper.toUserResponse(user);
@@ -369,7 +369,7 @@ public class UserService {
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public UserResponse updateMyProfile(UserProfileUpdateRequest request) {
-        UUID userId = securityHelper.getCurrentUserId();
+        UUID userId = SecurityContextService.getCurrentUserId();
         Users user = userRepository.findByIdWithRoleAndPermissions(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
 
@@ -382,7 +382,7 @@ public class UserService {
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public void changePassword(ChangePasswordRequest request) {
-        UUID userId = securityHelper.getCurrentUserId();
+        UUID userId = SecurityContextService.getCurrentUserId();
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
 

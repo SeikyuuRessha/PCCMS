@@ -4,7 +4,7 @@ import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.identity.repository.RefreshTokenRepository;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import com.astral.express.pccms.notification.service.EmailService;
 import com.astral.express.pccms.user.dto.response.AccountResponse;
 import com.astral.express.pccms.user.entity.Roles;
@@ -64,7 +64,7 @@ class AdminAccountServiceTest {
     private EmailService emailService;
 
     @Mock
-    private SecurityHelper securityHelper;
+    private SecurityContextService SecurityContextService;
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;

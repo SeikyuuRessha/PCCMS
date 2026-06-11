@@ -98,6 +98,21 @@ Biến môi trường:
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
+### Cloudflare R2 media storage
+
+Backend upload file/media uses Cloudflare R2 through the S3-compatible API. Create an R2 bucket, attach a public custom domain, then set:
+
+```env
+R2_ACCOUNT_ID=your-account-id
+R2_ACCESS_KEY_ID=your-r2-access-key
+R2_SECRET_ACCESS_KEY=your-r2-secret-key
+R2_BUCKET=pccms-media
+R2_PUBLIC_BASE_URL=https://media.example.com
+R2_CACHE_CONTROL=public,max-age=31536000,immutable
+```
+
+The backend stores the public URL in `file_assets.stored_key`, so existing frontend media rendering continues to use `media.url` directly. Keep bucket write access private to backend credentials; public read should go through the custom domain.
+
 ## Lệnh hữu ích
 
 | Mục đích | Lệnh |

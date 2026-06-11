@@ -3,7 +3,7 @@ package com.astral.express.pccms.user.service;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.identity.repository.RefreshTokenRepository;
-import com.astral.express.pccms.identity.security.SecurityHelper;
+import com.astral.express.pccms.identity.security.SecurityContextService;
 import com.astral.express.pccms.notification.service.EmailService;
 import com.astral.express.pccms.user.dto.request.AdminUpdateUserRequest;
 import com.astral.express.pccms.user.dto.request.ChangePasswordRequest;
@@ -55,7 +55,7 @@ class UserServiceTest {
     private EmailService emailService;
 
     @Mock
-    private SecurityHelper securityHelper;
+    private SecurityContextService SecurityContextService;
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
@@ -122,7 +122,7 @@ class UserServiceTest {
                 break;
             case "GET_MY_PROFILE":
             case "UPDATE_MY_PROFILE":
-                given(securityHelper.getCurrentUserId()).willReturn(userId);
+                given(SecurityContextService.getCurrentUserId()).willReturn(userId);
                 if ("USER_NOT_FOUND".equals(mockState)) {
                     given(userRepository.findByIdWithRoleAndPermissions(userId)).willReturn(Optional.empty());
                 } else {
@@ -136,7 +136,7 @@ class UserServiceTest {
                 }
                 break;
             case "CHANGE_PASSWORD":
-                given(securityHelper.getCurrentUserId()).willReturn(userId);
+                given(SecurityContextService.getCurrentUserId()).willReturn(userId);
                 if ("USER_NOT_FOUND".equals(mockState)) {
                     given(userRepository.findById(userId)).willReturn(Optional.empty());
                 } else {
