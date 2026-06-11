@@ -95,7 +95,7 @@ class AppointmentServiceFacadeCharacterizationTest {
 
 
         facade = new AppointmentServiceFacade(
-            appointmentRepository, serviceOrderRepository, serviceCatalogRepository,
+            appointmentRepository, serviceCatalogRepository,
             groomingTicketRepository, roomTypeRepository, boardingBookingRepository,
             petRepository, userRepository, assembler, receptionService,
             availabilityService, vetAvailabilityChecker, roomAvailabilityChecker,
@@ -126,7 +126,7 @@ class AppointmentServiceFacadeCharacterizationTest {
     }
 
     @Test
-    void should_CreateBoardingViaAppointmentFacade_ReturnExpectedResponseShape() {
+    void should_CreateBoardingViaAppointmentFacade_IgnoreProvidedOwnerIdAndDelegateToDedicatedService() {
         // GIVEN
         LocalDate checkin = ClinicDateTime.today().plusDays(1);
         LocalDate checkout = ClinicDateTime.today().plusDays(3);
@@ -150,8 +150,9 @@ class AppointmentServiceFacadeCharacterizationTest {
         
         given(boardingBookingRepository.findById(dedicatedResponseId)).willReturn(Optional.of(savedBooking));
 
-        // WHEN
-        BoardingBookingResponse response = facade.createBoardingBooking(request, ownerId);
+        // WHEN - Note: ownerId is intentionally ignored here, dedicated service uses authenticated user
+        UUID ignoredOwnerId = UUID.randomUUID();
+        BoardingBookingResponse response = facade.createBoardingBooking(request, ignoredOwnerId);
 
         // THEN
         assertThat(response).isNotNull();
@@ -161,12 +162,15 @@ class AppointmentServiceFacadeCharacterizationTest {
         assertThat(response.statusCode()).isEqualTo(BoardingStatus.RESERVED);
         assertThat(response.statusLabel()).isEqualTo("Đã đặt phòng");
         assertThat(response.specialCareRequest()).isEqualTo("Special diet");
+        
+        // Documenting that it delegated to the dedicated service
+        verify(boardingService).createBooking(any(com.astral.express.pccms.boarding.dto.request.BoardingBookingCreateRequest.class));
     }
 
 
 
     @Test
-    void should_CreateGroomingViaAppointmentFacade_ReturnExpectedResponseShape() {
+    void should_CreateGroomingViaAppointmentFacade_IgnoreProvidedOwnerIdAndDelegateToDedicatedService() {
         // GIVEN
         LocalDate appointmentDate = ClinicDateTime.today().plusDays(1);
         LocalTime slotStart = LocalTime.of(10, 0);
@@ -204,8 +208,9 @@ class AppointmentServiceFacadeCharacterizationTest {
         
         given(groomingTicketRepository.findById(dedicatedTicketId)).willReturn(Optional.of(ticket));
 
-        // WHEN
-        AppointmentResponse response = facade.createGroomingAppointment(request, ownerId);
+        // WHEN - Note: ownerId is intentionally ignored here, dedicated service uses authenticated user
+        UUID ignoredOwnerId = UUID.randomUUID();
+        AppointmentResponse response = facade.createGroomingAppointment(request, ignoredOwnerId);
 
         // THEN
         assertThat(response).isNotNull();
@@ -213,6 +218,9 @@ class AppointmentServiceFacadeCharacterizationTest {
         assertThat(response.petName()).isEqualTo("Test Pet");
         assertThat(response.statusCode()).isEqualTo(AppointmentStatus.PENDING);
         assertThat(response.statusLabel()).isEqualTo("Chờ tiếp nhận");
+        
+        // Documenting that it delegated to the dedicated service
+        verify(groomingService).createBooking(any(com.astral.express.pccms.grooming.dto.request.GroomingBookingCreateRequest.class));
     }
 
 

@@ -53,7 +53,6 @@ public class AppointmentServiceFacade {
     private static final String VET_ROLE = "VETERINARIAN";
 
     private final AppointmentRepository appointmentRepository;
-    private final ServiceOrderRepository serviceOrderRepository;
     private final ServiceCatalogRepository serviceCatalogRepository;
     private final GroomingTicketRepository groomingTicketRepository;
     private final RoomTypeRepository roomTypeRepository;
@@ -390,16 +389,6 @@ public class AppointmentServiceFacade {
                 .orElse(DEFAULT_SLOT_MINUTES);
     }
 
-    private LocalTime roundUpToSlot(LocalTime time, int slotMinutes) {
-        int totalMinutes = time.getHour() * 60 + time.getMinute();
-        int remainder = totalMinutes % slotMinutes;
-        int rounded = remainder == 0 ? totalMinutes : totalMinutes + (slotMinutes - remainder);
-        if (rounded < CLINIC_OPEN.getHour() * 60 + CLINIC_OPEN.getMinute()) {
-            return CLINIC_OPEN;
-        }
-        return LocalTime.of(rounded / 60, rounded % 60);
-    }
-
     private String normalizePhone(String phone) {
         if (phone == null) {
             return "";
@@ -427,7 +416,8 @@ public class AppointmentServiceFacade {
                 request.ownerNote()
         );
         var ticketResponse = groomingService.createBooking(createRequest);
-        GroomingTicket ticket = groomingTicketRepository.findById(ticketResponse.id()).orElseThrow();
+        GroomingTicket ticket = groomingTicketRepository.findById(ticketResponse.id())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_APT_001_NOT_FOUND));
         return assembler.toResponse(ticket.getAppointment(), null);
     }
 
@@ -486,7 +476,8 @@ public class AppointmentServiceFacade {
                 request.specialCareRequest()
         );
         var dedicatedResponse = boardingService.createBooking(createRequest);
-        BoardingBooking booking = boardingBookingRepository.findById(dedicatedResponse.id()).orElseThrow();
+        BoardingBooking booking = boardingBookingRepository.findById(dedicatedResponse.id())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_APT_001_NOT_FOUND));
         return assembler.toBoardingResponse(booking);
     }
 

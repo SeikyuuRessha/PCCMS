@@ -161,9 +161,28 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
         } else {
             records = medicalRecordRepository.findAllByOrderByCreatedAtDesc();
         }
+
+        if (records.isEmpty()) {
+            return List.of();
+        }
+
+        java.util.Set<UUID> petIds = records.stream()
+                .map(MedicalRecord::getPetId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.Set<UUID> vetIds = records.stream()
+                .map(MedicalRecord::getVetId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+
+        java.util.Map<UUID, String> petNameMap = petRepository.findAllById(petIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Pets::getId, Pets::getName));
+        java.util.Map<UUID, String> vetNameMap = userRepository.findAllById(vetIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Users::getId, Users::getFullName));
+
         return records.stream()
                 .map(medicalRecordMapper::toResponse)
-                .map(this::enrichResponse)
+                .map(response -> enrichResponseWithMaps(response, petNameMap, vetNameMap))
                 .toList();
     }
 
@@ -199,15 +218,7 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
         return securityHelper == null ? null : securityHelper.getCurrentUserId();
     }
 
-    private MedicalRecordResponse enrichResponse(MedicalRecordResponse response) {
-        String petName = petRepository.findById(response.petId())
-                .map(Pets::getName)
-                .orElse("Unknown Pet");
-
-        String vetName = userRepository.findById(response.vetId())
-                .map(Users::getFullName)
-                .orElse("Unknown Vet");
-
+    private MedicalRecordResponse withNames(MedicalRecordResponse response, String petName, String vetName) {
         return new MedicalRecordResponse(
                 response.id(),
                 response.recordCode(),
@@ -233,5 +244,29 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
                 response.createdAt(),
                 response.updatedAt()
         );
+    }
+
+    private MedicalRecordResponse enrichResponse(MedicalRecordResponse response) {
+        String petName = "Unknown Pet";
+        if (response.petId() != null) {
+            petName = petRepository.findById(response.petId())
+                    .map(Pets::getName)
+                    .orElse("Unknown Pet");
+        }
+
+        String vetName = "Unknown Vet";
+        if (response.vetId() != null) {
+            vetName = userRepository.findById(response.vetId())
+                    .map(Users::getFullName)
+                    .orElse("Unknown Vet");
+        }
+
+        return withNames(response, petName, vetName);
+    }
+    private MedicalRecordResponse enrichResponseWithMaps(MedicalRecordResponse response, java.util.Map<UUID, String> petNames, java.util.Map<UUID, String> vetNames) {
+        String petName = response.petId() != null ? petNames.getOrDefault(response.petId(), "Unknown Pet") : "Unknown Pet";
+        String vetName = response.vetId() != null ? vetNames.getOrDefault(response.vetId(), "Unknown Vet") : "Unknown Vet";
+
+        return withNames(response, petName, vetName);
     }
 }
