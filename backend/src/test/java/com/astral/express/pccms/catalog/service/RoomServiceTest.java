@@ -1,4 +1,4 @@
-package com.astral.express.pccms.catalog.service.impl;
+package com.astral.express.pccms.catalog.service;
 
 import com.astral.express.pccms.catalog.dto.request.CreateRoomRequest;
 import com.astral.express.pccms.catalog.dto.response.RoomResponse;
@@ -32,7 +32,7 @@ class RoomServiceImplTest {
     private RoomTypeRepository roomTypeRepository;
 
     @InjectMocks
-    private RoomServiceImpl roomService;
+    private RoomService roomService;
 
     @Test
     void should_GenerateRoomCode_When_RoomCodeIsBlank() {
@@ -72,3 +72,5 @@ class RoomServiceImplTest {
         assertThat(response).isNotNull();
     }
 }
+
+

@@ -1,4 +1,4 @@
-package com.astral.express.pccms.medicine.service.impl;
+package com.astral.express.pccms.medicine.service;
 
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
@@ -36,7 +36,7 @@ class MedicineUsageTemplateServiceImplTest {
     private MedicineUsageTemplateRepository templateRepository;
 
     @InjectMocks
-    private MedicineUsageTemplateServiceImpl templateService;
+    private MedicineUsageTemplateService templateService;
 
     @Test
     void should_CreateTemplate_when_ValidRequest() {
@@ -145,3 +145,5 @@ class MedicineUsageTemplateServiceImplTest {
         assertThat(list.get(0).label()).isEqualTo("Label");
     }
 }
+
+

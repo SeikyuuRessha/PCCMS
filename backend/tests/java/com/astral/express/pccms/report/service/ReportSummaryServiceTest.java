@@ -8,7 +8,6 @@ import com.astral.express.pccms.report.dto.response.RevenueSummaryRowResponse;
 import com.astral.express.pccms.report.entity.ReportType;
 import com.astral.express.pccms.report.repository.RevenueReportRepository;
 import com.astral.express.pccms.report.repository.RevenueSummaryRow;
-import com.astral.express.pccms.report.service.impl.ReportSummaryServiceImpl;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +34,7 @@ class ReportSummaryServiceTest {
     private RevenueReportRepository revenueReportRepository;
 
     @InjectMocks
-    private ReportSummaryServiceImpl reportSummaryService;
+    private ReportSummaryService reportSummaryService;
 
     @ParameterizedTest(name = "[{1}] {3}")
     @CsvFileSource(resources = "/testcases/report-summary.csv", numLinesToSkip = 1)
@@ -186,4 +185,5 @@ class ReportSummaryServiceTest {
     ) {
     }
 }
+
 

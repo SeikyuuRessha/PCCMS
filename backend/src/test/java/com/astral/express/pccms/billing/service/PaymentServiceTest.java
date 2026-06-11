@@ -1,4 +1,4 @@
-package com.astral.express.pccms.billing.service.impl;
+package com.astral.express.pccms.billing.service;
 
 import com.astral.express.pccms.billing.dto.request.OwnerPaymentRequest;
 import com.astral.express.pccms.billing.dto.response.PaymentResponse;
@@ -47,7 +47,7 @@ class PaymentServiceImplTest {
     private SecurityHelper securityHelper;
 
     @InjectMocks
-    private PaymentServiceImpl paymentService;
+    private PaymentService paymentService;
 
     @ParameterizedTest(name = "[{0}] {1}: amount={2}, expected={6}")
     @CsvFileSource(resources = "/testcases/payment-owner-request.csv", numLinesToSkip = 1)
@@ -115,3 +115,5 @@ class PaymentServiceImplTest {
         }
     }
 }
+
+
