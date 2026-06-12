@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -193,7 +194,7 @@ public class BoardingStaffServiceImpl implements BoardingStaffService {
         if (value instanceof Timestamp timestamp) {
             return timestamp.toLocalDateTime().toLocalDate();
         }
-        if (value instanceof java.util.Date date) {
+        if (value instanceof Date date) {
             return new Timestamp(date.getTime()).toLocalDateTime().toLocalDate();
         }
         return null;

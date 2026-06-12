@@ -19,6 +19,7 @@ vi.mock("~/features/admin/work-schedule-management/workScheduleService", () => (
     cancelWorkSchedule: vi.fn(),
     previewWeeklySchedulePlan: vi.fn(),
     applyWeeklySchedulePlan: vi.fn(),
+    roleFromBackend: vi.fn((code) => code === "VETERINARIAN" ? "Bác sĩ thú y" : "Lễ tân"),
 }));
 
 const createQueryClient = () =>

@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -63,13 +64,13 @@ public class PetServiceImpl implements PetService {
         Pets savedPet = petRepository.save(pet);
         log.info("Created pet with id: {} for owner: {}", savedPet.getId(), ownerId);
 
-        return petMapper.toResponse(savedPet, java.util.Collections.emptyList());
+        return petMapper.toResponse(savedPet, Collections.emptyList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<PetResponse> listPets(Boolean isActive, Pageable pageable) {
-        java.util.UUID currentUserId = SecurityContextService.getCurrentUserId();
+        UUID currentUserId = SecurityContextService.getCurrentUserId();
         Page<Pets> pets;
         if (SecurityContextService.isAdminOrStaff()) {
             pets = isActive == null
@@ -81,7 +82,7 @@ public class PetServiceImpl implements PetService {
                     : petRepository.findByOwner_IdAndIsActive(currentUserId, isActive, pageable);
         }
 
-        return PageResponse.of(pets.map(pet -> petMapper.toResponse(pet, java.util.Collections.emptyList())));
+        return PageResponse.of(pets.map(pet -> petMapper.toResponse(pet, Collections.emptyList())));
     }
 
     @Override
@@ -107,7 +108,7 @@ public class PetServiceImpl implements PetService {
         Pets savedPet = petRepository.save(pet);
         log.info("Updated pet with id: {}", savedPet.getId());
 
-        return petMapper.toResponse(savedPet, java.util.Collections.emptyList());
+        return petMapper.toResponse(savedPet, Collections.emptyList());
     }
 
     @Override
@@ -115,7 +116,7 @@ public class PetServiceImpl implements PetService {
     public PetResponse getPet(UUID petId) {
         Pets pet = findPetOrThrow(petId);
         assertCanAccessPet(pet);
-        return petMapper.toResponse(pet, java.util.Collections.emptyList());
+        return petMapper.toResponse(pet, Collections.emptyList());
     }
 
     @Override
@@ -126,7 +127,7 @@ public class PetServiceImpl implements PetService {
                 ? petRepository.findByOwner_Id(resolvedOwnerId, pageable)
                 : petRepository.findByOwner_IdAndIsActive(resolvedOwnerId, isActive, pageable);
         return PageResponse.of(
-                pets.map(pet -> petMapper.toResponse(pet, java.util.Collections.emptyList())));
+                pets.map(pet -> petMapper.toResponse(pet, Collections.emptyList())));
     }
 
     @Override

@@ -13,6 +13,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -58,7 +59,7 @@ public class VetAvailabilityChecker {
         List<UUID> candidates = resolveVetCandidates(date, slotStart);
         return candidates.stream()
                 .map(userRepository::findById)
-                .flatMap(java.util.Optional::stream)
+                .flatMap(Optional::stream)
                 .filter(v -> !overlapChecker.hasVetOverlap(v.getId(), startAt, endAt))
                 .findFirst()
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_APT_005_NO_VET_AVAILABLE));

@@ -6,13 +6,14 @@ import com.astral.express.pccms.pet.dto.request.UpdatePetRequest;
 import com.astral.express.pccms.pet.dto.response.PetResponse;
 import com.astral.express.pccms.common.dto.PageResponse;
 import org.springframework.data.domain.Pageable;
+import java.util.UUID;
 
 public interface PetService {
 
     PetResponse createPet(CreatePetRequest request);
     PageResponse<PetResponse> listPets(Boolean isActive, Pageable pageable);
-    PageResponse<PetResponse> listPets(java.util.UUID ownerId, Boolean isActive, Pageable pageable);
-    PetResponse updatePet(java.util.UUID petId, com.astral.express.pccms.pet.dto.request.UpdatePetRequest request);
-    PetResponse getPet(java.util.UUID petId);
-    void deactivatePet(java.util.UUID petId);
+    PageResponse<PetResponse> listPets(UUID ownerId, Boolean isActive, Pageable pageable);
+    PetResponse updatePet(UUID petId, UpdatePetRequest request);
+    PetResponse getPet(UUID petId);
+    void deactivatePet(UUID petId);
 }

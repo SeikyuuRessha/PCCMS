@@ -40,6 +40,7 @@ import {
     CatalogPage,
     RoomsPage,
     WorkSchedulePage,
+    ShiftChangeRequestPage,
     ReportsPage,
 } from "~/features/admin";
 
@@ -172,6 +173,7 @@ export const router = createBrowserRouter([
             { path: "catalog", element: <CatalogPage /> },
             { path: "rooms", element: <RoomsPage /> },
             { path: "schedule", element: <WorkSchedulePage /> },
+            { path: "shift-requests", element: <ShiftChangeRequestPage /> },
             { path: "reports", element: <ReportsPage /> },
             { path: "profile", element: <ProfilePage /> },
         ],

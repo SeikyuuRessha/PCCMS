@@ -1,17 +1,26 @@
 package com.astral.express.pccms.pet.mapper;
 
 import com.astral.express.pccms.pet.dto.request.CreatePetRequest;
+import com.astral.express.pccms.pet.dto.request.UpdatePetRequest;
 import com.astral.express.pccms.pet.dto.response.PetResponse;
 import com.astral.express.pccms.pet.entity.Pets;
+import com.astral.express.pccms.medicalrecord.dto.response.HealthAlertResponse;
+
 import java.util.HashMap;
+import java.util.List;
+import java.time.LocalDate;
+import java.time.Period;
+
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
+import org.mapstruct.AfterMapping;
+import java.util.Map;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, imports = {java.util.Map.class, java.util.HashMap.class})
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, imports = {Map.class, HashMap.class})
 public interface PetMapper {
 
     @Mapping(target = "speciesId", source = "pet.species.id")
@@ -24,7 +33,7 @@ public interface PetMapper {
     @Mapping(target = "allergyNote", expression = "java(getStringAttribute(pet, \"allergyNote\"))")
     @Mapping(target = "nutritionNote", expression = "java(getStringAttribute(pet, \"nutritionNote\"))")
     @Mapping(target = "estimatedAgeMonths", expression = "java(calculateAge(pet.getBirthDate()))")
-    PetResponse toResponse(Pets pet, java.util.List<com.astral.express.pccms.medicalrecord.dto.response.HealthAlertResponse> healthAlerts);
+    PetResponse toResponse(Pets pet, List<HealthAlertResponse> healthAlerts);
 
     @Mapping(target = "species", ignore = true)
     @Mapping(target = "breed", ignore = true)
@@ -37,10 +46,10 @@ public interface PetMapper {
     @Mapping(target = "breed", ignore = true)
     @Mapping(target = "owner", ignore = true)
     @Mapping(target = "id", ignore = true)
-    void updatePetFromRequest(com.astral.express.pccms.pet.dto.request.UpdatePetRequest request, @org.mapstruct.MappingTarget Pets pet);
+    void updatePetFromRequest(UpdatePetRequest request, @MappingTarget Pets pet);
 
-    @org.mapstruct.AfterMapping
-    default void mapNotesToAttributes(CreatePetRequest request, @org.mapstruct.MappingTarget Pets pet) {
+    @AfterMapping
+    default void mapNotesToAttributes(CreatePetRequest request, @MappingTarget Pets pet) {
         if (pet.getAttributes() == null) {
             pet.setAttributes(new HashMap<>());
         }
@@ -50,8 +59,8 @@ public interface PetMapper {
         if (request.nutritionNote() != null) pet.getAttributes().put("nutritionNote", request.nutritionNote());
     }
 
-    @org.mapstruct.AfterMapping
-    default void mapNotesToAttributes(com.astral.express.pccms.pet.dto.request.UpdatePetRequest request, @org.mapstruct.MappingTarget Pets pet) {
+    @AfterMapping
+    default void mapNotesToAttributes(UpdatePetRequest request, @MappingTarget Pets pet) {
         if (pet.getAttributes() == null) {
             pet.setAttributes(new HashMap<>());
         }
@@ -69,9 +78,9 @@ public interface PetMapper {
         return null;
     }
 
-    default Integer calculateAge(java.time.LocalDate birthDate) {
+    default Integer calculateAge(LocalDate birthDate) {
         if (birthDate == null) return null;
-        java.time.Period period = java.time.Period.between(birthDate, java.time.LocalDate.now());
+        Period period = Period.between(birthDate, LocalDate.now());
         return period.getYears() * 12 + period.getMonths();
     }
 }

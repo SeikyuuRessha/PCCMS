@@ -1,4 +1,4 @@
-export type WorkScheduleRole = "Lễ tân" | "Nhân viên trung tâm" | "Bác sĩ thú y" | "Quản trị viên";
+export type WorkScheduleRole = "Nhân viên trung tâm" | "Bác sĩ thú y";
 export type WorkScheduleShift = "Ca sáng" | "Ca chiều" | "Ca tối";
 export type WorkScheduleStatus = "Đã phân công" | "Đã hủy" | "Đã hoàn thành";
 export type WorkScheduleSource = "backend";
@@ -35,7 +35,6 @@ export interface WorkScheduleSearchParams {
     keyword: string;
     role: WorkScheduleRole | "";
     room: string;
-    position: string;
     workDate: string;
     shift: WorkScheduleShift | "";
     status: WorkScheduleStatus | "";
@@ -50,7 +49,6 @@ export interface WorkScheduleFormValues {
     capacity: string;
     role: WorkScheduleRole | "";
     room: string;
-    position: string;
     workDate: string;
     shift: WorkScheduleShift | "";
     status: WorkScheduleStatus | "";

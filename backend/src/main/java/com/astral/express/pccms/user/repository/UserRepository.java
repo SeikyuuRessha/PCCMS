@@ -50,7 +50,7 @@ public interface UserRepository extends JpaRepository<Users, UUID>, JpaSpecifica
               AND u.deleted_at IS NULL
             ORDER BY u.full_name ASC
             """, nativeQuery = true)
-    java.util.List<Users> findActiveByRoleCode(@Param("roleCode") String roleCode);
+    List<Users> findActiveByRoleCode(@Param("roleCode") String roleCode);
 
     @Query("SELECT u FROM Users u JOIN FETCH u.role r WHERE u.statusCode = :statusCode AND r.code IN :roleCodes")
     List<Users> findScheduleStaffOptions(@Param("statusCode") UserStatus statusCode, @Param("roleCodes") List<String> roleCodes);

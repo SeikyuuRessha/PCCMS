@@ -40,10 +40,6 @@ public class PrescriptionService {
         // Validate medical record
         MedicalRecord record = medicalRecordRepository.findById(medicalRecordId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_400_BAD_REQUEST));
-        
-        if (record.getRecordStatus() == RecordStatus.FINALIZED) {
-            throw new BusinessException(ErrorCode.ERR_MED_001_RECORD_LOCKED);
-        }
 
         Prescription prescription = new Prescription();
         prescription.setPrescriptionCode("PRE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());

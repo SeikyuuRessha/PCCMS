@@ -11,6 +11,8 @@ import com.astral.express.pccms.user.entity.Roles;
 import com.astral.express.pccms.user.entity.Users;
 
 import java.util.UUID;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 final class ScheduleMapperSupport {
     private ScheduleMapperSupport() {
@@ -47,14 +49,21 @@ final class ScheduleMapperSupport {
     }
 
     static ShiftChangeRequestResponse toShiftChangeRequestResponse(ShiftChangeRequest request) {
+        WorkSchedule schedule = request.getSchedule();
+        OffsetDateTime workDate = null;
+        if (schedule != null && schedule.getWorkDate() != null) {
+            workDate = schedule.getWorkDate().atStartOfDay().atOffset(ZoneOffset.UTC);
+        }
         return new ShiftChangeRequestResponse(
                 request.getId(),
-                request.getSchedule() == null ? null : request.getSchedule().getId(),
-                id(request.getRequestedBy()),
-                id(request.getTargetStaff()),
+                schedule == null ? null : schedule.getId(),
+                request.getRequestedBy() == null ? null : request.getRequestedBy().getFullName(),
+                request.getTargetStaff() == null ? null : request.getTargetStaff().getFullName(),
+                workDate,
+                schedule == null || schedule.getShift() == null ? null : schedule.getShift().getName(),
                 request.getReason(),
                 request.getStatusCode(),
-                id(request.getResolvedBy()),
+                request.getResolvedBy() == null ? null : request.getResolvedBy().getFullName(),
                 request.getResolvedAt(),
                 request.getCreatedAt()
         );

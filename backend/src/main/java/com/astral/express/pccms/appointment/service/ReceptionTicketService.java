@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +41,7 @@ public class ReceptionTicketService {
                 .orElse(null);
     }
 
-    public java.util.List<ReceptionTicket> getQueueForVet(UUID vetId, OffsetDateTime start, OffsetDateTime end) {
+    public List<ReceptionTicket> getQueueForVet(UUID vetId, OffsetDateTime start, OffsetDateTime end) {
         return receptionTicketRepository.findVetQueueTickets(vetId, start, end, com.astral.express.pccms.appointment.entity.AppointmentStatus.CHECKED_IN);
     }
 }

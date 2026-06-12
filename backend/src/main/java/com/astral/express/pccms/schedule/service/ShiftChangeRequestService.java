@@ -44,7 +44,28 @@ public class ShiftChangeRequestService {
                 : shiftChangeRequestRepository.findByRequestedByIdAndStatusCode(currentUserId, statusCode, pageable);
         return PageResponse.of(requests.map(ScheduleMapperSupport::toShiftChangeRequestResponse));
     }
-@Transactional
+    @PreAuthorize("hasAuthority('SCHEDULE_MANAGE')")
+    public PageResponse<ShiftChangeRequestResponse> getAdminRequests(
+            ShiftRequestStatus statusCode,
+            Pageable pageable) {
+        Page<ShiftChangeRequest> requests = statusCode == null
+                ? shiftChangeRequestRepository.findAll(pageable)
+                : shiftChangeRequestRepository.findByStatusCode(statusCode, pageable);
+        return PageResponse.of(requests.map(ScheduleMapperSupport::toShiftChangeRequestResponse));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    public PageResponse<ShiftChangeRequestResponse> getIncomingRequests(
+            ShiftRequestStatus statusCode,
+            Pageable pageable) {
+        UUID currentUserId = currentUserId();
+        Page<ShiftChangeRequest> requests = statusCode == null
+                ? shiftChangeRequestRepository.findByTargetStaffId(currentUserId, pageable)
+                : shiftChangeRequestRepository.findByTargetStaffIdAndStatusCode(currentUserId, statusCode, pageable);
+        return PageResponse.of(requests.map(ScheduleMapperSupport::toShiftChangeRequestResponse));
+    }
+
+    @Transactional
     @PreAuthorize("isAuthenticated()")
     public ShiftChangeRequestResponse createRequest(ShiftChangeRequestCreateRequest request) {
         UUID currentUserId = currentUserId();
@@ -52,6 +73,9 @@ public class ShiftChangeRequestService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_404_NOT_FOUND));
         validateScheduleCanBeChanged(schedule, currentUserId);
         Users targetStaff = findTargetStaff(request.targetStaffId());
+        if (targetStaff != null && currentUserId.equals(targetStaff.getId())) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
         if (shiftChangeRequestRepository.existsByScheduleIdAndRequestedByIdAndStatusCode(
                 request.scheduleId(), currentUserId, ShiftRequestStatus.PENDING)) {
             throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
@@ -89,9 +113,61 @@ public class ShiftChangeRequestService {
         Users resolver = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_404_NOT_FOUND));
 
+        if (request.getStatusCode() != ShiftRequestStatus.PENDING) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
+
         request.setStatusCode(statusCode);
         request.setResolvedBy(resolver);
         request.setResolvedAt(OffsetDateTime.now());
+
+        if (statusCode == ShiftRequestStatus.ACCEPTED) {
+            WorkSchedule schedule = request.getSchedule();
+            if (request.getTargetStaff() != null) {
+                validateTargetStaffCanTakeSchedule(schedule, request.getTargetStaff());
+                schedule.setStaff(request.getTargetStaff());
+            } else {
+                schedule.setStatusCode(ScheduleStatus.CANCELLED);
+            }
+            workScheduleRepository.save(schedule);
+        }
+
+        return ScheduleMapperSupport.toShiftChangeRequestResponse(shiftChangeRequestRepository.save(request));
+    }
+
+    @Transactional
+    @PreAuthorize("isAuthenticated()")
+    public ShiftChangeRequestResponse respondToRequest(UUID requestId, ShiftRequestStatus action) {
+        UUID currentUserId = currentUserId();
+        ShiftChangeRequest request = shiftChangeRequestRepository.findById(requestId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_404_NOT_FOUND));
+
+        if (request.getTargetStaff() == null || !currentUserId.equals(request.getTargetStaff().getId())) {
+            throw new BusinessException(ErrorCode.ERR_403_FORBIDDEN);
+        }
+
+        if (request.getStatusCode() != ShiftRequestStatus.PENDING) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
+
+        if (action != ShiftRequestStatus.ACCEPTED && action != ShiftRequestStatus.REJECTED) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
+
+        Users resolver = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ERR_404_NOT_FOUND));
+
+        request.setStatusCode(action);
+        request.setResolvedBy(resolver);
+        request.setResolvedAt(OffsetDateTime.now());
+
+        if (action == ShiftRequestStatus.ACCEPTED) {
+            validateTargetStaffCanTakeSchedule(request.getSchedule(), request.getTargetStaff());
+            WorkSchedule schedule = request.getSchedule();
+            schedule.setStaff(request.getTargetStaff());
+            workScheduleRepository.save(schedule);
+        }
+
         return ScheduleMapperSupport.toShiftChangeRequestResponse(shiftChangeRequestRepository.save(request));
     }
 
@@ -100,6 +176,21 @@ public class ShiftChangeRequestService {
             throw new BusinessException(ErrorCode.ERR_403_FORBIDDEN);
         }
         if (schedule.getStatusCode() != ScheduleStatus.ASSIGNED || !schedule.getWorkDate().isAfter(LocalDate.now())) {
+            throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+        }
+    }
+
+    private void validateTargetStaffCanTakeSchedule(WorkSchedule schedule, Users targetStaff) {
+        if (schedule.getRole() != null) {
+            boolean hasRole = targetStaff.getRole() != null &&
+                    targetStaff.getRole().getId().equals(schedule.getRole().getId());
+            if (!hasRole) {
+                throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
+            }
+        }
+        boolean conflict = workScheduleRepository.existsByStaffIdAndWorkDateAndShiftId(
+                targetStaff.getId(), schedule.getWorkDate(), schedule.getShift().getId());
+        if (conflict) {
             throw new BusinessException(ErrorCode.ERR_VALIDATION_FAILED);
         }
     }

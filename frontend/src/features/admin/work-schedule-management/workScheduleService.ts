@@ -141,16 +141,12 @@ const shiftFromBackend = (item: BackendWorkSchedule): WorkScheduleShift => {
     return "Ca sáng";
 };
 
-const roleFromBackend = (roleCode?: string): WorkScheduleRole => {
+export const roleFromBackend = (roleCode?: string): WorkScheduleRole => {
     switch (roleCode) {
-        case "ADMIN":
-            return "Quản trị viên";
         case "VETERINARIAN":
             return "Bác sĩ thú y";
-        case "STAFF":
-            return "Nhân viên trung tâm";
         default:
-            return "Lễ tân";
+            return "Nhân viên trung tâm";
     }
 };
 
@@ -218,12 +214,11 @@ const filterLocally = (items: WorkSchedule[], params: WorkScheduleSearchParams) 
     return items.filter((schedule) => {
         const matchesKeyword = !keyword || schedule.staffName.toLowerCase().includes(keyword);
         const matchesRole = !params.role || schedule.role === params.role;
-        const matchesRoom = !params.room || schedule.room.toLowerCase().includes(params.room.trim().toLowerCase());
-        const matchesPosition = !params.position || schedule.position.toLowerCase().includes(params.position.trim().toLowerCase());
+        const matchesRoom = !params.room || schedule.position.toLowerCase().includes(params.room.trim().toLowerCase());
         const matchesDate = !params.workDate || normalizeDate(schedule.workDate) === normalizeDate(params.workDate);
         const matchesShift = !params.shift || schedule.shift === params.shift;
         const matchesStatus = !params.status || schedule.status === params.status;
-        return matchesKeyword && matchesRole && matchesRoom && matchesPosition && matchesDate && matchesShift && matchesStatus;
+        return matchesKeyword && matchesRole && matchesRoom && matchesDate && matchesShift && matchesStatus;
     });
 };
 

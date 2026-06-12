@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -113,11 +114,11 @@ public class GroomingBoardService {
         return value == null || value.isBlank() ? null : value;
     }
 
-    private java.util.Optional<Map<String, Object>> optional(String sql, Object... args) {
+    private Optional<Map<String, Object>> optional(String sql, Object... args) {
         try {
-            return java.util.Optional.of(jdbc.queryForMap(sql, args));
+            return Optional.of(jdbc.queryForMap(sql, args));
         } catch (EmptyResultDataAccessException e) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
     }
 

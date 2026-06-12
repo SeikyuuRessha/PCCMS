@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Input, Tag, Textarea } from "~/components/atoms";
+import { Button, Input, Tag, Textarea, AutocompleteInput } from "~/components/atoms";
 import { Card, EmptyState, SummaryRow } from "~/components/molecules";
 import {
     cancelMyShiftChangeRequest,
     createMyShiftChangeRequest,
     getMyShiftChangeRequests,
+    getIncomingShiftChangeRequests,
+    respondToIncomingShiftChangeRequest,
     getShiftTargetStaffOptions,
     getMyWorkSchedules,
     type PersonalScheduleItem,
@@ -64,31 +66,37 @@ export function PersonalSchedulePage({ title = "Lịch làm việc cá nhân" }:
     });
     const [items, setItems] = useState<PersonalScheduleItem[]>([]);
     const [requests, setRequests] = useState<ShiftChangeRequestItem[]>([]);
+    const [incomingRequests, setIncomingRequests] = useState<ShiftChangeRequestItem[]>([]);
     const [targetStaffOptions, setTargetStaffOptions] = useState<ShiftTargetStaffOption[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [dialogError, setDialogError] = useState("");
     const [feedback, setFeedback] = useState("");
     const [selectedSchedule, setSelectedSchedule] = useState<PersonalScheduleItem | null>(null);
+    const [respondRequest, setRespondRequest] = useState<ShiftChangeRequestItem | null>(null);
     const [reason, setReason] = useState("");
+    const [respondReason, setRespondReason] = useState("");
     const [targetStaffId, setTargetStaffId] = useState("");
 
     const loadData = async (fromDate = filters.fromDate, toDate = filters.toDate) => {
         setLoading(true);
         setError("");
         try {
-            const [scheduleData, requestData, staffOptions] = await Promise.all([
+            const [scheduleData, requestData, incomingData, staffOptions] = await Promise.all([
                 getMyWorkSchedules(fromDate, toDate),
                 getMyShiftChangeRequests(),
+                getIncomingShiftChangeRequests(),
                 getShiftTargetStaffOptions(),
             ]);
             setItems(scheduleData);
             setRequests(requestData);
+            setIncomingRequests(incomingData);
             setTargetStaffOptions(staffOptions);
         } catch {
             setError("Không thể tải lịch làm việc từ hệ thống");
             setItems([]);
             setRequests([]);
+            setIncomingRequests([]);
         } finally {
             setLoading(false);
         }
@@ -106,6 +114,18 @@ export function PersonalSchedulePage({ title = "Lịch làm việc cá nhân" }:
         const upcoming = items.filter((item) => item.workDate > today && item.status === "Đã phân công").length;
         return { total, todayCount, upcoming, cancelled };
     }, [items]);
+
+    const targetStaffListOptions = useMemo(() => {
+        return [
+            { id: "", label: "Admin tự điều phối" },
+            ...targetStaffOptions
+                .filter((staff) => !selectedSchedule || staff.id !== selectedSchedule.userId)
+                .map((staff) => ({
+                    id: staff.id,
+                    label: staff.roleName ? `${staff.fullName} - ${staff.roleName}` : staff.fullName
+                }))
+        ];
+    }, [targetStaffOptions, selectedSchedule]);
 
     const handleSearch = async () => {
         if (!filters.fromDate || !filters.toDate) {
@@ -177,6 +197,23 @@ export function PersonalSchedulePage({ title = "Lịch làm việc cá nhân" }:
             setFeedback("Đã hủy yêu cầu đổi ca");
         } catch {
             setError("Không thể hủy yêu cầu đổi ca");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const submitRespond = async (isAccepted: boolean) => {
+        if (!respondRequest) return;
+        setLoading(true);
+        setDialogError("");
+        try {
+            const updated = await respondToIncomingShiftChangeRequest(respondRequest.requestId, isAccepted, respondReason.trim());
+            setIncomingRequests((prev) => prev.map((item) => (item.requestId === updated.requestId ? updated : item)));
+            setRespondRequest(null);
+            setRespondReason("");
+            setFeedback(isAccepted ? "Đã đồng ý đổi ca" : "Đã từ chối đổi ca");
+        } catch {
+            setDialogError("Không thể phản hồi yêu cầu đổi ca");
         } finally {
             setLoading(false);
         }
@@ -308,6 +345,54 @@ export function PersonalSchedulePage({ title = "Lịch làm việc cá nhân" }:
                 )}
             </Card>
 
+            <Card title="Yêu cầu đổi ca đến tôi" subtitle="Xử lý các yêu cầu đổi ca từ nhân viên khác gửi đến bạn.">
+                {incomingRequests.length === 0 ? (
+                    <EmptyState title="Chưa có yêu cầu đổi ca nào" description="Bạn sẽ thấy yêu cầu tại đây khi có người muốn đổi ca với bạn." />
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-500">
+                                <tr>
+                                    <th className="px-4 py-3 font-medium">Mã yêu cầu</th>
+                                    <th className="px-4 py-3 font-medium">Người gửi</th>
+                                    <th className="px-4 py-3 font-medium">Mã lịch làm việc</th>
+                                    <th className="px-4 py-3 font-medium">Lý do</th>
+                                    <th className="px-4 py-3 font-medium">Trạng thái</th>
+                                    <th className="px-4 py-3 font-medium">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 bg-white">
+                                {incomingRequests.map((item) => {
+                                    const pending = item.status === "Đang chờ";
+                                    return (
+                                        <tr key={item.requestId}>
+                                            <td className="px-4 py-3 font-medium">{item.requestId}</td>
+                                            <td className="px-4 py-3 font-medium">{item.senderName}</td>
+                                            <td className="px-4 py-3">{item.scheduleId}</td>
+                                            <td className="px-4 py-3">{item.reason}</td>
+                                            <td className="px-4 py-3"><Tag tone={statusTone(item.status)}>{item.status}</Tag></td>
+                                            <td className="px-4 py-3">
+                                                {pending ? (
+                                                    <Button variant="outline" className="px-3 py-1.5 text-xs" disabled={loading} onClick={() => {
+                                                        setRespondRequest(item);
+                                                        setRespondReason("");
+                                                        setDialogError("");
+                                                    }}>
+                                                        Phản hồi
+                                                    </Button>
+                                                ) : (
+                                                    <span className="text-xs text-slate-500">Đã xử lý</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </Card>
+
             <div className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6 ${selectedSchedule ? "" : "pointer-events-none opacity-0"}`}>
                 {selectedSchedule && (
                     <div className="w-full max-w-2xl">
@@ -321,21 +406,12 @@ export function PersonalSchedulePage({ title = "Lịch làm việc cá nhân" }:
 
                             <div className="mt-5 flex flex-col gap-1.5">
                                 <label className="text-[13px] font-medium text-slate-700">Người nhận đổi ca</label>
-                                <select
-                                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] text-slate-900 outline-none"
+                                <AutocompleteInput
                                     value={targetStaffId}
-                                    onChange={(event) => setTargetStaffId(event.target.value)}
-                                >
-                                    <option value="">Admin tự điều phối</option>
-                                    {targetStaffOptions
-                                        .filter((staff) => staff.id !== selectedSchedule.userId)
-                                        .map((staff) => (
-                                            <option key={staff.id} value={staff.id}>
-                                                {staff.fullName}
-                                                {staff.roleName ? ` - ${staff.roleName}` : ""}
-                                            </option>
-                                        ))}
-                                </select>
+                                    onChange={(value) => setTargetStaffId(value)}
+                                    options={targetStaffListOptions}
+                                    placeholder="Chọn nhân viên hoặc để trống"
+                                />
                             </div>
 
                             <div className="mt-5">
@@ -347,6 +423,31 @@ export function PersonalSchedulePage({ title = "Lịch làm việc cá nhân" }:
                             <div className="mt-6 flex flex-wrap justify-end gap-3">
                                 <Button variant="outline" onClick={() => setSelectedSchedule(null)} disabled={loading}>Hủy</Button>
                                 <Button onClick={() => void submitShiftChange()} disabled={loading}>Gửi yêu cầu</Button>
+                            </div>
+                        </Card>
+                    </div>
+                )}
+            </div>
+
+            <div className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6 ${respondRequest ? "" : "pointer-events-none opacity-0"}`}>
+                {respondRequest && (
+                    <div className="w-full max-w-xl">
+                        <Card title="Phản hồi yêu cầu đổi ca" subtitle={`Yêu cầu từ: ${respondRequest.senderName}`}>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs font-medium text-slate-500">Mã lịch làm việc</p><p className="mt-1 text-sm font-semibold text-slate-900">{respondRequest.scheduleId}</p></div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs font-medium text-slate-500">Lý do của người gửi</p><p className="mt-1 text-sm font-semibold text-slate-900">{respondRequest.reason}</p></div>
+                            </div>
+
+                            <div className="mt-5">
+                                <Textarea label="Lý do (Tùy chọn)" value={respondReason} onChange={(event) => setRespondReason(event.target.value)} placeholder="Nhập lý do phản hồi..." rows={3} />
+                            </div>
+
+                            {dialogError && <p className="mt-3 text-sm font-medium text-error-600">{dialogError}</p>}
+
+                            <div className="mt-6 flex flex-wrap justify-end gap-3">
+                                <Button variant="outline" onClick={() => setRespondRequest(null)} disabled={loading}>Hủy</Button>
+                                <Button variant="outline" onClick={() => void submitRespond(false)} disabled={loading}>Từ chối</Button>
+                                <Button onClick={() => void submitRespond(true)} disabled={loading}>Đồng ý</Button>
                             </div>
                         </Card>
                     </div>

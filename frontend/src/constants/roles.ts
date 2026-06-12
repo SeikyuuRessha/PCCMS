@@ -30,6 +30,6 @@ export const roles: Record<RoleKey, RoleConfig> = {
     },
     admin: {
         label: "Quản trị viên",
-        screens: ["adminDashboard", "accounts", "catalog", "rooms", "schedule", "reports", "adminProfile"],
+        screens: ["adminDashboard", "accounts", "catalog", "rooms", "schedule", "adminShiftRequests", "reports", "adminProfile"],
     },
 };

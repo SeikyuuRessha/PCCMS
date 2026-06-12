@@ -18,14 +18,15 @@ export const workScheduleSchema = z.object({
     roleId: z.string().min(1, "Vui lòng chọn vai trò"),
     shiftId: z.string().min(1, "Vui lòng chọn ca làm việc"),
     workDate: z.string().min(1, "Vui lòng nhập ngày làm việc"),
-    examRoomId: z.string(),
-    stationId: z.string(),
-    status: z.enum(["Đã phân công", "Đã hủy", "Đã hoàn thành", ""]),
-    note: z.string(),
-    role: z.string(),
-    room: z.string(),
-    position: z.string(),
-    shift: z.string(),
+    examRoomId: z.string().optional(),
+    stationId: z.string().optional(),
+    status: z.enum(["Đã phân công", "Đã hủy", "Đã hoàn thành", ""]).optional(),
+    note: z.string().optional(),
+    role: z.string().optional(),
+    room: z.string().optional(),
+    position: z.string().optional(),
+    shift: z.string().optional(),
+    capacity: z.string().optional(),
 });
 
 export type WorkScheduleFormData = z.infer<typeof workScheduleSchema>;
@@ -53,8 +54,6 @@ const statusLabels: Record<WorkScheduleStatus, string> = {
 
 const roleLabelFromCode = (code?: string): WorkScheduleRole => {
     switch (code) {
-        case "ADMIN":
-            return "Quản trị viên";
         case "VETERINARIAN":
             return "Bác sĩ thú y";
         case "STAFF":
@@ -126,8 +125,8 @@ export function WorkScheduleFormDialog({
     const selectedLocation = currentExamRoomId
         ? locationValue("exam", currentExamRoomId)
         : currentStationId
-        ? locationValue("station", currentStationId)
-        : "";
+          ? locationValue("station", currentStationId)
+          : "";
 
     const onFormSubmit = (data: WorkScheduleFormData) => {
         if (!data.status) {
@@ -146,16 +145,23 @@ export function WorkScheduleFormDialog({
                     <form onSubmit={handleSubmit(onFormSubmit)}>
                         <div className="grid gap-4 md:grid-cols-2">
                             <div className="flex flex-col gap-1.5 md:col-span-2">
-                                <label className="text-[13px] font-medium text-slate-700">Nhân sự <span className="text-rose-500">*</span></label>
+                                <label className="text-[13px] font-medium text-slate-700">
+                                    Nhân sự <span className="text-rose-500">*</span>
+                                </label>
                                 <select
                                     className={`h-10 w-full rounded-xl border ${
                                         errors.staffId ? "border-rose-300" : "border-slate-200"
                                     } bg-white px-3 text-[14px] text-slate-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20`}
                                     {...register("staffId", {
                                         onChange: (event) => {
-                                            const nextStaff = options.staff.find((staff) => staff.id === event.target.value);
+                                            const nextStaff = options.staff.find(
+                                                (staff) => staff.id === event.target.value
+                                            );
                                             if (nextStaff?.roleCode) {
-                                                setValue("role", roleLabelFromCode(nextStaff.roleCode));
+                                                setValue(
+                                                    "role",
+                                                    roleLabelFromCode(nextStaff.roleCode)
+                                                );
                                             }
                                         },
                                     })}
@@ -168,18 +174,26 @@ export function WorkScheduleFormDialog({
                                         </option>
                                     ))}
                                 </select>
-                                {errors.staffId && <p className="text-xs text-rose-500">{errors.staffId.message}</p>}
+                                {errors.staffId && (
+                                    <p className="text-xs text-rose-500">
+                                        {errors.staffId.message}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[13px] font-medium text-slate-700">Vai trò <span className="text-rose-500">*</span></label>
+                                <label className="text-[13px] font-medium text-slate-700">
+                                    Vai trò <span className="text-rose-500">*</span>
+                                </label>
                                 <select
                                     className={`h-10 w-full rounded-xl border ${
                                         errors.roleId ? "border-rose-300" : "border-slate-200"
                                     } bg-white px-3 text-[14px] text-slate-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20`}
                                     {...register("roleId", {
                                         onChange: (event) => {
-                                            const role = options.roles.find((item) => item.id === event.target.value);
+                                            const role = options.roles.find(
+                                                (item) => item.id === event.target.value
+                                            );
                                             if (role) {
                                                 setValue("role", roleLabelFromCode(role.code));
                                             }
@@ -193,20 +207,32 @@ export function WorkScheduleFormDialog({
                                         </option>
                                     ))}
                                 </select>
-                                {errors.roleId && <p className="text-xs text-rose-500">{errors.roleId.message}</p>}
+                                {errors.roleId && (
+                                    <p className="text-xs text-rose-500">{errors.roleId.message}</p>
+                                )}
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[13px] font-medium text-slate-700">Ca làm việc <span className="text-rose-500">*</span></label>
+                                <label className="text-[13px] font-medium text-slate-700">
+                                    Ca làm việc <span className="text-rose-500">*</span>
+                                </label>
                                 <select
                                     className={`h-10 w-full rounded-xl border ${
                                         errors.shiftId ? "border-rose-300" : "border-slate-200"
                                     } bg-white px-3 text-[14px] text-slate-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20`}
                                     {...register("shiftId", {
                                         onChange: (event) => {
-                                            const shift = options.shifts.find((item) => item.id === event.target.value);
+                                            const shift = options.shifts.find(
+                                                (item) => item.id === event.target.value
+                                            );
                                             if (shift) {
-                                                setValue("shift", shiftLabelFromCode(shift.shiftCode, shift.shiftName));
+                                                setValue(
+                                                    "shift",
+                                                    shiftLabelFromCode(
+                                                        shift.shiftCode,
+                                                        shift.shiftName
+                                                    )
+                                                );
                                             }
                                         },
                                     })}
@@ -219,7 +245,11 @@ export function WorkScheduleFormDialog({
                                         </option>
                                     ))}
                                 </select>
-                                {errors.shiftId && <p className="text-xs text-rose-500">{errors.shiftId.message}</p>}
+                                {errors.shiftId && (
+                                    <p className="text-xs text-rose-500">
+                                        {errors.shiftId.message}
+                                    </p>
+                                )}
                             </div>
 
                             <Input
@@ -230,36 +260,58 @@ export function WorkScheduleFormDialog({
                             />
 
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[13px] font-medium text-slate-700">Vị trí làm việc</label>
+                                <label className="text-[13px] font-medium text-slate-700">
+                                    Vị trí làm việc
+                                </label>
                                 <select
                                     className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] text-slate-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                                     value={selectedLocation}
                                     onChange={(event) => {
-                                        const [locationType, locationId] = event.target.value.split(":");
-                                        const room = options.examRooms.find((item) => item.id === locationId);
-                                        const station = options.groomingStations.find((item) => item.id === locationId);
+                                        const [locationType, locationId] =
+                                            event.target.value.split(":");
+                                        const room = options.examRooms.find(
+                                            (item) => item.id === locationId
+                                        );
+                                        const station = options.groomingStations.find(
+                                            (item) => item.id === locationId
+                                        );
 
-                                        setValue("examRoomId", locationType === "exam" ? locationId : "");
-                                        setValue("stationId", locationType === "station" ? locationId : "");
-                                        setValue("room", room ? "Khu khám bệnh" : station ? "Khu spa" : "");
+                                        setValue(
+                                            "examRoomId",
+                                            locationType === "exam" ? locationId : ""
+                                        );
+                                        setValue(
+                                            "stationId",
+                                            locationType === "station" ? locationId : ""
+                                        );
+                                        setValue(
+                                            "room",
+                                            room ? "Khu khám bệnh" : station ? "Khu spa" : ""
+                                        );
                                         setValue(
                                             "position",
                                             room
                                                 ? `${room.roomCode} - ${room.name}`
                                                 : station
-                                                ? `${station.stationCode} - ${station.name}`
-                                                : ""
+                                                  ? `${station.stationCode} - ${station.name}`
+                                                  : ""
                                         );
                                     }}
                                 >
                                     <option value="">Không chọn vị trí</option>
                                     {options.examRooms.map((room) => (
-                                        <option key={room.id} value={locationValue("exam", room.id)}>
+                                        <option
+                                            key={room.id}
+                                            value={locationValue("exam", room.id)}
+                                        >
                                             Khu khám bệnh - {room.roomCode} - {room.name}
                                         </option>
                                     ))}
                                     {options.groomingStations.map((station) => (
-                                        <option key={station.id} value={locationValue("station", station.id)}>
+                                        <option
+                                            key={station.id}
+                                            value={locationValue("station", station.id)}
+                                        >
                                             Khu spa - {station.stationCode} - {station.name}
                                         </option>
                                     ))}
@@ -267,7 +319,9 @@ export function WorkScheduleFormDialog({
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[13px] font-medium text-slate-700">Ngày làm việc <span className="text-rose-500">*</span></label>
+                                <label className="text-[13px] font-medium text-slate-700">
+                                    Ngày làm việc <span className="text-rose-500">*</span>
+                                </label>
                                 <input
                                     type="date"
                                     className={`h-10 w-full rounded-xl border ${
@@ -276,11 +330,17 @@ export function WorkScheduleFormDialog({
                                     {...register("workDate")}
                                     placeholder="YYYY-MM-DD"
                                 />
-                                {errors.workDate && <p className="text-xs text-rose-500">{errors.workDate.message}</p>}
+                                {errors.workDate && (
+                                    <p className="text-xs text-rose-500">
+                                        {errors.workDate.message}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[13px] font-medium text-slate-700">Trạng thái <span className="text-rose-500">*</span></label>
+                                <label className="text-[13px] font-medium text-slate-700">
+                                    Trạng thái <span className="text-rose-500">*</span>
+                                </label>
                                 <select
                                     className={`h-10 w-full rounded-xl border ${
                                         errors.status ? "border-rose-300" : "border-slate-200"
@@ -294,12 +354,16 @@ export function WorkScheduleFormDialog({
                                         </option>
                                     ))}
                                 </select>
-                                {errors.status && <p className="text-xs text-rose-500">{errors.status.message}</p>}
+                                {errors.status && (
+                                    <p className="text-xs text-rose-500">{errors.status.message}</p>
+                                )}
                             </div>
 
                             <div className="md:col-span-2">
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-[13px] font-medium text-slate-700">Ghi chú</label>
+                                    <label className="text-[13px] font-medium text-slate-700">
+                                        Ghi chú
+                                    </label>
                                     <textarea
                                         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[14px] text-slate-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                                         {...register("note")}
@@ -310,26 +374,44 @@ export function WorkScheduleFormDialog({
                             </div>
                         </div>
 
-                        {selectedStaff && currentSchedule && selectedStaff.id !== currentSchedule.staffId && (
-                            <p className="mt-3 text-sm text-slate-500">Nhân sự được chọn: {selectedStaff.fullName}</p>
-                        )}
+                        {selectedStaff &&
+                            currentSchedule &&
+                            selectedStaff.id !== currentSchedule.staffId && (
+                                <p className="mt-3 text-sm text-slate-500">
+                                    Nhân sự được chọn: {selectedStaff.fullName}
+                                </p>
+                            )}
 
                         {missingRequiredOptions && (
                             <p className="mt-3 text-sm font-medium text-amber-700">
-                                Chưa có dữ liệu nhân sự, ca làm việc hoặc vai trò từ hệ thống. Không thể lưu lịch thật.
+                                Chưa có dữ liệu nhân sự, ca làm việc hoặc vai trò từ hệ thống. Không
+                                thể lưu lịch thật.
                             </p>
                         )}
 
-                        {optionError && <p className="mt-3 text-sm font-medium text-amber-700">{optionError}</p>}
+                        {optionError && (
+                            <p className="mt-3 text-sm font-medium text-amber-700">{optionError}</p>
+                        )}
 
-                        {error && <p className="mt-3 text-sm font-medium text-error-600">{error}</p>}
+                        {error && (
+                            <p className="mt-3 text-sm font-medium text-error-600">{error}</p>
+                        )}
 
                         <div className="mt-6 flex flex-wrap justify-end gap-3">
-                            <Button variant="outline" type="button" onClick={onClose} disabled={loading}>
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={onClose}
+                                disabled={loading}
+                            >
                                 Hủy
                             </Button>
                             <Button type="submit" disabled={!canSubmit}>
-                                {loading ? "Đang lưu..." : mode === "create" ? "Thêm lịch làm việc" : "Cập nhật lịch làm việc"}
+                                {loading
+                                    ? "Đang lưu..."
+                                    : mode === "create"
+                                      ? "Thêm lịch làm việc"
+                                      : "Cập nhật lịch làm việc"}
                             </Button>
                         </div>
                     </form>

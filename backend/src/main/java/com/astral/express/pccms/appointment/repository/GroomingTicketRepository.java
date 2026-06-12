@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Collection;
 
 @Repository
 public interface GroomingTicketRepository extends JpaRepository<GroomingTicket, UUID> {
@@ -116,7 +117,7 @@ public interface GroomingTicketRepository extends JpaRepository<GroomingTicket, 
             """)
     boolean existsStationConflict(
             @Param("stationId") UUID stationId,
-            @Param("statuses") java.util.Collection<GroomingStatus> statuses,
+            @Param("statuses") Collection<GroomingStatus> statuses,
             @Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt,
             @Param("excludedTicketId") UUID excludedTicketId);
@@ -137,7 +138,7 @@ public interface GroomingTicketRepository extends JpaRepository<GroomingTicket, 
             @Param("ownerId") UUID ownerId,
             @Param("petId") UUID petId,
             @Param("serviceId") UUID serviceId,
-            @Param("statuses") java.util.Collection<GroomingStatus> statuses,
+            @Param("statuses") Collection<GroomingStatus> statuses,
             @Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt);
 }

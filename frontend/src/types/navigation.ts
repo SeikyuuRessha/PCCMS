@@ -34,6 +34,7 @@ export type ScreenKey =
     | "catalog"
     | "rooms"
     | "schedule"
+    | "adminShiftRequests"
     | "reports"
     | "staffProfile"
     | "vetProfile"

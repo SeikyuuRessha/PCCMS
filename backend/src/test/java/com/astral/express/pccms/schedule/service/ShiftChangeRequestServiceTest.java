@@ -86,8 +86,13 @@ class ShiftChangeRequestServiceTest {
             case "Cancel own pending request success" -> assertCancelSuccess(csv);
             case "Schedule not found rejected", "Schedule not owned by requester rejected",
                     "Target staff not found rejected", "Past or started schedule rejected",
-                    "Cancelled schedule rejected", "Duplicate pending request rejected" ->
-                    assertFailure(scenario, csv, ErrorCode.valueOf(expectedErrorCode));
+                    "Cancelled schedule rejected", "Duplicate pending request rejected",
+                    "Self assign rejected" ->
+                    assertCreateFailure(scenario, csv, ErrorCode.valueOf(expectedErrorCode));
+            case "Target staff conflict rejected", "Target staff role mismatch rejected" ->
+                    assertRespondFailure(scenario, csv, ErrorCode.valueOf(expectedErrorCode));
+            case "Admin status bypass rejected" ->
+                    assertUpdateFailure(scenario, csv, ErrorCode.valueOf(expectedErrorCode));
             default -> throw new IllegalArgumentException("Unhandled CSV scenario: " + scenario);
         }
     }
@@ -135,7 +140,7 @@ class ShiftChangeRequestServiceTest {
         assertThat(response.statusCode()).isEqualTo(ShiftRequestStatus.CANCELLED);
     }
 
-    private void assertFailure(String scenario, ShiftRequestCsvInput csv, ErrorCode errorCode) {
+    private void assertCreateFailure(String scenario, ShiftRequestCsvInput csv, ErrorCode errorCode) {
         given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
         if ("Schedule not found rejected".equals(scenario)) {
             given(workScheduleRepository.findById(csv.scheduleId())).willReturn(Optional.empty());
@@ -152,8 +157,12 @@ class ShiftChangeRequestServiceTest {
             given(workScheduleRepository.findById(csv.scheduleId()))
                     .willReturn(Optional.of(schedule(csv.scheduleId(), ownerId, status, workDate)));
         }
-        if ("Target staff not found rejected".equals(scenario)) {
-            given(userRepository.findById(csv.targetStaffId())).willReturn(Optional.empty());
+        if ("Target staff not found rejected".equals(scenario) || "Self assign rejected".equals(scenario)) {
+            if ("Self assign rejected".equals(scenario)) {
+                given(userRepository.findById(csv.targetStaffId())).willReturn(Optional.of(user(CURRENT_USER_ID)));
+            } else {
+                given(userRepository.findById(csv.targetStaffId())).willReturn(Optional.empty());
+            }
         }
         if ("Duplicate pending request rejected".equals(scenario)) {
             given(shiftChangeRequestRepository.existsByScheduleIdAndRequestedByIdAndStatusCode(
@@ -161,6 +170,48 @@ class ShiftChangeRequestServiceTest {
         }
 
         assertThatThrownBy(() -> shiftChangeRequestService.createRequest(createRequest(csv)))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", errorCode);
+    }
+
+    private void assertRespondFailure(String scenario, ShiftRequestCsvInput csv, ErrorCode errorCode) {
+        given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
+        ShiftChangeRequest req = request(csv.requestId(), UUID.fromString("00000000-0000-0000-0000-000000000011"));
+        req.setTargetStaff(user(CURRENT_USER_ID));
+        if ("Target staff role mismatch rejected".equals(scenario)) {
+            com.astral.express.pccms.user.entity.Roles docRole = new com.astral.express.pccms.user.entity.Roles();
+            docRole.setId(UUID.randomUUID());
+            req.getSchedule().setRole(docRole);
+            com.astral.express.pccms.user.entity.Roles staffRole = new com.astral.express.pccms.user.entity.Roles();
+            staffRole.setId(UUID.randomUUID());
+            req.getTargetStaff().setRole(staffRole);
+        } else if ("Target staff conflict rejected".equals(scenario)) {
+            given(workScheduleRepository.existsByStaffIdAndWorkDateAndShiftId(
+                    CURRENT_USER_ID, req.getSchedule().getWorkDate(), req.getSchedule().getShift().getId()
+            )).willReturn(true);
+            com.astral.express.pccms.user.entity.Roles docRole = new com.astral.express.pccms.user.entity.Roles();
+            docRole.setId(UUID.randomUUID());
+            req.getSchedule().setRole(docRole);
+            req.getTargetStaff().setRole(docRole);
+        }
+        given(userRepository.findById(CURRENT_USER_ID)).willReturn(Optional.of(user(CURRENT_USER_ID)));
+        given(shiftChangeRequestRepository.findById(csv.requestId())).willReturn(Optional.of(req));
+
+        assertThatThrownBy(() -> shiftChangeRequestService.respondToRequest(csv.requestId(), ShiftRequestStatus.ACCEPTED))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", errorCode);
+    }
+
+    private void assertUpdateFailure(String scenario, ShiftRequestCsvInput csv, ErrorCode errorCode) {
+        given(SecurityContextService.getCurrentUserId()).willReturn(CURRENT_USER_ID);
+        ShiftChangeRequest req = request(csv.requestId(), UUID.fromString("00000000-0000-0000-0000-000000000011"));
+        if ("Admin status bypass rejected".equals(scenario)) {
+            req.setStatusCode(ShiftRequestStatus.CANCELLED);
+        }
+        given(shiftChangeRequestRepository.findById(csv.requestId())).willReturn(Optional.of(req));
+        given(userRepository.findById(CURRENT_USER_ID)).willReturn(Optional.of(user(CURRENT_USER_ID)));
+
+        assertThatThrownBy(() -> shiftChangeRequestService.updateRequestStatus(csv.requestId(), ShiftRequestStatus.ACCEPTED))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", errorCode);
     }

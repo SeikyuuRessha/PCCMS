@@ -39,12 +39,12 @@ export function PrescriptionPage() {
             
             const payload = {
                 items: data.items
-                    .filter((item) => item.medicineId && item.quantity > 0 && item.instruction)
+                    .filter((item) => item.medicineId && item.quantity > 0)
                     .map((item) => ({
                         medicineId: item.medicineId,
                         dosage: item.dosage || "",
                         quantity: item.quantity,
-                        instruction: item.instruction,
+                        instruction: item.instruction || "",
                     })),
             };
 

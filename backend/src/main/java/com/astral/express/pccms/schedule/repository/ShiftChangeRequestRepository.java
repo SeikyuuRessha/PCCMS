@@ -21,6 +21,21 @@ public interface ShiftChangeRequestRepository extends JpaRepository<ShiftChangeR
             ShiftRequestStatus statusCode,
             Pageable pageable);
 
+    @EntityGraph(attributePaths = {"schedule", "requestedBy", "targetStaff", "resolvedBy"})
+    Page<ShiftChangeRequest> findAll(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"schedule", "requestedBy", "targetStaff", "resolvedBy"})
+    Page<ShiftChangeRequest> findByStatusCode(ShiftRequestStatus statusCode, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"schedule", "requestedBy", "targetStaff", "resolvedBy"})
+    Page<ShiftChangeRequest> findByTargetStaffId(UUID targetStaffId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"schedule", "requestedBy", "targetStaff", "resolvedBy"})
+    Page<ShiftChangeRequest> findByTargetStaffIdAndStatusCode(
+            UUID targetStaffId,
+            ShiftRequestStatus statusCode,
+            Pageable pageable);
+
     boolean existsByScheduleIdAndRequestedByIdAndStatusCode(
             UUID scheduleId,
             UUID requestedBy,

@@ -23,27 +23,41 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/v1/me/shift-change-requests")
+@RequestMapping("/v1")
 @RequiredArgsConstructor
 public class ShiftChangeRequestController {
     private final ShiftChangeRequestService shiftChangeRequestService;
 
-    @GetMapping
+    @GetMapping("/me/shift-change-requests")
     public ApiResponse<PageResponse<ShiftChangeRequestResponse>> getMyRequests(
             @RequestParam(required = false) ShiftRequestStatus statusCode,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ApiResponse.success(shiftChangeRequestService.getMyRequests(statusCode, pageable));
     }
 
-    @PostMapping
+    @PostMapping("/me/shift-change-requests")
     public ApiResponse<ShiftChangeRequestResponse> createRequest(
             @Valid @RequestBody ShiftChangeRequestCreateRequest request) {
         return ApiResponse.success(shiftChangeRequestService.createRequest(request));
     }
 
-    @PatchMapping("/{requestId}/cancel")
+    @PatchMapping("/me/shift-change-requests/{requestId}/cancel")
     public ApiResponse<ShiftChangeRequestResponse> cancelOwnRequest(@PathVariable UUID requestId) {
         return ApiResponse.success(shiftChangeRequestService.cancelOwnRequest(requestId));
+    }
+
+    @GetMapping("/shift-change-requests/incoming")
+    public ApiResponse<PageResponse<ShiftChangeRequestResponse>> getIncomingRequests(
+            @RequestParam(required = false) ShiftRequestStatus statusCode,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ApiResponse.success(shiftChangeRequestService.getIncomingRequests(statusCode, pageable));
+    }
+
+    @PatchMapping("/shift-change-requests/{requestId}/respond")
+    public ApiResponse<ShiftChangeRequestResponse> respondToRequest(
+            @PathVariable UUID requestId,
+            @Valid @RequestBody com.astral.express.pccms.schedule.dto.request.ShiftChangeRespondRequest request) {
+        return ApiResponse.success(shiftChangeRequestService.respondToRequest(requestId, request.action()));
     }
 
 }

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 @Repository
 public interface ReceptionTicketRepository extends JpaRepository<ReceptionTicket, UUID> {
@@ -39,7 +40,7 @@ public interface ReceptionTicketRepository extends JpaRepository<ReceptionTicket
               AND rt.checkedInAt < :dayEnd
             ORDER BY rt.queueNumber ASC NULLS LAST, rt.checkedInAt ASC
             """)
-    java.util.List<ReceptionTicket> findVetQueueTickets(
+    List<ReceptionTicket> findVetQueueTickets(
             @Param("vetId") UUID vetId,
             @Param("dayStart") OffsetDateTime dayStart,
             @Param("dayEnd") OffsetDateTime dayEnd,

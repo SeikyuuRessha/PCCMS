@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -215,7 +216,7 @@ public class MedicineService {
 
     @SafeVarargs
     private final Specification<Medicine> combine(Specification<Medicine>... specifications) {
-        java.util.List<Specification<Medicine>> activeSpecifications = new java.util.ArrayList<>();
+        List<Specification<Medicine>> activeSpecifications = new ArrayList<>();
         for (Specification<Medicine> specification : specifications) {
             if (specification != null) {
                 activeSpecifications.add(specification);

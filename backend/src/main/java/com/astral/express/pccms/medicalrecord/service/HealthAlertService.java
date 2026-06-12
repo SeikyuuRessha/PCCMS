@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import java.util.List;
+import com.astral.express.pccms.medicalrecord.dto.response.HealthAlertResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -44,9 +46,9 @@ public class HealthAlertService {
         alert.setResolvedAt(OffsetDateTime.now());
         healthAlertRepository.save(alert);
     }
-public java.util.List<com.astral.express.pccms.medicalrecord.dto.response.HealthAlertResponse> getUnresolvedAlertsByPetId(UUID petId) {
+public List<HealthAlertResponse> getUnresolvedAlertsByPetId(UUID petId) {
         return healthAlertRepository.findByPetIdAndResolvedAtIsNull(petId).stream()
-                .map(alert -> new com.astral.express.pccms.medicalrecord.dto.response.HealthAlertResponse(
+                .map(alert -> new HealthAlertResponse(
                         alert.getId(),
                         alert.getPetId(),
                         alert.getMedicalRecordId(),

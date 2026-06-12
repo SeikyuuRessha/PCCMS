@@ -11,7 +11,7 @@ export const prescriptionItemSchema = z.object({
     medicineName: z.string().optional(),
     dosage: z.string().optional(),
     quantity: z.coerce.number().min(1, "Số lượng phải >= 1"),
-    instruction: z.string().min(1, "Vui lòng nhập hoặc chọn hướng dẫn"),
+    instruction: z.string().optional(),
 });
 
 export const prescriptionFormSchema = z.object({
@@ -41,21 +41,26 @@ function MedicinePicker({
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [templates, setTemplates] = useState<any[]>([]);
     
-    // Fetch templates when a medicine is selected
-    const selectedMedicineId = useWatch({ name: `prescription.items.${index}.medicineId` });
+    const selectedMedicineId = useWatch({ name: `items.${index}.medicineId` });
     useEffect(() => {
+        let cancelled = false;
         if (selectedMedicineId) {
-            fetch(`/api/v1/medicines/${selectedMedicineId}/usage-templates`, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                }
-            })
-            .then(res => res.json())
-            .then(data => setTemplates(data.data || []))
-            .catch(() => setTemplates([]));
+            import('~/features/admin/medicine-management/medicineService')
+                .then(m => m.getMedicineUsageTemplates(selectedMedicineId))
+                .then(data => {
+                    if (!cancelled) {
+                        setTemplates(data || []);
+                    }
+                })
+                .catch(() => {
+                    if (!cancelled) setTemplates([]);
+                });
         } else {
             setTemplates([]);
         }
+        return () => {
+            cancelled = true;
+        };
     }, [selectedMedicineId]);
 
     useEffect(() => {
@@ -100,10 +105,10 @@ function MedicinePicker({
             .split(/\r?\n/)
             .map((line) => line.trim())
             .find(Boolean);
-        setValue(`prescription.items.${index}.medicineId`, medicine.id, { shouldValidate: true, shouldDirty: true });
-        setValue(`prescription.items.${index}.medicineName`, medicine.name, { shouldValidate: true, shouldDirty: true });
-        if (!getValues(`prescription.items.${index}.instruction`) && firstInstruction) {
-            setValue(`prescription.items.${index}.instruction`, firstInstruction, { shouldValidate: true, shouldDirty: true });
+        setValue(`items.${index}.medicineId`, medicine.id, { shouldValidate: true, shouldDirty: true });
+        setValue(`items.${index}.medicineName`, medicine.name, { shouldValidate: true, shouldDirty: true });
+        if (!getValues(`items.${index}.instruction`) && firstInstruction) {
+            setValue(`items.${index}.instruction`, firstInstruction, { shouldValidate: true, shouldDirty: true });
         }
         setKeyword(medicine.name);
         setOpen(false);
@@ -111,7 +116,7 @@ function MedicinePicker({
 
     return (
         <div className="relative w-72">
-            <input type="hidden" {...register(`prescription.items.${index}.medicineId`)} />
+            <input type="hidden" {...register(`items.${index}.medicineId`)} />
             <Input
                 value={keyword}
                 placeholder="Nhập tên thuốc"
@@ -120,8 +125,8 @@ function MedicinePicker({
                 onChange={(event) => {
                     setKeyword(event.target.value);
                     setOpen(true);
-                    setValue(`prescription.items.${index}.medicineId`, "", { shouldValidate: true, shouldDirty: true });
-                    setValue(`prescription.items.${index}.medicineName`, event.target.value, { shouldDirty: true });
+                    setValue(`items.${index}.medicineId`, "", { shouldValidate: true, shouldDirty: true });
+                    setValue(`items.${index}.medicineName`, event.target.value, { shouldDirty: true });
                 }}
                 error={error}
             />
@@ -161,15 +166,26 @@ function MedicinePicker({
                                 type="button"
                                 className="block w-full text-left p-1.5 hover:bg-indigo-100 rounded text-indigo-700 font-medium transition"
                                 onClick={() => {
-                                    setValue(`prescription.items.${index}.instruction`, t.instruction, { shouldValidate: true, shouldDirty: true });
-                                    setValue(`prescription.items.${index}.dosage`, t.label, { shouldValidate: true, shouldDirty: true });
+                                    setValue(`items.${index}.instruction`, t.instruction, { shouldValidate: true, shouldDirty: true });
+                                    if (t.dosage) {
+                                        setValue(`items.${index}.dosage`, t.dosage, { shouldValidate: true, shouldDirty: true });
+                                    }
                                 }}
                             >
-                                {t.label}: <span className="font-normal text-indigo-600">{t.instruction}</span>
+                                {t.label}: <span className="font-normal text-indigo-600">{t.dosage ? `${t.dosage} - ` : ''}{t.instruction}</span>
                             </button>
                         ))}
                     </div>
                 </div>
+            )}
+            
+            {/* Datalist for dosage autocomplete */}
+            {selectedMedicineId && templates.length > 0 && (
+                <datalist id={`dosage-list-${index}`}>
+                    {templates.filter(t => t.dosage).map(t => (
+                        <option key={`dl-${t.id}`} value={t.dosage}>{t.label}</option>
+                    ))}
+                </datalist>
             )}
         </div>
     );
@@ -184,7 +200,7 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
 
     const { fields, append, remove } = useFieldArray({
         control,
-        name: "prescription.items",
+        name: "items",
     });
 
 
@@ -193,9 +209,10 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
         <Card title="Kê đơn thuốc">
             <div className="space-y-6">
                 <DataTable
+                    overflowVisible
                     columns={["Thuốc", "Số lượng", "Mẫu Liều", "Hướng dẫn", ""]}
                     rows={fields.map((field, index) => {
-                        const itemErrors = (errors.prescription as any)?.items?.[index];
+                        const itemErrors = (errors.items as any)?.[index];
                         return [
                             <MedicinePicker
                                 key={`medicine-${field.id}`}
@@ -204,13 +221,13 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
                                 error={itemErrors?.medicineId?.message}
                             />,
                             <div key={`quantity-${field.id}`} className="w-24">
-                                <Input type="number" min="1" disabled={disabled} {...register(`prescription.items.${index}.quantity`, { valueAsNumber: true })} error={itemErrors?.quantity?.message} />
+                                <Input type="number" min="1" disabled={disabled} {...register(`items.${index}.quantity`, { valueAsNumber: true })} error={itemErrors?.quantity?.message} />
                             </div>,
                             <div key={`dosage-${field.id}`} className="w-40">
-                                <Input disabled={disabled} placeholder="VD: Liều cao..." {...register(`prescription.items.${index}.dosage`)} error={itemErrors?.dosage?.message} />
+                                <Input disabled={disabled} list={`dosage-list-${index}`} placeholder="VD: Liều cao..." {...register(`items.${index}.dosage`)} error={itemErrors?.dosage?.message} />
                             </div>,
                             <div key={`instruction-${field.id}`} className="w-64">
-                                <Textarea rows={2} disabled={disabled} placeholder="Nhập hướng dẫn dùng..." {...register(`prescription.items.${index}.instruction`)} error={itemErrors?.instruction?.message} />
+                                <Textarea rows={2} disabled={disabled} placeholder="Nhập hướng dẫn dùng..." {...register(`items.${index}.instruction`)} error={itemErrors?.instruction?.message} />
                             </div>,
                             <div key={`action-${field.id}`} className="flex justify-center">
                                 <Button type="button" variant="ghost" disabled={disabled} onClick={() => remove(index)} className="h-auto p-2 text-red-500 hover:bg-red-50 hover:text-red-700">

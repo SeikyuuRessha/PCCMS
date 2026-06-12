@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Tag } from "~/components/atoms";
+import { Button, Tag, AutocompleteInput } from "~/components/atoms";
 import { Card } from "~/components/molecules";
 import { WorkScheduleFormDialog } from "../work-schedule-management/components/WorkScheduleFormDialog";
 import { WorkScheduleCancelDialog } from "../work-schedule-management/components/WorkScheduleCancelDialog";
@@ -13,6 +13,7 @@ import {
     previewWeeklySchedulePlan,
     searchWorkSchedules,
     updateWorkSchedule,
+    roleFromBackend,
 } from "../work-schedule-management/workScheduleService";
 import type {
     WorkSchedule,
@@ -26,7 +27,6 @@ const emptyFilters: WorkScheduleSearchParams = {
     keyword: "",
     role: "",
     room: "",
-    position: "",
     workDate: "",
     shift: "",
     status: "",
@@ -41,7 +41,6 @@ const emptyForm: WorkScheduleFormValues = {
     capacity: "1",
     role: "",
     room: "",
-    position: "",
     workDate: "",
     shift: "",
     status: "",
@@ -59,8 +58,6 @@ const emptyOptions: WorkScheduleOptions = {
 const shiftOrder: WorkSchedule["shift"][] = ["Ca sáng", "Ca chiều", "Ca tối"];
 
 const weekdayLabels = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
-
-const roleOptions = ["Lễ tân", "Bác sĩ thú y", "Nhân viên trung tâm"];
 
 const shiftOptions = ["Ca sáng", "Ca chiều", "Ca tối"];
 
@@ -92,7 +89,6 @@ const buildFormValues = (schedule: WorkSchedule): WorkScheduleFormValues => ({
     capacity: String(schedule.capacity ?? 1),
     role: schedule.role,
     room: schedule.room,
-    position: schedule.position,
     workDate: schedule.workDate,
     shift: schedule.shift,
     status: schedule.status,
@@ -137,12 +133,23 @@ const getScheduleDetails = (schedule: WorkSchedule, options?: WorkScheduleOption
     const record = schedule as unknown as Record<string, unknown>;
 
     const room =
-        getTextValue(record, ["room", "roomName", "roomCode", "department", "location", "workRoom"]) ||
-        "Chưa có phòng";
+        getTextValue(record, [
+            "room",
+            "roomName",
+            "roomCode",
+            "department",
+            "location",
+            "workRoom",
+        ]) || "Chưa có phòng";
 
     const position =
-        getTextValue(record, ["position", "positionName", "jobPosition", "workPosition", "dutyPosition"]) ||
-        "Chưa có vị trí";
+        getTextValue(record, [
+            "position",
+            "positionName",
+            "jobPosition",
+            "workPosition",
+            "dutyPosition",
+        ]) || "Chưa có vị trí";
 
     return {
         room,
@@ -254,7 +261,9 @@ export function WorkSchedulePage() {
         queryKey: ["workScheduleOptions"],
         queryFn: getWorkScheduleOptions,
     });
-    const optionError = isOptionError ? "Không tải được dữ liệu nhân sự, ca làm việc hoặc vai trò từ hệ thống." : "";
+    const optionError = isOptionError
+        ? "Không tải được dữ liệu nhân sự, ca làm việc hoặc vai trò từ hệ thống."
+        : "";
     const [editingSchedule, setEditingSchedule] = useState<WorkSchedule | null>(null);
     const [cancelTarget, setCancelTarget] = useState<WorkSchedule | null>(null);
     const [cancelLoading, setCancelLoading] = useState(false);
@@ -266,7 +275,9 @@ export function WorkSchedulePage() {
         shift: WorkSchedule["shift"];
     } | null>(null);
     const [detailSearch, setDetailSearch] = useState("");
-    const [planSourceWeek, setPlanSourceWeek] = useState(() => formatISODate(addDays(weekAnchor, -7)));
+    const [planSourceWeek, setPlanSourceWeek] = useState(() =>
+        formatISODate(addDays(weekAnchor, -7))
+    );
     const [planTargetWeek, setPlanTargetWeek] = useState(() => formatISODate(weekAnchor));
     const [planRoleId, setPlanRoleId] = useState("");
     const [planShiftId, setPlanShiftId] = useState("");
@@ -298,11 +309,10 @@ export function WorkSchedulePage() {
         }
     };
 
-
-
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         void loadSchedules();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const total = schedules.length;
@@ -318,7 +328,9 @@ export function WorkSchedulePage() {
     const groupedByDate = useMemo(() => {
         return visibleWeekDates.map((date) => {
             const dateKey = formatISODate(date);
-            const items = filteredSchedules.filter((schedule) => normalizeDateValue(schedule.workDate) === dateKey);
+            const items = filteredSchedules.filter(
+                (schedule) => normalizeDateValue(schedule.workDate) === dateKey
+            );
 
             return {
                 date,
@@ -337,7 +349,9 @@ export function WorkSchedulePage() {
         const keyword = detailSearch.trim().toLowerCase();
 
         return filteredSchedules.filter((schedule) => {
-            const matchesSlot = normalizeDateValue(schedule.workDate) === dateKey && schedule.shift === detailSlot.shift;
+            const matchesSlot =
+                normalizeDateValue(schedule.workDate) === dateKey &&
+                schedule.shift === detailSlot.shift;
 
             if (!matchesSlot) {
                 return false;
@@ -347,7 +361,13 @@ export function WorkSchedulePage() {
                 return true;
             }
 
-            return [schedule.staffName, schedule.role, schedule.room, schedule.position, schedule.note]
+            return [
+                schedule.staffName,
+                schedule.role,
+                schedule.room,
+                schedule.position,
+                schedule.note,
+            ]
                 .filter(Boolean)
                 .some((value) => value.toLowerCase().includes(keyword));
         });
@@ -365,7 +385,6 @@ export function WorkSchedulePage() {
             filters.keyword.trim() ||
             filters.role ||
             filters.room.trim() ||
-            filters.position.trim() ||
             filters.workDate.trim() ||
             filters.shift ||
             filters.status;
@@ -430,8 +449,14 @@ export function WorkSchedulePage() {
     const openCreateForSlot = (date: Date, shift: WorkSchedule["shift"]) => {
         const shiftOption = scheduleOptions.shifts.find((option) => {
             const value = `${option.shiftCode} ${option.shiftName}`.toLowerCase();
-            if (shift === "Ca tối") return value.includes("evening") || value.includes("tối") || value.includes("toi");
-            if (shift === "Ca chiều") return value.includes("afternoon") || value.includes("chiều") || value.includes("chieu");
+            if (shift === "Ca tối")
+                return value.includes("evening") || value.includes("tối") || value.includes("toi");
+            if (shift === "Ca chiều")
+                return (
+                    value.includes("afternoon") ||
+                    value.includes("chiều") ||
+                    value.includes("chieu")
+                );
             return value.includes("morning") || value.includes("sáng") || value.includes("sang");
         });
 
@@ -462,7 +487,11 @@ export function WorkSchedulePage() {
         setFormError("");
 
         try {
-            if (scheduleOptions.staff.length === 0 || scheduleOptions.shifts.length === 0 || scheduleOptions.roles.length === 0) {
+            if (
+                scheduleOptions.staff.length === 0 ||
+                scheduleOptions.shifts.length === 0 ||
+                scheduleOptions.roles.length === 0
+            ) {
                 throw new Error("Chưa có dữ liệu nhân sự, ca làm việc hoặc vai trò từ hệ thống");
             }
 
@@ -563,7 +592,9 @@ export function WorkSchedulePage() {
         try {
             const result = await applyWeeklySchedulePlan(buildPlanPayload());
             setPlanPreview(result);
-            setFeedback(`Đã tạo ${result.createdCount} lịch, bỏ qua ${result.skippedCount} lịch trùng.`);
+            setFeedback(
+                `Đã tạo ${result.createdCount} lịch, bỏ qua ${result.skippedCount} lịch trùng.`
+            );
             const targetWeek = getStartOfWeek(new Date(`${planTargetWeek}T00:00:00`));
             setWeekAnchor(targetWeek);
             await loadSchedules(targetWeek);
@@ -615,8 +646,12 @@ export function WorkSchedulePage() {
             >
                 <div className="flex min-w-0 items-start justify-between gap-2">
                     <div className="min-w-0">
-                        <p className="break-words font-semibold text-slate-900">{schedule.staffName}</p>
-                        <p className="mt-0.5 break-words text-[11px] text-slate-500">{schedule.role}</p>
+                        <p className="break-words font-semibold text-slate-900">
+                            {schedule.staffName}
+                        </p>
+                        <p className="mt-0.5 break-words text-[11px] text-slate-500">
+                            {schedule.role}
+                        </p>
                     </div>
 
                     {schedule.status === "Đã hủy" && (
@@ -626,7 +661,9 @@ export function WorkSchedulePage() {
                     )}
                 </div>
 
-                <p className="mt-1 break-words text-[11px] text-slate-600">Phòng: {scheduleDetails.room}</p>
+                <p className="mt-1 break-words text-[11px] text-slate-600">
+                    Phòng: {scheduleDetails.room}
+                </p>
             </div>
         );
     };
@@ -649,19 +686,29 @@ export function WorkSchedulePage() {
             <tr key={schedule.id} className="border-b border-slate-100 last:border-b-0">
                 <td className="whitespace-nowrap px-3 py-3 text-xs text-slate-600">{index + 1}</td>
                 <td className="px-3 py-3 text-xs font-medium text-slate-900">
-                    <div className="max-w-[220px] whitespace-normal break-words">{schedule.staffName}</div>
+                    <div className="max-w-[220px] whitespace-normal break-words">
+                        {schedule.staffName}
+                    </div>
                 </td>
                 <td className="px-3 py-3 text-xs text-slate-700">
-                    <div className="max-w-[160px] whitespace-normal break-words">{schedule.role}</div>
+                    <div className="max-w-[160px] whitespace-normal break-words">
+                        {schedule.role}
+                    </div>
                 </td>
                 <td className="px-3 py-3 text-xs text-slate-700">
-                    <div className="max-w-[160px] whitespace-normal break-words">{scheduleDetails.room}</div>
+                    <div className="max-w-[160px] whitespace-normal break-words">
+                        {scheduleDetails.room}
+                    </div>
                 </td>
                 <td className="px-3 py-3 text-xs text-slate-700">
-                    <div className="max-w-[180px] whitespace-normal break-words">{scheduleDetails.position}</div>
+                    <div className="max-w-[180px] whitespace-normal break-words">
+                        {scheduleDetails.position}
+                    </div>
                 </td>
                 <td className="px-3 py-3 text-xs text-slate-600">
-                    <div className="max-w-[220px] whitespace-normal break-words line-clamp-2">{schedule.note || "-"}</div>
+                    <div className="max-w-[220px] whitespace-normal break-words line-clamp-2">
+                        {schedule.note || "-"}
+                    </div>
                 </td>
                 <td className="px-3 py-3 text-xs">{renderDetailStatusBadge(schedule.status)}</td>
                 <td className="px-3 py-3 text-xs">
@@ -692,9 +739,12 @@ export function WorkSchedulePage() {
     return (
         <div className="w-full min-w-0 max-w-full space-y-6 overflow-x-hidden">
             <div className="min-w-0">
-                <h1 className="text-2xl font-semibold text-slate-900">Quản lý lịch làm việc nhân sự</h1>
+                <h1 className="text-2xl font-semibold text-slate-900">
+                    Quản lý lịch làm việc nhân sự
+                </h1>
                 <p className="mt-1 text-sm text-slate-500">
-                    Phân công, theo dõi phòng làm việc, vị trí trực và ca làm việc của nhân sự trong trung tâm.
+                    Phân công, theo dõi phòng làm việc, vị trí trực và ca làm việc của nhân sự trong
+                    trung tâm.
                 </p>
             </div>
 
@@ -726,7 +776,9 @@ export function WorkSchedulePage() {
             >
                 <div className="grid w-full min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Tuần nguồn</label>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Tuần nguồn
+                        </label>
                         <input
                             type="date"
                             value={planSourceWeek}
@@ -738,7 +790,9 @@ export function WorkSchedulePage() {
                         />
                     </div>
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Tuần đích</label>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Tuần đích
+                        </label>
                         <input
                             type="date"
                             value={planTargetWeek}
@@ -750,7 +804,9 @@ export function WorkSchedulePage() {
                         />
                     </div>
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Vai trò</label>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Vai trò
+                        </label>
                         <select
                             value={planRoleId}
                             onChange={(event) => {
@@ -762,13 +818,15 @@ export function WorkSchedulePage() {
                             <option value="">Tất cả vai trò</option>
                             {scheduleOptions.roles.map((role) => (
                                 <option key={role.id} value={role.id}>
-                                    {role.name}
+                                    {roleFromBackend(role.code)}
                                 </option>
                             ))}
                         </select>
                     </div>
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Ca</label>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Ca
+                        </label>
                         <select
                             value={planShiftId}
                             onChange={(event) => {
@@ -793,10 +851,20 @@ export function WorkSchedulePage() {
                     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="text-sm text-slate-700">
-                                <span className="font-semibold">{planPreview.items.length}</span> lịch trong preview,
-                                <span className="ml-1 font-semibold text-rose-700">{planPreview.skippedCount}</span> conflict.
+                                <span className="font-semibold">{planPreview.items.length}</span>{" "}
+                                lịch trong preview,
+                                <span className="ml-1 font-semibold text-rose-700">
+                                    {planPreview.skippedCount}
+                                </span>{" "}
+                                conflict.
                             </div>
-                            <Button onClick={() => void applyPlan()} disabled={planLoading || planPreview.items.length === planPreview.skippedCount}>
+                            <Button
+                                onClick={() => void applyPlan()}
+                                disabled={
+                                    planLoading ||
+                                    planPreview.items.length === planPreview.skippedCount
+                                }
+                            >
                                 {planLoading ? "Đang áp dụng..." : "Áp dụng lịch tuần"}
                             </Button>
                         </div>
@@ -812,13 +880,23 @@ export function WorkSchedulePage() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {planPreview.items.slice(0, 30).map((item) => (
-                                        <tr key={`${item.sourceScheduleId ?? item.staffId}-${item.targetDate}-${item.shiftId}`}>
-                                            <td className="px-3 py-2 font-medium text-slate-900">{item.staffName ?? "-"}</td>
+                                        <tr
+                                            key={`${item.sourceScheduleId ?? item.staffId}-${item.targetDate}-${item.shiftId}`}
+                                        >
+                                            <td className="px-3 py-2 font-medium text-slate-900">
+                                                {item.staffName ?? "-"}
+                                            </td>
                                             <td className="px-3 py-2">{item.targetDate}</td>
-                                            <td className="px-3 py-2">{item.shiftName ?? item.shiftCode ?? "-"}</td>
+                                            <td className="px-3 py-2">
+                                                {item.shiftName ?? item.shiftCode ?? "-"}
+                                            </td>
                                             <td className="px-3 py-2">
                                                 <Tag tone={item.conflict ? "red" : "green"}>
-                                                    {item.conflict ? "Trùng lịch" : item.createdScheduleId ? "Đã tạo" : "Có thể tạo"}
+                                                    {item.conflict
+                                                        ? "Trùng lịch"
+                                                        : item.createdScheduleId
+                                                          ? "Đã tạo"
+                                                          : "Có thể tạo"}
                                                 </Tag>
                                             </td>
                                         </tr>
@@ -845,39 +923,43 @@ export function WorkSchedulePage() {
             >
                 <div className="grid w-full min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Nhân sự</label>
-                        <input
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Nhân sự
+                        </label>
+                        <AutocompleteInput
                             value={filters.keyword}
-                            onChange={(event) => updateFilter("keyword", event.target.value)}
-                            onKeyDown={(event) => {
-                                if (event.key === "Enter") {
-                                    void runSearch();
-                                }
-                            }}
-                            className={inputClassName}
-                            placeholder="Nhập tên nhân sự"
+                            onChange={(value) => updateFilter("keyword", value)}
+                            options={scheduleOptions.staff.map((s) => ({
+                                id: s.fullName,
+                                label: s.fullName,
+                            }))}
+                            placeholder="Chọn hoặc nhập tên nhân sự"
+                            allowFreeText={true}
                         />
                     </div>
 
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Vai trò</label>
-                        <select
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Vai trò
+                        </label>
+                        <AutocompleteInput
                             value={filters.role}
-                            onChange={(event) => updateFilter("role", event.target.value)}
-                            className={selectClassName}
-                        >
-                            <option value="">Tất cả vai trò</option>
-                            {roleOptions.map((role) => (
-                                <option key={role} value={role}>
-                                    {role}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(value) => updateFilter("role", value)}
+                            options={scheduleOptions.roles.map((r) => {
+                                const mappedName = roleFromBackend(r.code);
+                                return { id: mappedName, label: mappedName };
+                            })}
+                            placeholder="Tất cả vai trò"
+                            allowFreeText={true}
+                        />
                     </div>
 
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Phòng làm việc</label>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Phòng làm việc
+                        </label>
                         <input
+                            type="text"
                             value={filters.room}
                             onChange={(event) => updateFilter("room", event.target.value)}
                             onKeyDown={(event) => {
@@ -886,42 +968,26 @@ export function WorkSchedulePage() {
                                 }
                             }}
                             className={inputClassName}
-                            placeholder="Nhập phòng làm việc"
+                            placeholder="Nhập tên phòng (VD: P01)"
                         />
                     </div>
 
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Vị trí làm việc</label>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Ngày làm việc
+                        </label>
                         <input
-                            value={filters.position}
-                            onChange={(event) => updateFilter("position", event.target.value)}
-                            onKeyDown={(event) => {
-                                if (event.key === "Enter") {
-                                    void runSearch();
-                                }
-                            }}
-                            className={inputClassName}
-                            placeholder="Nhập vị trí làm việc"
-                        />
-                    </div>
-
-                    <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Ngày làm việc</label>
-                        <input
+                            type="date"
                             value={filters.workDate}
                             onChange={(event) => updateFilter("workDate", event.target.value)}
-                            onKeyDown={(event) => {
-                                if (event.key === "Enter") {
-                                    void runSearch();
-                                }
-                            }}
                             className={inputClassName}
-                            placeholder="DD/MM/YYYY"
                         />
                     </div>
 
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Ca làm việc</label>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Ca làm việc
+                        </label>
                         <select
                             value={filters.shift}
                             onChange={(event) => updateFilter("shift", event.target.value)}
@@ -937,7 +1003,9 @@ export function WorkSchedulePage() {
                     </div>
 
                     <div className="min-w-0">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Trạng thái</label>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            Trạng thái
+                        </label>
                         <select
                             value={filters.status}
                             onChange={(event) => updateFilter("status", event.target.value)}
@@ -953,20 +1021,30 @@ export function WorkSchedulePage() {
                     </div>
                 </div>
 
-                {searchError && <p className="mt-3 text-sm font-medium text-rose-600">{searchError}</p>}
+                {searchError && (
+                    <p className="mt-3 text-sm font-medium text-rose-600">{searchError}</p>
+                )}
 
                 <div className="mt-5 flex flex-wrap items-center gap-3">
                     <Button onClick={() => void runSearch()} disabled={loading}>
                         Tìm kiếm
                     </Button>
 
-                    <Button variant="outline" onClick={() => void resetFilters()} disabled={loading}>
+                    <Button
+                        variant="outline"
+                        onClick={() => void resetFilters()}
+                        disabled={loading}
+                    >
                         Xóa bộ lọc / Làm mới
                     </Button>
                 </div>
             </Card>
 
-            {feedback && <Card className="border-emerald-200 bg-emerald-50 text-emerald-800">{feedback}</Card>}
+            {feedback && (
+                <Card className="border-emerald-200 bg-emerald-50 text-emerald-800">
+                    {feedback}
+                </Card>
+            )}
 
             <Card
                 title="Lịch làm việc theo tuần"
@@ -974,15 +1052,27 @@ export function WorkSchedulePage() {
             >
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                     <div className="flex flex-wrap items-center gap-2">
-                        <Button variant="outline" className="px-3 py-2 text-xs" onClick={goToPreviousWeek}>
+                        <Button
+                            variant="outline"
+                            className="px-3 py-2 text-xs"
+                            onClick={goToPreviousWeek}
+                        >
                             Tuần trước
                         </Button>
 
-                        <Button variant="ghost" className="px-3 py-2 text-xs" onClick={goToCurrentWeek}>
+                        <Button
+                            variant="ghost"
+                            className="px-3 py-2 text-xs"
+                            onClick={goToCurrentWeek}
+                        >
                             Tuần hiện tại
                         </Button>
 
-                        <Button variant="outline" className="px-3 py-2 text-xs" onClick={goToNextWeek}>
+                        <Button
+                            variant="outline"
+                            className="px-3 py-2 text-xs"
+                            onClick={goToNextWeek}
+                        >
                             Tuần sau
                         </Button>
                     </div>
@@ -998,19 +1088,29 @@ export function WorkSchedulePage() {
                             />
                         </label>
 
-                        <div className="text-sm font-medium text-slate-700">{formatWeekRange(weekAnchor)}</div>
+                        <div className="text-sm font-medium text-slate-700">
+                            {formatWeekRange(weekAnchor)}
+                        </div>
 
-                        <Button variant="outline" className="px-4 py-2 text-xs" onClick={openCreate}>
+                        <Button
+                            variant="outline"
+                            className="px-4 py-2 text-xs"
+                            onClick={openCreate}
+                        >
                             Thêm thủ công
                         </Button>
                     </div>
                 </div>
 
                 {loading ? (
-                    <div className="py-10 text-center text-sm text-slate-500">Đang tải dữ liệu lịch làm việc...</div>
+                    <div className="py-10 text-center text-sm text-slate-500">
+                        Đang tải dữ liệu lịch làm việc...
+                    </div>
                 ) : visibleSchedules.length === 0 ? (
                     <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
-                        <p className="text-sm font-semibold text-slate-700">Chưa có lịch làm việc trong tuần này</p>
+                        <p className="text-sm font-semibold text-slate-700">
+                            Chưa có lịch làm việc trong tuần này
+                        </p>
                         <p className="mt-2 text-sm text-slate-500">
                             Chọn nhân sự, ca và vị trí làm việc từ hệ thống để tạo lịch mới.
                         </p>
@@ -1023,14 +1123,19 @@ export function WorkSchedulePage() {
                                 className="min-w-0 rounded-3xl border border-slate-200 bg-slate-50/80 p-3"
                             >
                                 <div className="mb-3 rounded-2xl bg-white px-3 py-3 shadow-sm">
-                                    <p className="text-sm font-semibold text-slate-900">{formatDayHeading(day.date)}</p>
-                                    <p className="mt-1 text-xs text-slate-500">{formatFullDate(day.date)}</p>
+                                    <p className="text-sm font-semibold text-slate-900">
+                                        {formatDayHeading(day.date)}
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        {formatFullDate(day.date)}
+                                    </p>
                                 </div>
 
                                 <div className="space-y-3">
                                     {day.shifts.map((shiftBlock) => {
                                         const previewItems = shiftBlock.items.slice(0, 2);
-                                        const hiddenCount = shiftBlock.items.length - previewItems.length;
+                                        const hiddenCount =
+                                            shiftBlock.items.length - previewItems.length;
 
                                         return (
                                             <div
@@ -1065,7 +1170,9 @@ export function WorkSchedulePage() {
                                                 ) : (
                                                     <>
                                                         <div className="space-y-2">
-                                                            {previewItems.map((schedule) => renderSchedulePreview(schedule))}
+                                                            {previewItems.map((schedule) =>
+                                                                renderSchedulePreview(schedule)
+                                                            )}
                                                         </div>
 
                                                         {hiddenCount > 0 && (
@@ -1074,20 +1181,20 @@ export function WorkSchedulePage() {
                                                             </div>
                                                         )}
 
-<div className="mt-3 grid grid-cols-1 gap-2">
-    <button
-        type="button"
-        onClick={() =>
-            setDetailSlot({
-                date: day.date,
-                shift: shiftBlock.shift,
-            })
-        }
-        className="min-w-0 rounded-xl border border-blue-200 bg-blue-50 px-2 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
-    >
-        Chi tiết
-    </button>
-</div>
+                                                        <div className="mt-3 grid grid-cols-1 gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setDetailSlot({
+                                                                        date: day.date,
+                                                                        shift: shiftBlock.shift,
+                                                                    })
+                                                                }
+                                                                className="min-w-0 rounded-xl border border-blue-200 bg-blue-50 px-2 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                                                            >
+                                                                Chi tiết
+                                                            </button>
+                                                        </div>
                                                     </>
                                                 )}
                                             </div>
@@ -1106,7 +1213,9 @@ export function WorkSchedulePage() {
                         <div className="border-b border-slate-200 px-6 py-5">
                             <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <h2 className="text-xl font-semibold text-slate-900">Chi tiết lịch làm việc</h2>
+                                    <h2 className="text-xl font-semibold text-slate-900">
+                                        Chi tiết lịch làm việc
+                                    </h2>
                                     <p className="mt-1 text-sm text-slate-500">
                                         {formatDayHeading(detailSlot.date)} - {detailSlot.shift}
                                     </p>
@@ -1156,7 +1265,9 @@ export function WorkSchedulePage() {
                                         </thead>
 
                                         <tbody className="bg-white">
-                                            {detailSlotItems.map((schedule, index) => renderDetailTableRow(schedule, index))}
+                                            {detailSlotItems.map((schedule, index) =>
+                                                renderDetailTableRow(schedule, index)
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>

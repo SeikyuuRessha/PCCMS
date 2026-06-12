@@ -59,6 +59,7 @@ export const screenMeta: Record<ScreenKey, ScreenMetaItem> = {
     catalog: { label: "Danh mục dịch vụ và thuốc", icon: Pill, path: "/admin/catalog" },
     rooms: { label: "Quản lý phòng lưu trú", icon: Warehouse, path: "/admin/rooms" },
     schedule: { label: "Lịch làm việc", icon: CalendarDays, path: "/admin/schedule" },
+    adminShiftRequests: { label: "Yêu cầu đổi ca", icon: ClipboardList, path: "/admin/shift-requests" },
     reports: { label: "Báo cáo thống kê", icon: FileText, path: "/admin/reports" },
     
     receptionMySchedule: { label: "Lịch trực cá nhân", icon: CalendarDays, path: "/staff/my-schedule" },

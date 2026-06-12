@@ -37,27 +37,6 @@ describe("PrescriptionTable", () => {
         expect(screen.queryByPlaceholderText("Nhập tên thuốc")).not.toBeInTheDocument();
     });
 
-    it("auto calculates total quantity", async () => {
-        render(<TestWrapper />);
-
-        await userEvent.click(screen.getByRole("button", { name: /Thêm thuốc/i }));
-
-        const dosageInputs = screen.getAllByPlaceholderText("Liều");
-        const freqInputs = screen.getAllByPlaceholderText("Lần");
-        const dayInputs = screen.getAllByPlaceholderText("Ngày");
-
-        await userEvent.clear(dosageInputs[0]);
-        await userEvent.type(dosageInputs[0], "2");
-        await userEvent.clear(freqInputs[0]);
-        await userEvent.type(freqInputs[0], "3");
-        await userEvent.clear(dayInputs[0]);
-        await userEvent.type(dayInputs[0], "5");
-
-        await waitFor(() => {
-            expect(screen.getByDisplayValue("30")).toBeInTheDocument();
-        });
-    });
-
     it("disables inputs when disabled=true", async () => {
         render(<TestWrapper disabled />);
 

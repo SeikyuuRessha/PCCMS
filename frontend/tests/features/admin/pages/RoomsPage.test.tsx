@@ -72,7 +72,7 @@ describe("RoomsPage", () => {
     it("should render rooms tab initially", async () => {
         renderWithQueryClient(<RoomsPage />);
         await waitFor(() => {
-            expect(screen.getByText(/P101/)).toBeInTheDocument();
+            expect(screen.getByText(/Phòng 101/)).toBeInTheDocument();
         });
         expect(screen.getAllByText("Trống").length).toBeGreaterThan(0);
     });
@@ -80,7 +80,7 @@ describe("RoomsPage", () => {
     it("should open create room modal", async () => {
         renderWithQueryClient(<RoomsPage />);
         await waitFor(() => {
-            expect(screen.getByText(/P101/)).toBeInTheDocument();
+            expect(screen.getByText(/Phòng 101/)).toBeInTheDocument();
         });
 
         await userEvent.click(screen.getByRole("button", { name: /Thêm phòng/i }));
@@ -92,7 +92,7 @@ describe("RoomsPage", () => {
     it("should switch to room types tab and show create modal", async () => {
         renderWithQueryClient(<RoomsPage />);
         await waitFor(() => {
-            expect(screen.getByText(/P101/)).toBeInTheDocument();
+            expect(screen.getByText(/Phòng 101/)).toBeInTheDocument();
         });
 
         await userEvent.click(screen.getByRole("button", { name: /Loại phòng/i }));

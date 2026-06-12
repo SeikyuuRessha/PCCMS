@@ -87,11 +87,11 @@ describe("UnifiedBookingPage", () => {
         await screen.findByText("Milu");
         await userEvent.selectOptions(screen.getByLabelText("Thú cưng"), "pet-1");
         fireEvent.change(screen.getByLabelText("Ngày nhận phòng"), {
-            target: { value: "2026-06-10" },
+            target: { value: "2026-06-20" },
         });
         fireEvent.change(screen.getByLabelText("Giờ nhận phòng"), { target: { value: "09:00" } });
         fireEvent.change(screen.getByLabelText("Ngày trả phòng"), {
-            target: { value: "2026-06-12" },
+            target: { value: "2026-06-22" },
         });
         fireEvent.change(screen.getByLabelText("Giờ trả phòng"), { target: { value: "10:00" } });
 
@@ -123,16 +123,16 @@ describe("UnifiedBookingPage", () => {
         const checkoutDate = screen.getByLabelText("Ngày trả phòng") as HTMLInputElement;
         const checkoutTime = screen.getByLabelText("Giờ trả phòng") as HTMLInputElement;
 
-        fireEvent.change(checkinDate, { target: { value: "2026-06-10" } });
+        fireEvent.change(checkinDate, { target: { value: "2026-06-20" } });
         fireEvent.change(checkinTime, { target: { value: "09:00" } });
-        fireEvent.change(checkoutDate, { target: { value: "2026-06-12" } });
+        fireEvent.change(checkoutDate, { target: { value: "2026-06-22" } });
         fireEvent.change(checkoutTime, { target: { value: "10:00" } });
         fireEvent.change(checkinTime, { target: { value: "14:30" } });
         fireEvent.change(checkoutTime, { target: { value: "16:00" } });
 
-        expect(checkinDate.value).toBe("2026-06-10");
+        expect(checkinDate.value).toBe("2026-06-20");
         expect(checkinTime.value).toBe("14:30");
-        expect(checkoutDate.value).toBe("2026-06-12");
+        expect(checkoutDate.value).toBe("2026-06-22");
         expect(checkoutTime.value).toBe("16:00");
     });
 });

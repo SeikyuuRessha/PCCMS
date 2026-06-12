@@ -21,7 +21,7 @@ interface BackendShiftChangeRequest {
     id: string;
     scheduleId: string;
     requestedBy?: string;
-    targetStaffId?: string;
+    targetStaff?: string;
     reason?: string;
     statusCode?: BackendRequestStatus;
     createdAt?: string;
@@ -123,7 +123,17 @@ const toShiftChangeRequest = (item: BackendShiftChangeRequest): ShiftChangeReque
     requestId: item.id,
     scheduleId: item.scheduleId,
     senderName: "Tôi",
-    receiverName: item.targetStaffId ?? "",
+    receiverName: item.targetStaff ?? "",
+    reason: item.reason ?? "",
+    status: requestStatusFromBackend(item.statusCode),
+    createdAt: item.createdAt ?? "",
+});
+
+const toIncomingShiftChangeRequest = (item: BackendShiftChangeRequest): ShiftChangeRequestItem => ({
+    requestId: item.id,
+    scheduleId: item.scheduleId,
+    senderName: item.requestedBy ?? "Ẩn danh",
+    receiverName: "Tôi",
     reason: item.reason ?? "",
     status: requestStatusFromBackend(item.statusCode),
     createdAt: item.createdAt ?? "",
@@ -160,4 +170,18 @@ export const createMyShiftChangeRequest = async (scheduleId: string, reason: str
 export const cancelMyShiftChangeRequest = async (requestId: string) => {
     const response = await api.patch(`/v1/me/shift-change-requests/${requestId}/cancel`);
     return toShiftChangeRequest(getApiData<BackendShiftChangeRequest>(response));
+};
+
+export const getIncomingShiftChangeRequests = async () => {
+    const response = await api.get("/v1/shift-change-requests/incoming", {
+        params: { page: 0, size: 100 },
+    });
+    return getPageContent<BackendShiftChangeRequest>(getApiData<unknown>(response)).map(toIncomingShiftChangeRequest);
+};
+
+export const respondToIncomingShiftChangeRequest = async (requestId: string, isAccepted: boolean, reason?: string) => {
+    const response = await api.patch(`/v1/shift-change-requests/${requestId}/respond`, {
+        action: isAccepted ? "ACCEPTED" : "REJECTED",
+    });
+    return toIncomingShiftChangeRequest(getApiData<BackendShiftChangeRequest>(response));
 };

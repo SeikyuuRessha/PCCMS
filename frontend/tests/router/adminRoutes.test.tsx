@@ -17,6 +17,7 @@ vi.mock("~/features/admin", () => ({
     CatalogPage: () => <div>Admin Catalog Route</div>,
     RoomsPage: () => <div>Admin Rooms Route</div>,
     WorkSchedulePage: () => <div>Admin Schedule Route</div>,
+    ShiftChangeRequestPage: () => <div>Admin Shift Requests Route</div>,
     ReportsPage: () => <div>Admin Reports Route</div>,
 }));
 

@@ -2,17 +2,20 @@ package com.astral.express.pccms.schedule.dto.response;
 
 import com.astral.express.pccms.schedule.entity.ShiftRequestStatus;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record ShiftChangeRequestResponse(
         UUID id,
         UUID scheduleId,
-        UUID requestedBy,
-        UUID targetStaffId,
+        String requestedBy,
+        String targetStaff,
+        OffsetDateTime workDate,
+        String shiftName,
         String reason,
         ShiftRequestStatus statusCode,
-        UUID resolvedBy,
+        String resolvedBy,
         OffsetDateTime resolvedAt,
         OffsetDateTime createdAt
 ) {

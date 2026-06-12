@@ -53,8 +53,85 @@ class ShiftChangeRequestControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
         adminMockMvc = MockMvcBuilders.standaloneSetup(adminShiftChangeRequestController)
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+    }
+
+    @Test
+    void should_ReturnAdminShiftChangeRequests_when_GetAdminRequests() throws Exception {
+        ShiftChangeRequestResponse response = new ShiftChangeRequestResponse(
+                UUID.fromString("00000000-0000-0000-0000-000000000010"),
+                UUID.fromString("00000000-0000-0000-0000-000000000011"),
+                UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                null,
+                "Family matter",
+                ShiftRequestStatus.PENDING,
+                null,
+                null,
+                OffsetDateTime.parse("2026-04-01T00:00:00Z")
+        );
+        given(shiftChangeRequestService.getAdminRequests(isNull(), any()))
+                .willReturn(PageResponse.of(new PageImpl<>(List.of(response))));
+
+        adminMockMvc.perform(get("/v1/admin/shift-change-requests"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.data.content[0].statusCode").value("PENDING"));
+    }
+
+    @Test
+    void should_ReturnIncomingShiftChangeRequests_when_GetIncomingRequests() throws Exception {
+        ShiftChangeRequestResponse response = new ShiftChangeRequestResponse(
+                UUID.fromString("00000000-0000-0000-0000-000000000010"),
+                UUID.fromString("00000000-0000-0000-0000-000000000011"),
+                UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                UUID.fromString("00000000-0000-0000-0000-000000000003"),
+                "Family matter",
+                ShiftRequestStatus.PENDING,
+                null,
+                null,
+                OffsetDateTime.parse("2026-04-01T00:00:00Z")
+        );
+        given(shiftChangeRequestService.getIncomingRequests(isNull(), any()))
+                .willReturn(PageResponse.of(new PageImpl<>(List.of(response))));
+
+        userMockMvc.perform(get("/v1/shift-change-requests/incoming"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.data.content[0].statusCode").value("PENDING"));
+    }
+
+    @Test
+    void should_ReturnSuccess_when_RespondToRequest() throws Exception {
+        UUID requestId = UUID.fromString("00000000-0000-0000-0000-000000000010");
+        ShiftChangeRequestResponse response = new ShiftChangeRequestResponse(
+                requestId,
+                UUID.fromString("00000000-0000-0000-0000-000000000011"),
+                UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                UUID.fromString("00000000-0000-0000-0000-000000000003"),
+                "Family matter",
+                ShiftRequestStatus.ACCEPTED,
+                null,
+                null,
+                OffsetDateTime.parse("2026-04-01T00:00:00Z")
+        );
+
+        given(shiftChangeRequestService.respondToRequest(any(UUID.class), any(ShiftRequestStatus.class)))
+                .willReturn(response);
+
+        String request = """
+                {
+                  "action": "ACCEPTED"
+                }
+                """;
+
+        userMockMvc.perform(patch("/v1/shift-change-requests/{requestId}/respond", requestId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.statusCode").value("ACCEPTED"));
     }
 
     @Test
