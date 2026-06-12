@@ -207,7 +207,7 @@ export function PersonalSchedulePage({ title = "Lịch làm việc cá nhân" }:
         setLoading(true);
         setDialogError("");
         try {
-            const updated = await respondToIncomingShiftChangeRequest(respondRequest.requestId, isAccepted, respondReason.trim());
+            const updated = await respondToIncomingShiftChangeRequest(respondRequest.requestId, isAccepted);
             setIncomingRequests((prev) => prev.map((item) => (item.requestId === updated.requestId ? updated : item)));
             setRespondRequest(null);
             setRespondReason("");
