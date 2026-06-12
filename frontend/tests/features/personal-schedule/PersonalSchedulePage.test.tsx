@@ -111,7 +111,7 @@ describe("PersonalSchedulePage", () => {
         await userEvent.click(acceptButton);
 
         await waitFor(() => {
-            expect(respondToIncomingShiftChangeRequest).toHaveBeenCalledWith("req-1", true, "");
+            expect(respondToIncomingShiftChangeRequest).toHaveBeenCalledWith("req-1", true);
             expect(screen.getByText("Đã đồng ý đổi ca")).toBeInTheDocument();
         });
     });
