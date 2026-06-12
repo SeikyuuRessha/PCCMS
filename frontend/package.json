@@ -14,6 +14,7 @@
         "@hookform/resolvers": "^5.4.0",
         "@tanstack/react-query": "^5.100.14",
         "axios": "^1.15.1",
+        "date-fns": "^4.4.0",
         "jwt-decode": "^4.0.0",
         "lucide-react": "^1.8.0",
         "motion": "^12.38.0",

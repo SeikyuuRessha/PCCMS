@@ -21,6 +21,7 @@ import {
     GroomingTrackingPage,
     BoardingTrackingPage,
     PaymentsPage,
+    PetMedicalRecordsPage,
 } from "~/features/owner";
 import { ProfilePage } from "~/shared/pages/ProfilePage";
 
@@ -120,6 +121,7 @@ export const router = createBrowserRouter([
             { path: "grooming/book", element: <GroomingBookingPage /> },
             { path: "grooming/tracking", element: <GroomingTrackingPage /> },
             { path: "boarding/tracking", element: <BoardingTrackingPage /> },
+            { path: "pets/:petId/medical-records", element: <PetMedicalRecordsPage /> },
             { path: "payments", element: <PaymentsPage /> },
             { path: "profile", element: <ProfilePage /> },
         ],

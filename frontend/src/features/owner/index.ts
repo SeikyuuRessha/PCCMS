@@ -6,3 +6,4 @@ export { GroomingBookingPage } from "./pages/GroomingBookingPage";
 export { GroomingTrackingPage } from "./pages/GroomingTrackingPage";
 export { BoardingTrackingPage } from "./pages/BoardingTrackingPage";
 export { PaymentsPage } from "./pages/PaymentsPage";
+export { PetMedicalRecordsPage } from "./pages/PetMedicalRecordsPage";

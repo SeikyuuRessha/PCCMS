@@ -63,12 +63,14 @@ class ShiftChangeRequestControllerTest {
         ShiftChangeRequestResponse response = new ShiftChangeRequestResponse(
                 UUID.fromString("00000000-0000-0000-0000-000000000010"),
                 UUID.fromString("00000000-0000-0000-0000-000000000011"),
-                UUID.fromString("00000000-0000-0000-0000-000000000002"),
-                null,
-                "Family matter",
+                "00000000-0000-0000-0000-000000000002",
+                "User Name",
+                OffsetDateTime.parse("2026-04-01T00:00:00Z"),
+                "00000000-0000-0000-0000-000000000003",
+                "Target User Name",
                 ShiftRequestStatus.PENDING,
-                null,
-                null,
+                "Family matter",
+                OffsetDateTime.parse("2026-04-01T00:00:00Z"),
                 OffsetDateTime.parse("2026-04-01T00:00:00Z")
         );
         given(shiftChangeRequestService.getAdminRequests(isNull(), any()))
@@ -85,12 +87,14 @@ class ShiftChangeRequestControllerTest {
         ShiftChangeRequestResponse response = new ShiftChangeRequestResponse(
                 UUID.fromString("00000000-0000-0000-0000-000000000010"),
                 UUID.fromString("00000000-0000-0000-0000-000000000011"),
-                UUID.fromString("00000000-0000-0000-0000-000000000002"),
-                UUID.fromString("00000000-0000-0000-0000-000000000003"),
-                "Family matter",
+                "00000000-0000-0000-0000-000000000002",
+                "User Name",
+                OffsetDateTime.parse("2026-04-01T00:00:00Z"),
+                "00000000-0000-0000-0000-000000000003",
+                "Target User Name",
                 ShiftRequestStatus.PENDING,
-                null,
-                null,
+                "Family matter",
+                OffsetDateTime.parse("2026-04-01T00:00:00Z"),
                 OffsetDateTime.parse("2026-04-01T00:00:00Z")
         );
         given(shiftChangeRequestService.getIncomingRequests(isNull(), any()))
@@ -108,12 +112,14 @@ class ShiftChangeRequestControllerTest {
         ShiftChangeRequestResponse response = new ShiftChangeRequestResponse(
                 requestId,
                 UUID.fromString("00000000-0000-0000-0000-000000000011"),
-                UUID.fromString("00000000-0000-0000-0000-000000000002"),
-                UUID.fromString("00000000-0000-0000-0000-000000000003"),
-                "Family matter",
+                "00000000-0000-0000-0000-000000000002",
+                "User Name",
+                OffsetDateTime.parse("2026-04-01T00:00:00Z"),
+                "00000000-0000-0000-0000-000000000003",
+                "Target User Name",
                 ShiftRequestStatus.ACCEPTED,
-                null,
-                null,
+                "Family matter",
+                OffsetDateTime.parse("2026-04-01T00:00:00Z"),
                 OffsetDateTime.parse("2026-04-01T00:00:00Z")
         );
 
@@ -139,12 +145,14 @@ class ShiftChangeRequestControllerTest {
         ShiftChangeRequestResponse response = new ShiftChangeRequestResponse(
                 UUID.fromString("00000000-0000-0000-0000-000000000010"),
                 UUID.fromString("00000000-0000-0000-0000-000000000011"),
-                UUID.fromString("00000000-0000-0000-0000-000000000002"),
-                null,
-                "Family matter",
+                "00000000-0000-0000-0000-000000000002",
+                "User Name",
+                OffsetDateTime.parse("2026-04-01T00:00:00Z"),
+                "00000000-0000-0000-0000-000000000003",
+                "Target User Name",
                 ShiftRequestStatus.PENDING,
-                null,
-                null,
+                "Family matter",
+                OffsetDateTime.parse("2026-04-01T00:00:00Z"),
                 OffsetDateTime.parse("2026-04-01T00:00:00Z")
         );
         given(shiftChangeRequestService.getMyRequests(isNull(), any()))

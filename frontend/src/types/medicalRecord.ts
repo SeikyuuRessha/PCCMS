@@ -10,6 +10,47 @@ export interface HealthAlertResponse {
     createdAt: string;
 }
 
+export interface PrescriptionResponse {
+    id: string;
+    prescriptionCode: string;
+    medicalRecordId: string;
+    vetId: string;
+    note: string;
+    issuedAt: string;
+    items: PrescriptionItemResponse[];
+}
+
+export interface PrescriptionItemResponse {
+    id: string;
+    medicineId: string;
+    medicineName: string;
+    medicineUnit: string;
+    dosage: string;
+    quantity: number;
+    instruction: string;
+    unitPriceVnd: number;
+}
+
+export interface MedicalRecordOwnerResponse {
+    id: string;
+    recordCode: string;
+    petId: string;
+    vetName: string;
+    temperatureC: number;
+    weightKg: number;
+    heartRateBpm: number | null;
+    respiratoryRateBpm: number | null;
+    bloodPressure: string | null;
+    spo2Percent: number | null;
+    mucousMembraneColor: string | null;
+    capillaryRefillSeconds: number | null;
+    finalDiagnosis: string;
+    treatmentNote: string;
+    followUpAt: string | null;
+    createdAt: string;
+    prescription: PrescriptionResponse | null;
+}
+
 export interface MedicalRecordResponse {
     id: string;
     recordCode: string;

@@ -39,30 +39,6 @@ function MedicinePicker({
     const [open, setOpen] = useState(false);
     const [suggestions, setSuggestions] = useState<MedicineSuggestion[]>([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-    const [templates, setTemplates] = useState<any[]>([]);
-    
-    const selectedMedicineId = useWatch({ name: `items.${index}.medicineId` });
-    useEffect(() => {
-        let cancelled = false;
-        if (selectedMedicineId) {
-            import('~/features/admin/medicine-management/medicineService')
-                .then(m => m.getMedicineUsageTemplates(selectedMedicineId))
-                .then(data => {
-                    if (!cancelled) {
-                        setTemplates(data || []);
-                    }
-                })
-                .catch(() => {
-                    if (!cancelled) setTemplates([]);
-                });
-        } else {
-            setTemplates([]);
-        }
-        return () => {
-            cancelled = true;
-        };
-    }, [selectedMedicineId]);
-
     useEffect(() => {
         setKeyword(selectedName);
     }, [selectedName]);
@@ -115,7 +91,7 @@ function MedicinePicker({
     };
 
     return (
-        <div className="relative w-72">
+        <div className={`relative w-72 ${open ? "z-50" : "z-10"}`}>
             <input type="hidden" {...register(`items.${index}.medicineId`)} />
             <Input
                 value={keyword}
@@ -155,37 +131,85 @@ function MedicinePicker({
                 </div>
             )}
             
-            {/* Show Templates below the input if a medicine is selected and has templates */}
-            {selectedMedicineId && templates.length > 0 && !disabled && (
-                <div className="mt-2 text-xs border border-indigo-200 bg-indigo-50 rounded-md p-2 shadow-sm">
-                    <p className="font-semibold text-indigo-800 mb-1">Mẫu liều khuyến nghị:</p>
-                    <div className="space-y-1">
-                        {templates.map(t => (
-                            <button
-                                key={t.id}
-                                type="button"
-                                className="block w-full text-left p-1.5 hover:bg-indigo-100 rounded text-indigo-700 font-medium transition"
-                                onClick={() => {
-                                    setValue(`items.${index}.instruction`, t.instruction, { shouldValidate: true, shouldDirty: true });
-                                    if (t.dosage) {
-                                        setValue(`items.${index}.dosage`, t.dosage, { shouldValidate: true, shouldDirty: true });
-                                    }
-                                }}
-                            >
-                                {t.label}: <span className="font-normal text-indigo-600">{t.dosage ? `${t.dosage} - ` : ''}{t.instruction}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-            
-            {/* Datalist for dosage autocomplete */}
-            {selectedMedicineId && templates.length > 0 && (
-                <datalist id={`dosage-list-${index}`}>
+        </div>
+    );
+}
+export function useMedicineTemplates(medicineId?: string) {
+    const [templates, setTemplates] = useState<any[]>([]);
+    useEffect(() => {
+        let cancelled = false;
+        if (medicineId) {
+            import('~/features/admin/medicine-management/medicineService')
+                .then(m => m.getMedicineUsageTemplates(medicineId))
+                .then(data => {
+                    if (!cancelled) setTemplates(data || []);
+                })
+                .catch(() => {
+                    if (!cancelled) setTemplates([]);
+                });
+        } else {
+            setTemplates([]);
+        }
+        return () => { cancelled = true; };
+    }, [medicineId]);
+    return templates;
+}
+
+function TemplateDosageInput({ index, disabled, error }: { index: number, disabled: boolean, error?: string }) {
+    const { register, setValue } = useFormContext<any>();
+    const medicineId = useWatch({ name: `items.${index}.medicineId` });
+    const templates = useMedicineTemplates(medicineId);
+    
+    return (
+        <div className="space-y-1 w-40">
+            <Input disabled={disabled} placeholder="VD: 2 viên..." {...register(`items.${index}.dosage`)} error={error} />
+            {templates.length > 0 && !disabled && (
+                <select
+                    className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
+                    onChange={(e) => {
+                        if (!e.target.value) return;
+                        const t = templates.find(x => x.id === e.target.value);
+                        if (t && t.dosage) {
+                            setValue(`items.${index}.dosage`, t.dosage, { shouldValidate: true, shouldDirty: true });
+                        }
+                        e.target.value = "";
+                    }}
+                >
+                    <option value="">-- Gợi ý --</option>
                     {templates.filter(t => t.dosage).map(t => (
-                        <option key={`dl-${t.id}`} value={t.dosage}>{t.label}</option>
+                        <option key={t.id} value={t.id}>{t.label}: {t.dosage}</option>
                     ))}
-                </datalist>
+                </select>
+            )}
+        </div>
+    );
+}
+
+function TemplateInstructionInput({ index, disabled, error }: { index: number, disabled: boolean, error?: string }) {
+    const { register, setValue } = useFormContext<any>();
+    const medicineId = useWatch({ name: `items.${index}.medicineId` });
+    const templates = useMedicineTemplates(medicineId);
+    
+    return (
+        <div className="space-y-1 w-64">
+            <Textarea rows={2} disabled={disabled} placeholder="Không bắt buộc..." {...register(`items.${index}.instruction`)} error={error} />
+            {templates.length > 0 && !disabled && (
+                <select
+                    className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
+                    onChange={(e) => {
+                        if (!e.target.value) return;
+                        const t = templates.find(x => x.id === e.target.value);
+                        if (t && t.instruction) {
+                            setValue(`items.${index}.instruction`, t.instruction, { shouldValidate: true, shouldDirty: true });
+                        }
+                        e.target.value = "";
+                    }}
+                >
+                    <option value="">-- Chọn hướng dẫn --</option>
+                    {templates.filter(t => t.instruction).map(t => (
+                        <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
+                </select>
             )}
         </div>
     );
@@ -223,12 +247,18 @@ export function PrescriptionTable({ disabled = false }: PrescriptionTableProps) 
                             <div key={`quantity-${field.id}`} className="w-24">
                                 <Input type="number" min="1" disabled={disabled} {...register(`items.${index}.quantity`, { valueAsNumber: true })} error={itemErrors?.quantity?.message} />
                             </div>,
-                            <div key={`dosage-${field.id}`} className="w-40">
-                                <Input disabled={disabled} list={`dosage-list-${index}`} placeholder="VD: Liều cao..." {...register(`items.${index}.dosage`)} error={itemErrors?.dosage?.message} />
-                            </div>,
-                            <div key={`instruction-${field.id}`} className="w-64">
-                                <Textarea rows={2} disabled={disabled} placeholder="Nhập hướng dẫn dùng..." {...register(`items.${index}.instruction`)} error={itemErrors?.instruction?.message} />
-                            </div>,
+                            <TemplateDosageInput
+                                key={`dosage-${field.id}`}
+                                index={index}
+                                disabled={disabled}
+                                error={itemErrors?.dosage?.message}
+                            />,
+                            <TemplateInstructionInput
+                                key={`instruction-${field.id}`}
+                                index={index}
+                                disabled={disabled}
+                                error={itemErrors?.instruction?.message}
+                            />,
                             <div key={`action-${field.id}`} className="flex justify-center">
                                 <Button type="button" variant="ghost" disabled={disabled} onClick={() => remove(index)} className="h-auto p-2 text-red-500 hover:bg-red-50 hover:text-red-700">
                                     <Trash2 className="h-4 w-4" />

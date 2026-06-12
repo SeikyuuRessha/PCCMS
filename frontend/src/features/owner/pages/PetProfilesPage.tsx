@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -21,6 +22,7 @@ function sexLabel(sex: PetResponse["sex"]) {
 
 export function PetProfilesPage() {
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [viewingPet, setViewingPet] = useState<PetResponse | null>(null);
     const [editingPet, setEditingPet] = useState<PetResponse | null>(null);
@@ -128,20 +130,27 @@ export function PetProfilesPage() {
                                         <p className="mt-1 font-medium">{sexLabel(pet.sex)}</p>
                                     </div>
                                 </div>
-                                <div className="mt-4 flex gap-2">
+                                <div className="mt-4 flex flex-wrap gap-2">
                                     <Button
                                         variant="outline"
-                                        className="flex-1"
+                                        className="flex-1 px-3 py-1.5 text-xs"
                                         onClick={() => setViewingPet(pet)}
                                     >
-                                        Xem chi tiết
+                                        Chi tiết
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="flex-1 px-3 py-1.5 text-xs"
+                                        onClick={() => navigate(`/owner/pets/${pet.id}/medical-records`)}
+                                    >
+                                        Lịch sử khám
                                     </Button>
                                     <Button
                                         variant="ghost"
-                                        className="flex-1"
+                                        className="flex-1 px-3 py-1.5 text-xs"
                                         onClick={() => setEditingPet(pet)}
                                     >
-                                        Chỉnh sửa
+                                        Sửa
                                     </Button>
                                     <Button
                                         variant="ghost"

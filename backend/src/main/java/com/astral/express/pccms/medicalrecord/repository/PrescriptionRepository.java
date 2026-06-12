@@ -12,4 +12,7 @@ import java.util.UUID;
 public interface PrescriptionRepository extends JpaRepository<Prescription, UUID> {
     @EntityGraph(attributePaths = "items")
     List<Prescription> findByMedicalRecordIdOrderByIssuedAtDesc(UUID medicalRecordId);
+
+    @EntityGraph(attributePaths = {"items"})
+    List<Prescription> findByMedicalRecordIdIn(List<UUID> medicalRecordIds);
 }

@@ -3,6 +3,7 @@ import type {
     MedicalRecordResponse,
     UpdateMedicalRecordRequest,
     FinalizeMedicalRecordRequest,
+    MedicalRecordOwnerResponse
 } from "~/types/medicalRecord";
 
 export interface PrescriptionItemRequest {
@@ -47,13 +48,12 @@ export const medicalRecordApi = {
         return axiosClient.get("/v1/medical-records", { params: { vetId } });
     },
 
+
     getOrCreateMedicalRecordByAppointmentId: (appointmentId: string): Promise<MedicalRecordResponse> => {
         return axiosClient.get(`/v1/medical-records/appointment/${appointmentId}`);
     },
 
-
     updateMedicalRecord: (
-
         id: string,
         data: UpdateMedicalRecordRequest
     ): Promise<MedicalRecordResponse> => {
@@ -65,6 +65,10 @@ export const medicalRecordApi = {
         data: FinalizeMedicalRecordRequest
     ): Promise<MedicalRecordResponse> => {
         return axiosClient.patch(`/v1/medical-records/${id}/finalize`, data);
+    },
+
+    getOwnerMedicalRecords: (petId: string): Promise<MedicalRecordOwnerResponse[]> => {
+        return axiosClient.get(`/v1/owner/pets/${petId}/medical-records`);
     },
 
     createPrescription: (

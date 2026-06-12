@@ -28,7 +28,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import com.astral.express.pccms.medicalrecord.repository.PrescriptionRepository;
+import com.astral.express.pccms.medicalrecord.entity.Prescription;
+import com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordOwnerResponse;
+import com.astral.express.pccms.medicalrecord.dto.response.PrescriptionResponse;
+import com.astral.express.pccms.medicalrecord.dto.response.PrescriptionItemResponse;
+import com.astral.express.pccms.pet.dto.response.PetResponse;
+import com.astral.express.pccms.pet.service.PetService;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +49,10 @@ public class MedicalRecordService {
     private final AppointmentLifecycleUseCase appointmentLifecycleUseCase;
     private final AppointmentQueryUseCase appointmentQueryUseCase;
     private final SecurityContextService SecurityContextService;
+    private final PetService petService;
+    private final PrescriptionRepository prescriptionRepository;
+    private final com.astral.express.pccms.medicine.repository.MedicineRepository medicineRepository;
+
 @Transactional
     public MedicalRecordResponse updateMedicalRecord(UUID recordId, UpdateMedicalRecordRequest request) {
         // Find record
@@ -124,6 +137,73 @@ public List<MedicalRecordResponse> getMedicalRecords(UUID vetId) {
 
     private UUID currentUserIdOrNull() {
         return SecurityContextService == null ? null : SecurityContextService.getCurrentUserId();
+    }
+
+    public List<MedicalRecordOwnerResponse> getOwnerMedicalRecords(UUID petId, UUID currentUserId) {
+        PetResponse pet = petService.getPet(petId);
+        if (!pet.ownerId().equals(currentUserId)) {
+            throw new BusinessException(ErrorCode.ERR_403_FORBIDDEN);
+        }
+
+        List<MedicalRecordOwnerResponse> records = medicalRecordRepository.findOwnerResponsesByPetIdAndStatus(petId, RecordStatus.FINALIZED);
+
+        if (records.isEmpty()) {
+            return records;
+        }
+
+        List<UUID> recordIds = records.stream().map(MedicalRecordOwnerResponse::id).toList();
+        List<Prescription> prescriptions = prescriptionRepository.findByMedicalRecordIdIn(recordIds);
+        
+        // Fetch all medicines to avoid N+1
+        List<UUID> medicineIds = prescriptions.stream()
+                .flatMap(p -> p.getItems().stream())
+                .map(com.astral.express.pccms.medicalrecord.entity.PrescriptionItem::getMedicineId)
+                .toList();
+        Map<UUID, com.astral.express.pccms.medicine.entity.Medicine> medicineMap = medicineRepository.findAllById(medicineIds).stream()
+                .collect(Collectors.toMap(com.astral.express.pccms.medicine.entity.Medicine::getId, m -> m));
+
+        Map<UUID, PrescriptionResponse> prescriptionMap = prescriptions.stream()
+                .collect(Collectors.toMap(Prescription::getMedicalRecordId, p -> new PrescriptionResponse(
+                        p.getId(),
+                        p.getPrescriptionCode(),
+                        p.getMedicalRecordId(),
+                        p.getVetId(),
+                        p.getNote(),
+                        p.getIssuedAt(),
+                        p.getItems().stream().map(i -> {
+                            var medicine = medicineMap.get(i.getMedicineId());
+                            return new PrescriptionItemResponse(
+                                    i.getId(),
+                                    i.getMedicineId(),
+                                    medicine != null ? medicine.getName() : null,
+                                    medicine != null ? medicine.getUnit() : null,
+                                    i.getDosage(),
+                                    i.getQuantity(),
+                                    i.getInstruction(),
+                                    i.getUnitPriceVnd()
+                            );
+                        }).toList()
+                )));
+
+        return records.stream().map(record -> new MedicalRecordOwnerResponse(
+                record.id(),
+                record.recordCode(),
+                record.petId(),
+                record.vetName(),
+                record.temperatureC(),
+                record.weightKg(),
+                record.heartRateBpm(),
+                record.respiratoryRateBpm(),
+                record.bloodPressure(),
+                record.spo2Percent(),
+                record.mucousMembraneColor(),
+                record.capillaryRefillSeconds(),
+                record.finalDiagnosis(),
+                record.treatmentNote(),
+                record.followUpAt(),
+                record.createdAt(),
+                prescriptionMap.get(record.id())
+        )).toList();
     }
 }
 

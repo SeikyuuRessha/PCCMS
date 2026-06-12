@@ -129,9 +129,6 @@ export function WorkScheduleFormDialog({
           : "";
 
     const onFormSubmit = (data: WorkScheduleFormData) => {
-        if (!data.status) {
-            return; // Status is required logically but schema allows "" for initial state
-        }
         onSubmit(data as WorkScheduleFormValues);
     };
 

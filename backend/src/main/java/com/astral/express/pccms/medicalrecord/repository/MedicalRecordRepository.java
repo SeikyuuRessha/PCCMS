@@ -74,6 +74,22 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, UU
         WHERE m.appointmentId = :appointmentId
     """)
     Optional<com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordResponse> findResponseByAppointmentId(@org.springframework.data.repository.query.Param("appointmentId") UUID appointmentId);
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT new com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordOwnerResponse(
+            m.id, m.recordCode, m.petId, COALESCE(u.fullName, 'Unknown Vet'), m.temperatureC, m.weightKg,
+            m.heartRateBpm, m.respiratoryRateBpm, m.bloodPressure, m.spo2Percent, m.mucousMembraneColor, m.capillaryRefillSeconds,
+            m.finalDiagnosis, m.treatmentNote, m.followUpAt, m.createdAt, null
+        )
+        FROM MedicalRecord m
+        LEFT JOIN Users u ON m.vetId = u.id
+        WHERE m.petId = :petId AND m.recordStatus = :status
+        ORDER BY m.createdAt DESC
+    """)
+    List<com.astral.express.pccms.medicalrecord.dto.response.MedicalRecordOwnerResponse> findOwnerResponsesByPetIdAndStatus(
+        @org.springframework.data.repository.query.Param("petId") UUID petId,
+        @org.springframework.data.repository.query.Param("status") com.astral.express.pccms.medicalrecord.entity.RecordStatus status
+    );
 }
 
 
