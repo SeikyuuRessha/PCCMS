@@ -120,7 +120,7 @@ export function DoctorDashboard() {
                                         </div>
                                     </div>
                                     <Link to={`/doctor/records/${patient.appointmentId}`}>
-                                        <Button size="sm" variant="outline" className="gap-2">
+                                        <Button variant="outline" className="flex items-center gap-2 px-3 py-1.5">
                                             Khám ngay
                                             <ArrowRight className="h-4 w-4" />
                                         </Button>
