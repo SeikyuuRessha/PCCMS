@@ -217,6 +217,8 @@ export function UnifiedBookingPage() {
                             <Input
                                 type="time"
                                 label="Giờ nhận phòng"
+                                min="07:00"
+                                max="22:00"
                                 error={errors.expectedCheckinTime?.message}
                                 {...register("expectedCheckinTime")}
                             />
@@ -230,6 +232,8 @@ export function UnifiedBookingPage() {
                             <Input
                                 type="time"
                                 label="Giờ trả phòng"
+                                min="07:00"
+                                max="22:00"
                                 error={errors.expectedCheckoutTime?.message}
                                 {...register("expectedCheckoutTime")}
                             />
