@@ -19,14 +19,24 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class VetAvailabilityChecker {
     private static final String VET_ROLE = "VETERINARIAN";
+    private static final LocalTime CLINIC_OPEN = LocalTime.of(7, 0);
+    private static final LocalTime CLINIC_CLOSE = LocalTime.of(22, 0);
     
     private final UserRepository userRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final AppointmentOverlapChecker overlapChecker;
 
     public boolean isVetOnDuty(LocalDate date, LocalTime slotStart, UUID vetId) {
+        if (slotStart.isBefore(CLINIC_OPEN) || !slotStart.isBefore(CLINIC_CLOSE)) {
+            return false;
+        }
+
         List<UUID> scheduledVetIds = workScheduleRepository.findAvailableVetIds(date, slotStart);
         if (scheduledVetIds.isEmpty()) {
+            List<UUID> allDayVets = workScheduleRepository.findVetIdsOnDutyForDate(date);
+            if (!allDayVets.isEmpty()) {
+                return false;
+            }
             return userRepository.findActiveByRoleCode(VET_ROLE).stream()
                     .anyMatch(v -> v.getId().equals(vetId));
         }
@@ -34,10 +44,20 @@ public class VetAvailabilityChecker {
     }
 
     public List<UUID> resolveVetCandidates(LocalDate date, LocalTime slotStart) {
+        if (slotStart.isBefore(CLINIC_OPEN) || !slotStart.isBefore(CLINIC_CLOSE)) {
+            return List.of();
+        }
+
         List<UUID> scheduledVetIds = workScheduleRepository.findAvailableVetIds(date, slotStart);
         if (!scheduledVetIds.isEmpty()) {
             return scheduledVetIds;
         }
+
+        List<UUID> allDayVets = workScheduleRepository.findVetIdsOnDutyForDate(date);
+        if (!allDayVets.isEmpty()) {
+            return List.of();
+        }
+
         return userRepository.findActiveByRoleCode(VET_ROLE).stream().map(Users::getId).toList();
     }
 

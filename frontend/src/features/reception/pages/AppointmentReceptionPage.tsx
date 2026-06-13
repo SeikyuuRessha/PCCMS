@@ -291,7 +291,7 @@ export function AppointmentReceptionPage() {
                     />
                     <Button
                         className="w-full py-3"
-                        disabled={quickCheckInMutation.isPending}
+                        disabled={quickCheckInMutation.isPending || new Date().getHours() < 7 || new Date().getHours() >= 22}
                         onClick={() => {
                             if (!quickPhone.trim()) {
                                 toast.error("Cần nhập SĐT khi tạo nhanh");
@@ -311,6 +311,11 @@ export function AppointmentReceptionPage() {
                     >
                         Tiếp nhận ngay
                     </Button>
+                    {(new Date().getHours() < 7 || new Date().getHours() >= 22) && (
+                        <p className="mt-2 text-center text-sm text-red-600">
+                            Phòng khám hiện đang đóng cửa (07:00 - 22:00). Không thể tiếp nhận nhanh.
+                        </p>
+                    )}
                     <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
                         Khi tiếp nhận thành công, thú cưng được đưa vào danh sách chờ khám của bác
                         sĩ phụ trách.

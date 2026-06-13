@@ -24,8 +24,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AppointmentAvailabilityUseCase {
-    private static final LocalTime CLINIC_OPEN = LocalTime.of(8, 0);
-    private static final LocalTime CLINIC_CLOSE = LocalTime.of(17, 0);
+    private static final LocalTime CLINIC_OPEN = LocalTime.of(7, 0);
+    private static final LocalTime CLINIC_CLOSE = LocalTime.of(22, 0);
     private static final int DEFAULT_SLOT_MINUTES = 30;
     private static final String MEDICAL_SERVICE_CODE = "MED-GENERAL";
     private static final String VET_ROLE = "VETERINARIAN";

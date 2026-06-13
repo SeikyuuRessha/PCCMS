@@ -200,6 +200,8 @@ export function GroomingBookingPage() {
                             <Input
                                 type="time"
                                 label="Giờ hẹn"
+                                min="07:00"
+                                max="22:00"
                                 error={
                                     errors.scheduledTime?.message ||
                                     (isPastTime ? "Thời gian hẹn phải ở tương lai" : undefined)

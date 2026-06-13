@@ -24,7 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QuickCheckInUseCase {
 
-    private static final LocalTime CLINIC_CLOSE = LocalTime.of(17, 0);
+    private static final LocalTime CLINIC_CLOSE = LocalTime.of(22, 0);
     private static final int DEFAULT_SLOT_MINUTES = 30;
     private static final String MEDICAL_SERVICE_CODE = "MED-GENERAL";
 
@@ -52,8 +52,8 @@ public class QuickCheckInUseCase {
         LocalDate today = ClinicDateTime.today();
         LocalTime nowTime = ClinicDateTime.nowTime();
         LocalTime slotStart = roundUpToSlot(nowTime, resolveSlotMinutes());
-        if (slotStart.plusMinutes(resolveSlotMinutes()).isAfter(CLINIC_CLOSE)) {
-            throw new BusinessException(ErrorCode.ERR_APT_005_NO_VET_AVAILABLE);
+        if (slotStart.isBefore(LocalTime.of(7, 0)) || slotStart.plusMinutes(resolveSlotMinutes()).isAfter(CLINIC_CLOSE)) {
+            throw new BusinessException(ErrorCode.ERR_APT_010_OUT_OF_BUSINESS_HOURS);
         }
 
         int slotMinutes = resolveSlotMinutes();
