@@ -234,7 +234,7 @@ export const PetMedicalRecordsPage: React.FC = () => {
                                 )}
 
                                 {/* Prescription */}
-                                {record.prescription && record.prescription.items.length > 0 && (
+                                {record.prescription && (record.prescription.items ?? []).length > 0 && (
                                     <div className="pt-4 border-t border-slate-100">
                                         <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                                             <Pill className="h-4 w-4 text-emerald-500" /> Đơn thuốc
@@ -259,7 +259,7 @@ export const PetMedicalRecordsPage: React.FC = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100 bg-white">
-                                                    {record.prescription.items.map((item) => (
+                                                    {(record.prescription.items ?? []).map((item) => (
                                                         <tr key={item.id}>
                                                             <td className="px-4 py-3 font-medium text-slate-900">
                                                                 {item.medicineName ||

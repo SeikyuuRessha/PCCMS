@@ -227,9 +227,9 @@ export function BoardingTrackingPage() {
                                             </div>
                                             <Tag tone="blue">{log.staffName}</Tag>
                                         </div>
-                                        {log.media.length > 0 && (
+                                        {(log.media ?? []).length > 0 && (
                                             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                                {log.media.map((media) => (
+                                                {(log.media ?? []).map((media) => (
                                                     <img
                                                         key={media.id}
                                                         src={media.url}
@@ -253,4 +253,3 @@ export function BoardingTrackingPage() {
         </div>
     );
   }
-

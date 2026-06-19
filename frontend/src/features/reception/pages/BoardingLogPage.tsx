@@ -522,9 +522,9 @@ export function BoardingLogPage() {
                                                 Xóa
                                             </Button>
                                         </div>
-                                        {log.media.length > 0 && (
+                                        {(log.media ?? []).length > 0 && (
                                             <p className="mt-2 text-xs text-slate-500">
-                                                {log.media.length} ảnh đã tải lên
+                                                {(log.media ?? []).length} ảnh đã tải lên
                                             </p>
                                         )}
                                     </div>

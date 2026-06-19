@@ -14,22 +14,15 @@ import type {
   VetOptionResponse,
   AppointmentStatus,
 } from '~/types/appointment';
+import { normalizePage } from './pageUtils';
+
+const asArray = <T>(value: unknown): T[] => (Array.isArray(value) ? value : []);
 
 function normalizeSlotTime(slotStart: string): string {
   if (/^\d{2}:\d{2}$/.test(slotStart)) {
     return `${slotStart}:00`;
   }
   return slotStart;
-}
-
-function normalizePage<T>(raw: PageResponse<T> & { data?: PageResponse<T> }): PageResponse<T> {
-  if (raw && 'content' in raw && Array.isArray(raw.content)) {
-    return raw;
-  }
-  if (raw?.data && 'content' in raw.data) {
-    return raw.data;
-  }
-  return raw;
 }
 
 export const appointmentApi = {
@@ -42,30 +35,30 @@ export const appointmentApi = {
       '/v1/appointments',
       { params }
     );
-    return normalizePage(raw);
+    return normalizePage<AppointmentResponse>(raw);
   },
 
-  listTodayAppointments: (params?: {
+  listTodayAppointments: async (params?: {
     date?: string;
     status?: AppointmentStatus;
     phone?: string;
     customerName?: string;
   }): Promise<AppointmentResponse[]> => {
-    return axiosClient.get('/v1/appointments/today', { params });
+    return asArray<AppointmentResponse>(await axiosClient.get('/v1/appointments/today', { params }));
   },
 
   getAvailableSlots: (date: string, vetId?: string): Promise<TimeSlotResponse[]> => {
     return axiosClient.get('/v1/appointments/slots', { params: { date, vetId } });
   },
 
-  listAvailableVets: (date: string, slotStart: string): Promise<VetOptionResponse[]> => {
-    return axiosClient.get('/v1/appointments/vets', {
+  listAvailableVets: async (date: string, slotStart: string): Promise<VetOptionResponse[]> => {
+    return asArray<VetOptionResponse>(await axiosClient.get('/v1/appointments/vets', {
       params: { date, slotStart: normalizeSlotTime(slotStart) },
-    });
+    }));
   },
 
-  listVetsOnDuty: (date: string): Promise<VetOptionResponse[]> => {
-    return axiosClient.get('/v1/appointments/vets/on-duty', { params: { date } });
+  listVetsOnDuty: async (date: string): Promise<VetOptionResponse[]> => {
+    return asArray<VetOptionResponse>(await axiosClient.get('/v1/appointments/vets/on-duty', { params: { date } }));
   },
 
   getAvailabilitySummary: (
@@ -96,17 +89,24 @@ export const appointmentApi = {
     return axiosClient.post('/v1/appointments/quick-check-in', data);
   },
 
-  getVetQueue: (date?: string): Promise<QueueEntryResponse[]> => {
-    return axiosClient.get('/v1/appointments/queue', { params: date ? { date } : undefined });
+  getVetQueue: async (date?: string): Promise<QueueEntryResponse[]> => {
+    return asArray<QueueEntryResponse>(await axiosClient.get('/v1/appointments/queue', { params: date ? { date } : undefined }));
   },
 
-  lookupCustomer: (phone: string): Promise<{
+  lookupCustomer: async (phone: string): Promise<{
     ownerId: string;
     ownerName: string;
     phone: string;
     pets: { id: string; name: string }[];
   }> => {
-    return axiosClient.get('/v1/appointments/customer-lookup', { params: { phone } });
+    const result = await axiosClient.get<unknown, {
+      ownerId: string;
+      ownerName: string;
+      phone: string;
+      pets?: { id: string; name: string }[];
+    }>('/v1/appointments/customer-lookup', { params: { phone } });
+
+    return { ...result, pets: asArray(result?.pets) };
   },
 
   createGroomingAppointment: (data: {
@@ -119,8 +119,8 @@ export const appointmentApi = {
     return axiosClient.post('/v1/appointments/grooming', data);
   },
 
-  listGroomingBoard: (date?: string): Promise<GroomingBoardCardResponse[]> => {
-    return axiosClient.get('/v1/appointments/grooming/board', { params: date ? { date } : undefined });
+  listGroomingBoard: async (date?: string): Promise<GroomingBoardCardResponse[]> => {
+    return asArray<GroomingBoardCardResponse>(await axiosClient.get('/v1/appointments/grooming/board', { params: date ? { date } : undefined }));
   },
 
   updateGroomingStatus: (
@@ -140,15 +140,15 @@ export const appointmentApi = {
     return axiosClient.post('/v1/appointments/boarding', data);
   },
 
-  listOwnerBoardingBookings: (): Promise<BoardingBookingResponse[]> => {
-    return axiosClient.get('/v1/appointments/boarding');
+  listOwnerBoardingBookings: async (): Promise<BoardingBookingResponse[]> => {
+    return asArray<BoardingBookingResponse>(await axiosClient.get('/v1/appointments/boarding'));
   },
 
-  listRoomTypes: (): Promise<RoomTypeOptionResponse[]> => {
-    return axiosClient.get('/v1/appointments/room-types');
+  listRoomTypes: async (): Promise<RoomTypeOptionResponse[]> => {
+    return asArray<RoomTypeOptionResponse>(await axiosClient.get('/v1/appointments/room-types'));
   },
 
-  listServices: (category: 'MEDICAL' | 'GROOMING' | 'BOARDING'): Promise<ServiceCatalogOptionResponse[]> => {
-    return axiosClient.get('/v1/appointments/services', { params: { category } });
+  listServices: async (category: 'MEDICAL' | 'GROOMING' | 'BOARDING'): Promise<ServiceCatalogOptionResponse[]> => {
+    return asArray<ServiceCatalogOptionResponse>(await axiosClient.get('/v1/appointments/services', { params: { category } }));
   },
 };

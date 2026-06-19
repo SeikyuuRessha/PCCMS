@@ -23,6 +23,21 @@ function unwrapPage<T>(value: PageEnvelope<T>): PageResponse<T> {
     return value as PageResponse<T>;
 }
 
+function normalizeCareLogs(value: unknown): CareLogResponse[] {
+    const candidate = Array.isArray(value)
+        ? value
+        : value && typeof value === "object" && Array.isArray((value as { data?: unknown }).data)
+          ? (value as { data: unknown[] }).data
+          : [];
+
+    return candidate
+        .filter((item): item is CareLogResponse => Boolean(item && typeof item === "object"))
+        .map((item) => ({
+            ...item,
+            media: Array.isArray(item.media) ? item.media : [],
+        }));
+}
+
 export interface CareLogFormPayload {
     sessionId: string;
     petId?: string;
@@ -94,11 +109,11 @@ export const boardingApi = {
         return careLog;
     },
 
-    getCareLogs: (bookingId: string): Promise<CareLogResponse[]> =>
-        axiosClient.get(`/v1/boarding/bookings/${bookingId}/care-logs`),
+    getCareLogs: async (bookingId: string): Promise<CareLogResponse[]> =>
+        normalizeCareLogs(await axiosClient.get(`/v1/boarding/bookings/${bookingId}/care-logs`)),
 
-    getReceptionCareLogs: (sessionId: string): Promise<CareLogResponse[]> =>
-        axiosClient.get("/v1/reception/boarding/care-logs", { params: { sessionId } }),
+    getReceptionCareLogs: async (sessionId: string): Promise<CareLogResponse[]> =>
+        normalizeCareLogs(await axiosClient.get("/v1/reception/boarding/care-logs", { params: { sessionId } })),
 
     getCareLogDetail: (careLogId: string): Promise<CareLogResponse> =>
         axiosClient.get(`/v1/reception/boarding/care-logs/${careLogId}`),

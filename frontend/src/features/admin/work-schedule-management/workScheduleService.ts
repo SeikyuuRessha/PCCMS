@@ -60,6 +60,20 @@ interface WorkSchedulePayload {
 const DEFAULT_CAPACITY = 1;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const asArray = <T>(value: unknown): T[] => (Array.isArray(value) ? value : []);
+
+const normalizeWeeklySchedulePlan = (value: unknown): WeeklySchedulePlanResponse => {
+    const plan = value && typeof value === "object"
+        ? value as Partial<WeeklySchedulePlanResponse>
+        : {};
+
+    return {
+        createdCount: typeof plan.createdCount === "number" ? plan.createdCount : 0,
+        skippedCount: typeof plan.skippedCount === "number" ? plan.skippedCount : 0,
+        items: asArray(plan.items),
+    };
+};
+
 const toIsoDate = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -232,11 +246,11 @@ export const getWorkScheduleOptions = async (): Promise<WorkScheduleOptions> => 
     ]);
 
     return {
-        staff: getApiData<WorkScheduleStaffOption[]>(staff),
-        shifts: getApiData<WorkScheduleShiftOption[]>(shifts),
-        roles: getApiData<WorkScheduleRoleOption[]>(roles),
-        examRooms: getApiData<WorkScheduleExamRoomOption[]>(examRooms),
-        groomingStations: getApiData<WorkScheduleGroomingStationOption[]>(groomingStations),
+        staff: asArray<WorkScheduleStaffOption>(getApiData<unknown>(staff)),
+        shifts: asArray<WorkScheduleShiftOption>(getApiData<unknown>(shifts)),
+        roles: asArray<WorkScheduleRoleOption>(getApiData<unknown>(roles)),
+        examRooms: asArray<WorkScheduleExamRoomOption>(getApiData<unknown>(examRooms)),
+        groomingStations: asArray<WorkScheduleGroomingStationOption>(getApiData<unknown>(groomingStations)),
     };
 };
 
@@ -290,10 +304,10 @@ export const cancelWorkSchedule = async (id: string) => {
 
 export const previewWeeklySchedulePlan = async (payload: WeeklySchedulePlanRequest) => {
     const response = await api.post("/v1/admin/work-schedules/weekly-plan/preview", payload);
-    return getApiData<WeeklySchedulePlanResponse>(response);
+    return normalizeWeeklySchedulePlan(getApiData<unknown>(response));
 };
 
 export const applyWeeklySchedulePlan = async (payload: WeeklySchedulePlanRequest) => {
     const response = await api.post("/v1/admin/work-schedules/weekly-plan/apply", payload);
-    return getApiData<WeeklySchedulePlanResponse>(response);
+    return normalizeWeeklySchedulePlan(getApiData<unknown>(response));
 };

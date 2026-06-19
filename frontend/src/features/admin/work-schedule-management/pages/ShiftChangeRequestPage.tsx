@@ -29,6 +29,7 @@ export function ShiftChangeRequestPage() {
         queryKey: ["adminShiftChangeRequests", page],
         queryFn: () => getAdminShiftChangeRequests({ page, size: 20 }),
     });
+    const requests = data?.content ?? [];
 
     const respondMutation = useMutation({
         mutationFn: ({ id, action }: { id: string; action: "ACCEPTED" | "REJECTED" }) =>
@@ -65,14 +66,14 @@ export function ShiftChangeRequestPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {data?.content.length === 0 ? (
+                            {requests.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                                         Không có yêu cầu đổi ca nào.
                                     </td>
                                 </tr>
                             ) : (
-                                data?.content.map((request) => (
+                                requests.map((request) => (
                                     <tr key={request.id} className="hover:bg-slate-50/50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {request.workDate
