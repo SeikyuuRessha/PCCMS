@@ -15,17 +15,14 @@ import com.astral.express.pccms.appointment.dto.response.RoomTypeOptionResponse;
 import com.astral.express.pccms.appointment.dto.response.ServiceCatalogOptionResponse;
 import com.astral.express.pccms.appointment.dto.response.TimeSlotResponse;
 import com.astral.express.pccms.appointment.dto.response.VetOptionResponse;
-import com.astral.express.pccms.appointment.entity.Appointment;
 import com.astral.express.pccms.appointment.entity.AppointmentStatus;
 import com.astral.express.pccms.appointment.entity.ServiceCategory;
 import com.astral.express.pccms.appointment.service.AppointmentAvailabilityUseCase;
 import com.astral.express.pccms.appointment.service.AppointmentLifecycleUseCase;
 import com.astral.express.pccms.appointment.service.AppointmentQueryUseCase;
-import com.astral.express.pccms.appointment.service.AppointmentResponseAssembler;
+import com.astral.express.pccms.appointment.service.AppointmentCommandService;
 import com.astral.express.pccms.appointment.service.AppointmentBoardingBookingUseCase;
-import com.astral.express.pccms.appointment.service.CreateMedicalAppointmentUseCase;
 import com.astral.express.pccms.appointment.service.AppointmentGroomingBookingUseCase;
-import com.astral.express.pccms.appointment.service.QuickCheckInUseCase;
 import com.astral.express.pccms.common.dto.ApiResponse;
 import com.astral.express.pccms.common.dto.PageResponse;
 import com.astral.express.pccms.identity.security.SecurityContextService;
@@ -62,9 +59,7 @@ public class AppointmentController {
     private final AppointmentQueryUseCase queryUseCase;
     private final AppointmentBoardingBookingUseCase boardingBookingUseCase;
     private final AppointmentGroomingBookingUseCase groomingBookingUseCase;
-    private final CreateMedicalAppointmentUseCase createMedicalAppointmentUseCase;
-    private final QuickCheckInUseCase quickCheckInUseCase;
-    private final AppointmentResponseAssembler appointmentResponseAssembler;
+    private final AppointmentCommandService appointmentCommandService;
     private final SecurityContextService securityContextService;
 
     @PostMapping
@@ -72,8 +67,7 @@ public class AppointmentController {
     public ResponseEntity<ApiResponse<AppointmentResponse>> createMedicalAppointment(
             @Valid @RequestBody CreateMedicalAppointmentRequest request) {
         UUID ownerId = securityContextService.getCurrentUserId();
-        Appointment appointment = createMedicalAppointmentUseCase.createMedicalAppointment(request, ownerId);
-        AppointmentResponse response = appointmentResponseAssembler.toResponse(appointment, null);
+        AppointmentResponse response = appointmentCommandService.createMedicalAppointment(request, ownerId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, 201, "Đặt lịch thành công", response));
     }
@@ -153,8 +147,7 @@ public class AppointmentController {
     @PreAuthorize("hasAuthority('APPOINTMENT_RECEIVE')")
     public ApiResponse<AppointmentResponse> quickCheckIn(@Valid @RequestBody QuickCheckInRequest request) {
         UUID staffId = securityContextService.getCurrentUserId();
-        QuickCheckInUseCase.Result result = quickCheckInUseCase.execute(request, staffId);
-        return ApiResponse.success(appointmentResponseAssembler.toResponse(result.appointment(), result.queueNumber()), "Tiếp nhận thành công");
+        return ApiResponse.success(appointmentCommandService.quickCheckIn(request, staffId), "Tiếp nhận thành công");
     }
 
     @GetMapping("/queue")

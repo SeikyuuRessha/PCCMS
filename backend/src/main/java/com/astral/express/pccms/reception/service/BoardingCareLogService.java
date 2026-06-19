@@ -1,5 +1,6 @@
 package com.astral.express.pccms.reception.service;
 
+import com.astral.express.pccms.appointment.service.ClinicDateTime;
 import com.astral.express.pccms.common.exception.BusinessException;
 import com.astral.express.pccms.common.exception.ErrorCode;
 import com.astral.express.pccms.filemedia.dto.UploadedFileResponse;
@@ -36,19 +37,21 @@ public class BoardingCareLogService {
     @Transactional(readOnly = true)
     public List<CareLogResponse> listCareLogs(UUID sessionId, UUID petId) {
         UUID currentUserId = securityContextService.getCurrentUserId();
-        return boardingCareLogQueryRepository.listCareLogs(currentUserId, sessionId, petId);
+        return boardingCareLogQueryRepository.listCareLogs(
+                currentUserId, ClinicDateTime.today(), ClinicDateTime.nowTime(), sessionId, petId);
     }
 
     @Transactional(readOnly = true)
     public CareLogResponse getCareLog(UUID id) {
         UUID currentUserId = securityContextService.getCurrentUserId();
-        return boardingCareLogQueryRepository.findCareLog(currentUserId, id)
+        return boardingCareLogQueryRepository.findCareLog(
+                        currentUserId, ClinicDateTime.today(), ClinicDateTime.nowTime(), id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_REC_005_INVALID_CARE_LOG));
     }
 
     @Transactional
     public CareLogResponse saveCareLog(CareLogRequest request) {
-        LocalDate logDate = date(request.logDate(), LocalDate.now());
+        LocalDate logDate = date(request.logDate(), ClinicDateTime.today());
         ReceptionValidation.validateCareLog(logDate, request.periodCode(), request.feedingStatus(), request.hygieneStatus());
         UUID sessionId = request.sessionId();
         UUID petId = request.petId();
@@ -66,7 +69,7 @@ public class BoardingCareLogService {
         UUID existingId = boardingCareLogCommandRepository.findExistingCareLogId(sessionId, logDate, request.periodCode())
                 .orElse(null);
         if (existingId != null) {
-            return updateCareLog(existingId, request);
+            throw new BusinessException(ErrorCode.ERR_BOARDING_004_CARE_LOG_DUPLICATED);
         }
 
         UUID staffId = securityContextService.getCurrentUserId();
@@ -89,7 +92,7 @@ public class BoardingCareLogService {
     public CareLogResponse updateCareLog(UUID id, CareLogRequest request) {
         UUID currentUserId = securityContextService.getCurrentUserId();
         assertCareLogEditable(id, currentUserId);
-        LocalDate logDate = date(request.logDate(), LocalDate.now());
+        LocalDate logDate = date(request.logDate(), ClinicDateTime.today());
         ReceptionValidation.validateCareLog(logDate, request.periodCode(), request.feedingStatus(), request.hygieneStatus());
         boardingCareLogCommandRepository.updateCareLog(
                 id,
@@ -131,12 +134,14 @@ public class BoardingCareLogService {
     }
 
     private UUID resolveActiveWorkSchedule(UUID staffId, LocalDate logDate) {
-        return boardingCareLogCommandRepository.findActiveWorkScheduleId(staffId, logDate)
+        return boardingCareLogCommandRepository.findActiveWorkScheduleId(
+                        staffId, logDate, ClinicDateTime.nowTime())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_BOARDING_007_CARE_LOG_LOCKED));
     }
 
     private void assertCareLogEditable(UUID careLogId, UUID currentUserId) {
-        Boolean canEdit = boardingCareLogCommandRepository.canEditCareLog(careLogId, currentUserId)
+        Boolean canEdit = boardingCareLogCommandRepository.canEditCareLog(
+                        careLogId, currentUserId, ClinicDateTime.today(), ClinicDateTime.nowTime())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ERR_REC_005_INVALID_CARE_LOG));
         if (!Boolean.TRUE.equals(canEdit)) {
             throw new BusinessException(ErrorCode.ERR_BOARDING_007_CARE_LOG_LOCKED);

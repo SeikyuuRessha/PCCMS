@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -89,32 +90,37 @@ public class BoardingCareLogCommandRepository {
                 careLogId, fileId, caption);
     }
 
-    public Optional<UUID> findActiveWorkScheduleId(UUID staffId, LocalDate logDate) {
+    public Optional<UUID> findActiveWorkScheduleId(UUID staffId, LocalDate logDate, LocalTime clinicTime) {
         return optionalUuid("""
                 SELECT ws.id
                 FROM work_schedules ws
                 JOIN shifts sh ON sh.id = ws.shift_id
                 WHERE ws.staff_id = ? AND ws.work_date = ? AND ws.status_code = 'ASSIGNED'
-                  AND CURRENT_TIME BETWEEN sh.start_time AND sh.end_time
+                  AND ? >= sh.start_time AND ? < sh.end_time
                 ORDER BY sh.start_time
                 LIMIT 1
-                """, staffId, logDate);
+                """, staffId, logDate, clinicTime, clinicTime);
     }
 
-    public Optional<Boolean> canEditCareLog(UUID careLogId, UUID currentUserId) {
+    public Optional<Boolean> canEditCareLog(
+            UUID careLogId,
+            UUID currentUserId,
+            LocalDate clinicDate,
+            LocalTime clinicTime) {
         try {
             return Optional.ofNullable(jdbc.queryForObject("""
                     SELECT CASE
                              WHEN cl.work_schedule_id IS NULL THEN false
                              WHEN cl.staff_id <> ? THEN false
-                             WHEN CURRENT_TIMESTAMP > (ws.work_date + sh.end_time)::timestamptz THEN false
+                             WHEN ? <> ws.work_date THEN false
+                             WHEN ? < sh.start_time OR ? >= sh.end_time THEN false
                              ELSE true
                            END AS can_edit
                     FROM care_logs cl
                     LEFT JOIN work_schedules ws ON ws.id = cl.work_schedule_id
                     LEFT JOIN shifts sh ON sh.id = ws.shift_id
                     WHERE cl.id = ? AND cl.deleted_at IS NULL
-                    """, Boolean.class, currentUserId, careLogId));
+                    """, Boolean.class, currentUserId, clinicDate, clinicTime, clinicTime, careLogId));
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }

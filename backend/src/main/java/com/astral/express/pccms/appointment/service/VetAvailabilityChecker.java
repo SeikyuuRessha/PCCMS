@@ -64,7 +64,7 @@ public class VetAvailabilityChecker {
     public Users requireVetAvailable(LocalDate date, LocalTime slotStart, UUID requestedVetId,
                                      OffsetDateTime startAt, OffsetDateTime endAt) {
         if (requestedVetId != null) {
-            Users vet = userRepository.findById(requestedVetId)
+            Users vet = userRepository.findByIdWithRole(requestedVetId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.ERR_ACC_002_USER_NOT_FOUND));
             if (!VET_ROLE.equals(vet.getRole().getCode())) {
                 throw new BusinessException(ErrorCode.ERR_APT_005_NO_VET_AVAILABLE);

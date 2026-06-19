@@ -48,9 +48,7 @@ class AppointmentControllerTest {
     @Mock private AppointmentQueryUseCase queryUseCase;
     @Mock private AppointmentBoardingBookingUseCase boardingBookingUseCase;
     @Mock private AppointmentGroomingBookingUseCase groomingBookingUseCase;
-    @Mock private CreateMedicalAppointmentUseCase createMedicalAppointmentUseCase;
-    @Mock private QuickCheckInUseCase quickCheckInUseCase;
-    @Mock private AppointmentResponseAssembler appointmentResponseAssembler;
+    @Mock private AppointmentCommandService appointmentCommandService;
     @Mock private SecurityContextService securityContextService;
 
     @InjectMocks
@@ -70,8 +68,8 @@ class AppointmentControllerTest {
     void createMedicalAppointment_success() throws Exception {
         CreateMedicalAppointmentRequest request = Mockito.mock(CreateMedicalAppointmentRequest.class);
         given(securityContextService.getCurrentUserId()).willReturn(UUID.randomUUID());
-        given(createMedicalAppointmentUseCase.createMedicalAppointment(any(), any())).willReturn(new Appointment());
-        given(appointmentResponseAssembler.toResponse(any(), any())).willReturn(Mockito.mock(AppointmentResponse.class));
+        given(appointmentCommandService.createMedicalAppointment(any(), any()))
+                .willReturn(Mockito.mock(AppointmentResponse.class));
 
         mockMvc.perform(post("/v1/appointments")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -160,7 +158,8 @@ class AppointmentControllerTest {
     void quickCheckIn_success() throws Exception {
         QuickCheckInRequest request = Mockito.mock(QuickCheckInRequest.class);
         given(securityContextService.getCurrentUserId()).willReturn(UUID.randomUUID());
-        given(quickCheckInUseCase.execute(any(), any())).willReturn(new QuickCheckInUseCase.Result(new Appointment(), 1));
+        given(appointmentCommandService.quickCheckIn(any(), any()))
+                .willReturn(Mockito.mock(AppointmentResponse.class));
 
         mockMvc.perform(post("/v1/appointments/quick-check-in")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -24,6 +24,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,7 +80,9 @@ class BoardingCareLogServiceTest {
                 3L
         );
         given(securityContextService.getCurrentUserId()).willReturn(userId);
-        given(boardingCareLogCommandRepository.canEditCareLog(careLogId, userId)).willReturn(Optional.of(true));
+        given(boardingCareLogCommandRepository.canEditCareLog(
+                eq(careLogId), eq(userId), any(LocalDate.class), any(LocalTime.class)))
+                .willReturn(Optional.of(true));
         given(fileMediaService.uploadOwnerVisibleMedia(media, userId)).willReturn(uploaded);
 
         CareLogMediaResponse response = boardingCareLogService.uploadMedia(careLogId, media);
@@ -123,7 +126,9 @@ class BoardingCareLogServiceTest {
         UUID petId = UUID.randomUUID();
         CareLogResponse row = new CareLogResponse(clId, sessionId, petId, "Milu", null, null, null, null, null, null, null, null, false, false, null, null);
         given(securityContextService.getCurrentUserId()).willReturn(userId);
-        given(boardingCareLogQueryRepository.listCareLogs(userId, sessionId, petId)).willReturn(List.of(row));
+        given(boardingCareLogQueryRepository.listCareLogs(
+                eq(userId), any(LocalDate.class), any(LocalTime.class), eq(sessionId), eq(petId)))
+                .willReturn(List.of(row));
 
         List<CareLogResponse> result = boardingCareLogService.listCareLogs(sessionId, petId);
 
@@ -153,17 +158,36 @@ class BoardingCareLogServiceTest {
         given(securityContextService.getCurrentUserId()).willReturn(staffId);
         given(boardingCareLogCommandRepository.findExistingCareLogId(eq(sessionId), any(LocalDate.class), eq("MORNING")))
                 .willReturn(Optional.empty());
-        given(boardingCareLogCommandRepository.findActiveWorkScheduleId(eq(staffId), any(LocalDate.class)))
+        given(boardingCareLogCommandRepository.findActiveWorkScheduleId(
+                eq(staffId), any(LocalDate.class), any(LocalTime.class)))
                 .willReturn(Optional.of(UUID.randomUUID()));
 
         given(boardingCareLogCommandRepository.createCareLog(eq(sessionId), eq(petId), eq(staffId), any(UUID.class), any(), eq("MORNING"), eq("NORMAL"), eq("CLEAN"), eq("Fine"), eq(""))).willReturn(careLogId);
 
-        given(boardingCareLogQueryRepository.findCareLog(staffId, careLogId)).willReturn(Optional.of(new CareLogResponse(
+        given(boardingCareLogQueryRepository.findCareLog(
+                eq(staffId), any(LocalDate.class), any(LocalTime.class), eq(careLogId)))
+                .willReturn(Optional.of(new CareLogResponse(
                 careLogId, sessionId, petId, "Milu", "Staff A", null, "MORNING",
                 null, null, null, null, null, false, false, null, null)));
 
         CareLogResponse res = boardingCareLogService.saveCareLog(req);
         assertThat(res.id()).isEqualTo(careLogId);
+    }
+
+    @Test
+    void saveCareLog_shouldReportDuplicateInsteadOfTryingToEditAnotherLog() {
+        UUID sessionId = UUID.randomUUID();
+        UUID existingCareLogId = UUID.randomUUID();
+        CareLogRequest request = new CareLogRequest(
+                sessionId, UUID.randomUUID(), LocalDate.now().toString(),
+                "MORNING", "NORMAL", "CLEAN", "Fine", "");
+        given(boardingCareLogCommandRepository.findExistingCareLogId(
+                eq(sessionId), any(LocalDate.class), eq("MORNING")))
+                .willReturn(Optional.of(existingCareLogId));
+
+        assertThatThrownBy(() -> boardingCareLogService.saveCareLog(request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ERR_BOARDING_004_CARE_LOG_DUPLICATED);
     }
 
     @Test
@@ -188,7 +212,9 @@ class BoardingCareLogServiceTest {
         MediaUploadCommand media = new MediaUploadCommand(null, "image/png", new byte[100]);
         UploadedFileResponse uploaded = new UploadedFileResponse(fileId, "url", "key", "image/png", 100L);
         given(securityContextService.getCurrentUserId()).willReturn(userId);
-        given(boardingCareLogCommandRepository.canEditCareLog(careLogId, userId)).willReturn(Optional.of(true));
+        given(boardingCareLogCommandRepository.canEditCareLog(
+                eq(careLogId), eq(userId), any(LocalDate.class), any(LocalTime.class)))
+                .willReturn(Optional.of(true));
         given(fileMediaService.uploadOwnerVisibleMedia(media, userId)).willReturn(uploaded);
 
         CareLogMediaResponse response = boardingCareLogService.uploadMedia(careLogId, media);
@@ -208,12 +234,15 @@ class BoardingCareLogServiceTest {
         given(securityContextService.getCurrentUserId()).willReturn(staffId);
         given(boardingCareLogCommandRepository.findExistingCareLogId(eq(sessionId), any(LocalDate.class), eq("MORNING")))
                 .willReturn(Optional.empty());
-        given(boardingCareLogCommandRepository.findActiveWorkScheduleId(eq(staffId), any(LocalDate.class)))
+        given(boardingCareLogCommandRepository.findActiveWorkScheduleId(
+                eq(staffId), any(LocalDate.class), any(LocalTime.class)))
                 .willReturn(Optional.of(UUID.randomUUID()));
         
         given(boardingCareLogCommandRepository.createCareLog(eq(sessionId), eq(petId), any(), any(), any(), eq("MORNING"), eq("NORMAL"), eq("CLEAN"), eq("Fine"), eq(""))).willReturn(careLogId);
         
-        given(boardingCareLogQueryRepository.findCareLog(staffId, careLogId)).willReturn(Optional.empty());
+        given(boardingCareLogQueryRepository.findCareLog(
+                eq(staffId), any(LocalDate.class), any(LocalTime.class), eq(careLogId)))
+                .willReturn(Optional.empty());
                 
         assertThatThrownBy(() -> boardingCareLogService.saveCareLog(req))
                 .isInstanceOf(BusinessException.class);

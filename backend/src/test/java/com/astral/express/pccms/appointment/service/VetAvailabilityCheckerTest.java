@@ -110,7 +110,7 @@ class VetAvailabilityCheckerTest {
     @Test
     void requireVetAvailable_shouldThrowException_whenRequestedVetNotFound() {
         UUID vetId = UUID.randomUUID();
-        given(userRepository.findById(vetId)).willReturn(Optional.empty());
+        given(userRepository.findByIdWithRole(vetId)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> checker.requireVetAvailable(LocalDate.now(), LocalTime.now(), vetId, OffsetDateTime.now(), OffsetDateTime.now()))
                 .isInstanceOf(BusinessException.class)
@@ -124,7 +124,7 @@ class VetAvailabilityCheckerTest {
         Roles role = new Roles();
         role.setCode("ADMIN");
         user.setRole(role);
-        given(userRepository.findById(vetId)).willReturn(Optional.of(user));
+        given(userRepository.findByIdWithRole(vetId)).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> checker.requireVetAvailable(LocalDate.now(), LocalTime.now(), vetId, OffsetDateTime.now(), OffsetDateTime.now()))
                 .isInstanceOf(BusinessException.class)
@@ -138,7 +138,7 @@ class VetAvailabilityCheckerTest {
         Roles role = new Roles();
         role.setCode("VETERINARIAN");
         user.setRole(role);
-        given(userRepository.findById(vetId)).willReturn(Optional.of(user));
+        given(userRepository.findByIdWithRole(vetId)).willReturn(Optional.of(user));
         given(workScheduleRepository.findAvailableVetIds(any(), any())).willReturn(List.of(UUID.randomUUID()));
 
         assertThatThrownBy(() -> checker.requireVetAvailable(LocalDate.now(), LocalTime.now(), vetId, OffsetDateTime.now(), OffsetDateTime.now()))
@@ -153,7 +153,7 @@ class VetAvailabilityCheckerTest {
         Roles role = new Roles();
         role.setCode("VETERINARIAN");
         user.setRole(role);
-        given(userRepository.findById(vetId)).willReturn(Optional.of(user));
+        given(userRepository.findByIdWithRole(vetId)).willReturn(Optional.of(user));
         given(workScheduleRepository.findAvailableVetIds(any(), any())).willReturn(List.of(vetId));
         given(overlapChecker.hasVetOverlap(eq(vetId), any(), any())).willReturn(false);
 

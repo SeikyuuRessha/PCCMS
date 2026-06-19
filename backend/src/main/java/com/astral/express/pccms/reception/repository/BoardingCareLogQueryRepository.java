@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -48,21 +50,30 @@ public class BoardingCareLogQueryRepository {
                 """, BoardingCareLogQueryRepository::booking, args.toArray());
     }
 
-    public List<CareLogResponse> listCareLogs(UUID currentUserId, UUID sessionId, UUID petId) {
+    public List<CareLogResponse> listCareLogs(
+            UUID currentUserId,
+            LocalDate clinicDate,
+            LocalTime clinicTime,
+            UUID sessionId,
+            UUID petId) {
         List<Object> args = new ArrayList<>();
         args.add(currentUserId);
-        args.add(currentUserId);
-        args.add(currentUserId);
+        args.add(clinicDate);
+        args.add(clinicTime);
         String clause = buildCareLogListClause(sessionId, petId, args);
         return jdbc.query(careLogSelect(clause), BoardingCareLogQueryRepository::careLog, args.toArray());
     }
 
-    public Optional<CareLogResponse> findCareLog(UUID currentUserId, UUID id) {
+    public Optional<CareLogResponse> findCareLog(
+            UUID currentUserId,
+            LocalDate clinicDate,
+            LocalTime clinicTime,
+            UUID id) {
         return optional(careLogSelect("WHERE cl.id = ? AND cl.deleted_at IS NULL"),
                 BoardingCareLogQueryRepository::careLog,
                 currentUserId,
-                currentUserId,
-                currentUserId,
+                clinicDate,
+                clinicTime,
                 id);
     }
 
@@ -86,24 +97,28 @@ public class BoardingCareLogQueryRepository {
                        cl.period_code, cl.feeding_status, cl.hygiene_status, cl.health_note, cl.staff_note, cl.created_at,
                        CASE
                          WHEN cl.work_schedule_id IS NULL THEN false
-                         WHEN cl.staff_id <> ? THEN false
-                         WHEN CURRENT_TIMESTAMP > (ws.work_date + sh.end_time)::timestamptz THEN false
+                         WHEN cl.staff_id <> ctx.current_user_id THEN false
+                         WHEN ctx.clinic_date <> ws.work_date THEN false
+                         WHEN ctx.clinic_time < sh.start_time OR ctx.clinic_time >= sh.end_time THEN false
                          ELSE true
                        END AS can_edit,
                        CASE
                          WHEN cl.work_schedule_id IS NULL THEN false
-                         WHEN cl.staff_id <> ? THEN false
-                         WHEN CURRENT_TIMESTAMP > (ws.work_date + sh.end_time)::timestamptz THEN false
+                         WHEN cl.staff_id <> ctx.current_user_id THEN false
+                         WHEN ctx.clinic_date <> ws.work_date THEN false
+                         WHEN ctx.clinic_time < sh.start_time OR ctx.clinic_time >= sh.end_time THEN false
                          ELSE true
                        END AS can_delete,
-                       (ws.work_date + sh.end_time)::timestamptz AS locked_at,
+                       ((ws.work_date + sh.end_time) AT TIME ZONE 'Asia/Ho_Chi_Minh') AS locked_at,
                        CASE
                          WHEN cl.work_schedule_id IS NULL THEN 'Khong xac dinh ca tao nhat ky'
-                         WHEN cl.staff_id <> ? THEN 'Chi nhan vien tao nhat ky duoc sua'
-                         WHEN CURRENT_TIMESTAMP > (ws.work_date + sh.end_time)::timestamptz THEN 'Da het ca lam viec'
+                         WHEN cl.staff_id <> ctx.current_user_id THEN 'Chi nhan vien tao nhat ky duoc sua'
+                         WHEN ctx.clinic_date <> ws.work_date THEN 'Da het ca lam viec'
+                         WHEN ctx.clinic_time < sh.start_time OR ctx.clinic_time >= sh.end_time THEN 'Da het ca lam viec'
                          ELSE NULL
                        END AS locked_reason
                 FROM care_logs cl
+                CROSS JOIN (SELECT ?::uuid AS current_user_id, ?::date AS clinic_date, ?::time AS clinic_time) ctx
                 JOIN pets p ON p.id = cl.pet_id
                 JOIN users u ON u.id = cl.staff_id
                 LEFT JOIN work_schedules ws ON ws.id = cl.work_schedule_id

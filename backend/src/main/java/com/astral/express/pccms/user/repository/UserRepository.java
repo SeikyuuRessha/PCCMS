@@ -31,6 +31,9 @@ public interface UserRepository extends JpaRepository<Users, UUID>, JpaSpecifica
            "WHERE u.id = :id")
     Optional<Users> findByIdWithRoleAndPermissions(@Param("id") UUID id);
 
+    @Query("SELECT u FROM Users u JOIN FETCH u.role WHERE u.id = :id")
+    Optional<Users> findByIdWithRole(@Param("id") UUID id);
+
     boolean existsByEmail(String email);
 
     Optional<Users> findByPhone(String phone);
