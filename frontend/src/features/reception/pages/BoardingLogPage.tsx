@@ -193,7 +193,7 @@ export function BoardingLogPage() {
     const startEditLog = (log: CareLogResponse) => {
         setEditingLog(log);
         reset({
-            logDate: log.logDate,
+            logDate: datePart(log.logDate) ?? "",
             periodCode: log.periodCode,
             feedingStatus: log.feedingStatus,
             hygieneStatus: log.hygieneStatus,
