@@ -53,6 +53,7 @@ export function AppointmentReceptionPage() {
     const [quickPetId, setQuickPetId] = useState("");
     const [quickVetId, setQuickVetId] = useState("");
     const [quickSymptom, setQuickSymptom] = useState("");
+    const [viewingApt, setViewingApt] = useState<AppointmentResponse | null>(null);
     const todayIso = clinicTodayIso();
     const minReceptionDate = addDaysIso(todayIso, -30);
     const maxReceptionDate = addDaysIso(todayIso, 30);
@@ -161,6 +162,13 @@ export function AppointmentReceptionPage() {
                     </button>
                     <button
                         type="button"
+                        className="text-sm font-medium text-slate-500 hover:underline"
+                        onClick={() => setViewingApt(apt)}
+                    >
+                        Xem
+                    </button>
+                    <button
+                        type="button"
                         className="text-sm font-medium text-red-600 hover:underline"
                         onClick={() => cancelMutation.mutate(apt.id)}
                     >
@@ -168,7 +176,13 @@ export function AppointmentReceptionPage() {
                     </button>
                 </div>
             ) : (
-                <span className="text-sm text-slate-500">Xem</span>
+                <button
+                    type="button"
+                    className="text-sm font-medium text-slate-500 hover:underline"
+                    onClick={() => setViewingApt(apt)}
+                >
+                    Xem
+                </button>
             );
 
         return [
@@ -238,6 +252,24 @@ export function AppointmentReceptionPage() {
                     />
                 )}
             </Card>
+
+            {viewingApt && (
+                <Card title="Chi tiết lịch hẹn">
+                    <div className="space-y-2 text-sm text-slate-700">
+                        <p><strong>Mã lịch:</strong> {viewingApt.appointmentCode}</p>
+                        <p><strong>Giờ hẹn:</strong> {formatTime(viewingApt.scheduledStartAt)}</p>
+                        <p><strong>Khách hàng:</strong> {viewingApt.ownerName}</p>
+                        <p><strong>Số điện thoại:</strong> {viewingApt.ownerPhone ?? "—"}</p>
+                        <p><strong>Thú cưng:</strong> {viewingApt.petName}</p>
+                        <p><strong>Bác sĩ phụ trách:</strong> {viewingApt.assignedVetName ?? "Chưa gán"}</p>
+                        <p><strong>Triệu chứng:</strong> {viewingApt.symptomText || "Không có"}</p>
+                        <p><strong>Trạng thái:</strong> {viewingApt.statusLabel}</p>
+                    </div>
+                    <div className="mt-4 flex justify-end">
+                        <Button variant="outline" onClick={() => setViewingApt(null)}>Đóng</Button>
+                    </div>
+                </Card>
+            )}
 
             <Card title="Tạo nhanh tại quầy" subtitle="Dành cho khách đăng ký tại quầy">
                 {availability && (

@@ -20,7 +20,7 @@ public class EmailService {
     private final EmailTemplateService emailTemplateService;
 
     @Async("mailTaskExecutor")
-public void sendAccountCreatedEmail(String toEmail, String temporaryPassword) {
+    public void sendAccountCreatedEmail(String toEmail, String temporaryPassword) {
         String subject = emailTemplateService.buildAccountCreatedSubject();
 
         try {
@@ -45,7 +45,7 @@ public void sendAccountCreatedEmail(String toEmail, String temporaryPassword) {
     }
 
     @Async("mailTaskExecutor")
-public void sendTemporaryPasswordEmail(String toEmail, String temporaryPassword) {
+    public void sendTemporaryPasswordEmail(String toEmail, String temporaryPassword) {
         try {
             String content = emailTemplateService.buildTemporaryPasswordContent(toEmail, temporaryPassword);
 
@@ -68,7 +68,7 @@ public void sendTemporaryPasswordEmail(String toEmail, String temporaryPassword)
     }
 
     @Async("mailTaskExecutor")
-public void sendOtpEmail(String toEmail, String purpose, String otp) {
+    public void sendOtpEmail(String toEmail, String purpose, String otp) {
         if (!StringUtils.hasText(toEmail) || !toEmail.contains("@")) {
             log.info("OTP generated for non-email contact; external SMS sender is not configured");
             return;

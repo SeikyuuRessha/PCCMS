@@ -46,10 +46,6 @@ export function ProfilePage() {
     const [newEmail, setNewEmail] = useState("");
     const [emailOtp, setEmailOtp] = useState("");
 
-    const [phoneStep, setPhoneStep] = useState<OtpStep>("idle");
-    const [newPhone, setNewPhone] = useState("");
-    const [phoneOtp, setPhoneOtp] = useState("");
-
     // --- Data Fetching ---
     const {
         data: profile,
@@ -147,27 +143,6 @@ export function ProfilePage() {
         onError: () => toast.error("Không thể đổi email"),
     });
 
-    const requestPhoneOtpMutation = useMutation({
-        mutationFn: userApi.requestPhoneChangeOtp,
-        onSuccess: () => {
-            setPhoneStep("otp-sent");
-            toast.success("Đã gửi OTP");
-        },
-        onError: () => toast.error("Không thể gửi OTP"),
-    });
-
-    const confirmPhoneMutation = useMutation({
-        mutationFn: userApi.confirmPhoneChange,
-        onSuccess: () => {
-            setNewPhone("");
-            setPhoneOtp("");
-            setPhoneStep("idle");
-            queryClient.invalidateQueries({ queryKey: ["profile"] });
-            toast.success("Đổi số điện thoại thành công!");
-        },
-        onError: () => toast.error("Không thể đổi số điện thoại"),
-    });
-
     const handleSendEmailOtp = (event: React.FormEvent) => {
         event.preventDefault();
         if (!newEmail.trim()) return toast.error("Vui lòng nhập email mới.");
@@ -177,16 +152,6 @@ export function ProfilePage() {
         event.preventDefault();
         if (!emailOtp.trim()) return toast.error("Vui lòng nhập mã OTP.");
         confirmEmailMutation.mutate({ contact: newEmail.trim(), otp: emailOtp.trim() });
-    };
-    const handleSendPhoneOtp = (event: React.FormEvent) => {
-        event.preventDefault();
-        if (!newPhone.trim()) return toast.error("Vui lòng nhập số điện thoại mới.");
-        requestPhoneOtpMutation.mutate({ contact: newPhone.trim() });
-    };
-    const handleConfirmPhone = (event: React.FormEvent) => {
-        event.preventDefault();
-        if (!phoneOtp.trim()) return toast.error("Vui lòng nhập mã OTP.");
-        confirmPhoneMutation.mutate({ contact: newPhone.trim(), otp: phoneOtp.trim() });
     };
 
     // --- Render States ---
@@ -239,7 +204,7 @@ export function ProfilePage() {
                             </div>
                         </div>
                         <p className="mt-3 text-xs text-slate-500">
-                            Email và số điện thoại được đổi ở panel riêng bằng mã OTP.
+                            Email được đổi ở panel riêng bằng mã OTP.
                         </p>
                     </div>
 
@@ -307,60 +272,6 @@ export function ProfilePage() {
                                     }}
                                 >
                                     Đổi email khác
-                                </Button>
-                            </div>
-                        </form>
-                    )}
-                </Card>
-
-                <Card
-                    title="Cập nhật số điện thoại"
-                    subtitle="Mã OTP sẽ được gửi về số điện thoại mới"
-                >
-                    <div className="mb-4 rounded-2xl bg-slate-50 p-4">
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                            Số điện thoại hiện tại
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-slate-700">{profile.phone}</p>
-                    </div>
-                    {phoneStep === "idle" ? (
-                        <form onSubmit={handleSendPhoneOtp} className="space-y-4">
-                            <Input
-                                label="Số điện thoại mới"
-                                type="tel"
-                                placeholder="Số điện thoại mới"
-                                value={newPhone}
-                                onChange={(event) => setNewPhone(event.target.value)}
-                            />
-                            <div className="flex justify-end">
-                                <Button type="submit" variant="outline">
-                                    Gửi OTP
-                                </Button>
-                            </div>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleConfirmPhone} className="space-y-4">
-                            <Input label="Số điện thoại mới" type="tel" value={newPhone} disabled />
-
-                            <Input
-                                label="Mã OTP"
-                                placeholder="6 chữ số"
-                                value={phoneOtp}
-                                inputMode="numeric"
-                                maxLength={6}
-                                onChange={(event) => setPhoneOtp(event.target.value)}
-                            />
-                            <div className="flex flex-wrap gap-2">
-                                <Button type="submit">Xác nhận đổi số điện thoại</Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => {
-                                        setPhoneStep("idle");
-                                        setPhoneOtp("");
-                                    }}
-                                >
-                                    Đổi số khác
                                 </Button>
                             </div>
                         </form>

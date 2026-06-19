@@ -56,6 +56,23 @@ function minDate(first?: string, second?: string) {
     return first < second ? first : second;
 }
 
+const PERIOD_LABELS: Record<string, string> = {
+    MORNING: "Sáng",
+    NOON: "Trưa",
+    AFTERNOON: "Chiều",
+};
+
+const LOCKED_REASON_LABELS: Record<string, string> = {
+    NO_SCHEDULE: "Nhật ký tạo ngoài ca trực — không tìm được lịch làm việc",
+    NOT_OWNER: "Chỉ nhân viên tạo nhật ký mới được sửa",
+    OUTSIDE_SHIFT: "Đã hết ca làm việc",
+};
+
+function friendlyLockedReason(reason?: string): string | undefined {
+    if (!reason) return undefined;
+    return LOCKED_REASON_LABELS[reason] ?? reason;
+}
+
 export function BoardingLogPage() {
     const queryClient = useQueryClient();
     const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
@@ -489,13 +506,13 @@ export function BoardingLogPage() {
                                         className="rounded-2xl border border-slate-200 p-4"
                                     >
                                         <p className="font-semibold">
-                                            {log.logDate} - {log.periodCode}
+                                            {datePart(log.logDate)} — {PERIOD_LABELS[log.periodCode] ?? log.periodCode}
                                         </p>
                                         <p className="mt-1 text-sm text-slate-500">
                                             {log.feedingStatus} | {log.hygieneStatus}
                                         </p>
                                         {log.lockedReason && !log.canEdit && (
-                                            <p className="mt-2 text-xs text-amber-700">{log.lockedReason}</p>
+                                            <p className="mt-2 text-xs text-amber-700">{friendlyLockedReason(log.lockedReason)}</p>
                                         )}
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             <Button variant="outline" className="h-auto px-3 py-1 text-xs" onClick={() => setViewingLog(log)}>
@@ -535,14 +552,14 @@ export function BoardingLogPage() {
                     {viewingLog && (
                         <Card title="Chi tiết nhật ký">
                             <div className="space-y-2 text-sm text-slate-700">
-                                <p><strong>Ngày:</strong> {viewingLog.logDate}</p>
-                                <p><strong>Buổi:</strong> {viewingLog.periodCode}</p>
+                                <p><strong>Ngày:</strong> {datePart(viewingLog.logDate)}</p>
+                                <p><strong>Buổi:</strong> {PERIOD_LABELS[viewingLog.periodCode] ?? viewingLog.periodCode}</p>
                                 <p><strong>Ăn uống:</strong> {viewingLog.feedingStatus}</p>
                                 <p><strong>Vệ sinh:</strong> {viewingLog.hygieneStatus}</p>
                                 <p><strong>Sức khỏe:</strong> {viewingLog.healthNote || "Không có"}</p>
                                 <p><strong>Ghi chú nhân viên:</strong> {viewingLog.staffNote || "Không có"}</p>
                                 <p><strong>Người tạo:</strong> {viewingLog.staffName}</p>
-                                {viewingLog.lockedReason && <p><strong>Trạng thái sửa:</strong> {viewingLog.lockedReason}</p>}
+                                {viewingLog.lockedReason && <p><strong>Trạng thái sửa:</strong> {friendlyLockedReason(viewingLog.lockedReason)}</p>}
                             </div>
                             <div className="mt-4 flex justify-end">
                                 <Button variant="outline" onClick={() => setViewingLog(null)}>Đóng</Button>
