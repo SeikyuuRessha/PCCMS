@@ -31,6 +31,7 @@ export function NotificationRealtimeProvider({ children }: { children: ReactNode
 
         let socket: WebSocket | null = null;
         let reconnectTimer: number | undefined;
+        let connectTimer: number | undefined;
         let closedByEffect = false;
 
         const connect = () => {
@@ -70,12 +71,19 @@ export function NotificationRealtimeProvider({ children }: { children: ReactNode
             });
         };
 
-        connect();
+        connectTimer = window.setTimeout(connect, 50);
 
         return () => {
             closedByEffect = true;
+            if (connectTimer) window.clearTimeout(connectTimer);
             if (reconnectTimer) window.clearTimeout(reconnectTimer);
-            socket?.close();
+            if (socket) {
+                if (socket.readyState === WebSocket.CONNECTING) {
+                    socket.onopen = () => socket?.close();
+                } else {
+                    socket.close();
+                }
+            }
         };
     }, [queryClient]);
 

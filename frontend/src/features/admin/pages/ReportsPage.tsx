@@ -7,7 +7,8 @@ import { ReportPieChart } from "../report-management/components/ReportPieChart";
 import { ReportSummaryCards } from "../report-management/components/ReportSummaryCards";
 import { ReportTable } from "../report-management/components/ReportTable";
 import { getDefaultReportFilters, getGroupBreakdown, getReportData } from "../report-management/reportService";
-import type { ReportGroup, ReportRecord, ReportSearchParams, ReportSummary } from "../report-management/types";
+import { exportReportToPdf } from "../report-management/reportPdfExport";
+import type { ReportGroup, ReportRecord, ReportSearchParams, ReportSummary, ServiceStats, PaymentStats } from "../report-management/types";
 
 const revenueReportLabel = "Doanh thu";
 
@@ -39,6 +40,8 @@ export function ReportsPage() {
     const [filters, setFilters] = useState<ReportSearchParams>(getDefaultReportFilters());
     const [records, setRecords] = useState<ReportRecord[]>([]);
     const [summary, setSummary] = useState<ReportSummary | null>(null);
+    const [serviceStats, setServiceStats] = useState<ServiceStats[]>([]);
+    const [paymentStats, setPaymentStats] = useState<PaymentStats[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [emptyMessage, setEmptyMessage] = useState("");
@@ -66,12 +69,16 @@ export function ReportsPage() {
             const data = await getReportData(params);
             setRecords(data.records);
             setSummary(data.summary);
+            setServiceStats(data.serviceStats);
+            setPaymentStats(data.paymentStats);
             if (data.records.length === 0) {
                 setEmptyMessage("Không có dữ liệu trong khoảng thời gian đã chọn");
             }
         } catch {
             setRecords([]);
             setSummary(null);
+            setServiceStats([]);
+            setPaymentStats([]);
             setError("Không thể tổng hợp dữ liệu từ hệ thống");
             setEmptyMessage("Không có dữ liệu trong khoảng thời gian đã chọn");
         } finally {
@@ -102,17 +109,27 @@ export function ReportsPage() {
     };
 
     return (
-        <div className="space-y-6 print:space-y-4">
+        <div className="space-y-6">
             <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-semibold text-slate-900">Báo cáo thống kê</h1>
                         <p className="text-sm text-slate-500">Tổng hợp dữ liệu vận hành, dịch vụ và doanh thu theo tiêu chí thống kê.</p>
                     </div>
-                    <div className="print:hidden">
+                    <div>
                         <Button
                             variant="primary"
-                            onClick={() => window.print()}
+                            onClick={() => {
+                                if (!summary) return;
+                                exportReportToPdf({
+                                    records,
+                                    summary,
+                                    fromDate: filters.fromDate,
+                                    toDate: filters.toDate,
+                                    serviceStats,
+                                    paymentStats,
+                                });
+                            }}
                             disabled={records.length === 0 || loading}
                         >
                             Xuất Báo Cáo PDF
@@ -121,7 +138,7 @@ export function ReportsPage() {
                 </div>
             </div>
 
-            <div className="print:hidden">
+            <div>
                 <Card title="Tiêu chí thống kê" subtitle="Có thể lọc báo cáo theo nhóm dịch vụ: Khám bệnh, Làm đẹp, Lưu trú hoặc Khác.">
                 <div className="grid gap-4 lg:grid-cols-5">
                     <Input

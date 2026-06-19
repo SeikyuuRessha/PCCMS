@@ -13,8 +13,8 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
             </div>
             <div className="flex h-72 items-end gap-3 rounded-3xl bg-slate-50 p-5">
                 {data.length > 0 ? (
-                    data.map((item) => (
-                        <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
+                    data.map((item, index) => (
+                        <div key={`${item.label}-${index}`} className="flex flex-1 flex-col items-center gap-2">
                             <div className="flex h-56 w-full items-end">
                                 <div
                                     className="w-full rounded-t-2xl bg-emerald-500/80 transition-all hover:bg-emerald-600"

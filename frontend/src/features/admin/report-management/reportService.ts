@@ -113,14 +113,30 @@ export async function getReportData(params: ReportSearchParams) {
     });
     const summary = getApiData<BackendReportSummary>(response);
     const records = (summary.items ?? []).map(toRecord);
+    const summaryData = buildReportSummary(
+        records,
+        params,
+        Number(summary.totalRevenueVnd ?? 0),
+        Number(summary.totalInvoiceCount ?? 0)
+    );
+
+    const groups = getGroupBreakdown(records);
+    const serviceStats = groups.map((g) => ({
+        group: g.group,
+        count: g.count,
+        revenue: g.revenue,
+    }));
+    const paymentStats = groups.map((g) => ({
+        group: g.group,
+        count: g.count,
+        revenue: g.revenue,
+    }));
+
     return {
         records,
-        summary: buildReportSummary(
-            records,
-            params,
-            Number(summary.totalRevenueVnd ?? 0),
-            Number(summary.totalInvoiceCount ?? 0)
-        ),
+        summary: summaryData,
+        serviceStats,
+        paymentStats,
     };
 }
 

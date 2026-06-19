@@ -30,7 +30,7 @@ public class NotificationWebSocketConfig implements WebSocketMessageBrokerConfig
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws/notifications")
+        registry.addEndpoint("/api/ws/notifications")
                 .setAllowedOriginPatterns(allowedOrigins.toArray(String[]::new));
     }
 

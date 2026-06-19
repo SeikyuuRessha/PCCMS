@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ReportsPage } from "~/features/admin/pages/ReportsPage";
+import { exportReportToPdf } from "~/features/admin/report-management/reportPdfExport";
 import { getReportData } from "~/features/admin/report-management/reportService";
 
 vi.mock("~/features/admin/report-management/reportService", () => ({
@@ -16,13 +17,16 @@ vi.mock("~/features/admin/report-management/reportService", () => ({
     getReportData: vi.fn(),
 }));
 
+vi.mock("~/features/admin/report-management/reportPdfExport", () => ({
+    exportReportToPdf: vi.fn(),
+}));
+
 describe("ReportsPage", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.stubGlobal("print", vi.fn());
     });
 
-    it("should render Export PDF button and call window.print when clicked", async () => {
+    it("should render Export PDF button and export the loaded report when clicked", async () => {
         vi.mocked(getReportData).mockResolvedValue({
             records: [
                 {
@@ -43,6 +47,8 @@ describe("ReportsPage", () => {
                 totalRevenue: 1000000,
                 totalCount: 10,
             },
+            serviceStats: [{ group: "MEDICAL", count: 10, revenue: 1000000 }],
+            paymentStats: [{ group: "MEDICAL", count: 10, revenue: 1000000 }],
         });
 
         render(<ReportsPage />);
@@ -58,7 +64,7 @@ describe("ReportsPage", () => {
 
         await userEvent.click(exportBtn);
 
-        expect(window.print).toHaveBeenCalledTimes(1);
+        expect(exportReportToPdf).toHaveBeenCalledTimes(1);
     });
 
     it("should disable Export PDF button when there are no records", async () => {
@@ -71,6 +77,8 @@ describe("ReportsPage", () => {
                 totalRevenue: 0,
                 totalCount: 0,
             },
+            serviceStats: [],
+            paymentStats: [],
         });
 
         render(<ReportsPage />);
