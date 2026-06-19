@@ -29,6 +29,8 @@ const apiErrorMessages: Record<string, string> = {
     ERR_BOARDING_003_INVALID_STATUS_TRANSITION: "Không thể chuyển trạng thái lưu trú ở bước hiện tại.",
     ERR_BOARDING_004_CARE_LOG_DUPLICATED: "Nhật ký cho ngày và buổi này đã tồn tại.",
     ERR_BOARDING_005_SESSION_NOT_FOUND: "Chưa có phiên lưu trú đang hoạt động.",
+    ERR_BOARDING_007_CARE_LOG_LOCKED:
+        "Nhật ký đã bị khóa hoặc bạn đang ngoài ca làm việc — chỉ có thể ghi trong ca trực hiện tại.",
     ERR_GROOMING_004_INVALID_STATUS_TRANSITION: "Không thể chuyển trạng thái làm đẹp ở bước hiện tại.",
     ERR_GROOMING_005_STATION_NOT_FOUND: "Không tìm thấy khu làm đẹp.",
     ERR_GROOMING_006_STATION_UNAVAILABLE: "Khu làm đẹp không khả dụng trong khung giờ này.",

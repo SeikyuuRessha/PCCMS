@@ -1,5 +1,4 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from "axios";
-import toast from "react-hot-toast";
 import { router } from "~/router";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -105,8 +104,6 @@ axiosClient.interceptors.response.use(
             } finally {
                 isRefreshing = false;
             }
-        } else if (error.response?.status === 403) {
-            toast.error("Không có quyền truy cập");
         }
 
         return Promise.reject(error);
