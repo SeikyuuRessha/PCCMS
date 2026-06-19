@@ -11,6 +11,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,13 +49,16 @@ class BoardingCareLogQueryRepositoryTest {
         UUID userId = UUID.randomUUID();
         given(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).willReturn(List.of());
 
-        repository.listCareLogs(userId, null, null);
+        LocalDate clinicDate = LocalDate.of(2026, 6, 19);
+        LocalTime clinicTime = LocalTime.of(13, 30);
+        repository.listCareLogs(userId, clinicDate, clinicTime, null, null);
 
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Object[]> argsCaptor = ArgumentCaptor.forClass(Object[].class);
         verify(jdbc).query(sqlCaptor.capture(), any(RowMapper.class), argsCaptor.capture());
         assertThat(sqlCaptor.getValue()).doesNotContain("? IS NULL");
-        assertThat(argsCaptor.getValue()).containsExactly(userId, userId, userId);
+        assertThat(argsCaptor.getValue()).containsExactly(userId, clinicDate, clinicTime);
+        assertThat(sqlCaptor.getValue()).doesNotContain("CURRENT_TIME", "CURRENT_TIMESTAMP");
     }
 
     @Test
@@ -101,7 +106,8 @@ class BoardingCareLogQueryRepositoryTest {
             return List.of(mapper.mapRow(rs, 0));
         });
 
-        List<CareLogResponse> result = repository.listCareLogs(UUID.randomUUID(), sessionId, petId);
+        List<CareLogResponse> result = repository.listCareLogs(
+                UUID.randomUUID(), LocalDate.now(), LocalTime.NOON, sessionId, petId);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo(id);

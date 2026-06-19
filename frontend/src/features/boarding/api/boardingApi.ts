@@ -23,6 +23,10 @@ function unwrapPage<T>(value: PageEnvelope<T>): PageResponse<T> {
     return value as PageResponse<T>;
 }
 
+function isoDate(value: string): string {
+    return value.split("T")[0];
+}
+
 function normalizeCareLogs(value: unknown): CareLogResponse[] {
     const candidate = Array.isArray(value)
         ? value
@@ -93,18 +97,23 @@ export const boardingApi = {
         axiosClient.post(`/v1/boarding/bookings/${bookingId}/cancellations`, { reason }),
 
     createCareLog: async (payload: CareLogFormPayload): Promise<CareLogResponse> => {
-        const careLog = await axiosClient.post<any, CareLogResponse>("/v1/reception/boarding/care-logs", {
-            sessionId: payload.sessionId,
-            petId: payload.petId,
-            logDate: payload.logDate,
-            periodCode: payload.periodCode,
-            feedingStatus: payload.feedingStatus,
-            hygieneStatus: payload.hygieneStatus,
-            healthNote: payload.healthNote,
-            staffNote: payload.staffNote,
-        });
+        const careLog = await axiosClient.post<any, CareLogResponse>(
+            "/v1/reception/boarding/care-logs",
+            {
+                sessionId: payload.sessionId,
+                petId: payload.petId,
+                logDate: isoDate(payload.logDate),
+                periodCode: payload.periodCode,
+                feedingStatus: payload.feedingStatus,
+                hygieneStatus: payload.hygieneStatus,
+                healthNote: payload.healthNote,
+                staffNote: payload.staffNote,
+            }
+        );
         if (payload.images?.length) {
-            await Promise.all(payload.images.map((image) => boardingApi.uploadCareLogMedia(careLog.id, image)));
+            await Promise.all(
+                payload.images.map((image) => boardingApi.uploadCareLogMedia(careLog.id, image))
+            );
         }
         return careLog;
     },
@@ -113,7 +122,9 @@ export const boardingApi = {
         normalizeCareLogs(await axiosClient.get(`/v1/boarding/bookings/${bookingId}/care-logs`)),
 
     getReceptionCareLogs: async (sessionId: string): Promise<CareLogResponse[]> =>
-        normalizeCareLogs(await axiosClient.get("/v1/reception/boarding/care-logs", { params: { sessionId } })),
+        normalizeCareLogs(
+            await axiosClient.get("/v1/reception/boarding/care-logs", { params: { sessionId } })
+        ),
 
     getCareLogDetail: (careLogId: string): Promise<CareLogResponse> =>
         axiosClient.get(`/v1/reception/boarding/care-logs/${careLogId}`),
@@ -122,7 +133,7 @@ export const boardingApi = {
         axiosClient.put(`/v1/reception/boarding/care-logs/${careLogId}`, {
             sessionId: payload.sessionId,
             petId: payload.petId,
-            logDate: payload.logDate,
+            logDate: isoDate(payload.logDate),
             periodCode: payload.periodCode,
             feedingStatus: payload.feedingStatus,
             hygieneStatus: payload.hygieneStatus,
@@ -158,8 +169,7 @@ export const roomAdminApi = {
         return unwrapPage(response);
     },
 
-    createRoom: (data: RoomRequest): Promise<RoomResponse> =>
-        axiosClient.post("/v1/rooms", data),
+    createRoom: (data: RoomRequest): Promise<RoomResponse> => axiosClient.post("/v1/rooms", data),
 
     updateRoom: (id: string, data: RoomRequest): Promise<RoomResponse> =>
         axiosClient.put(`/v1/rooms/${id}`, data),

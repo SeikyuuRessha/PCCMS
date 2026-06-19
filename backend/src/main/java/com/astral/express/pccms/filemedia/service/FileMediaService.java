@@ -72,7 +72,7 @@ public class FileMediaService {
                 .uploadedBy(uploadedBy)
                 .visibilityCode(FileVisibility.OWNER_VISIBLE)
                 .build();
-        FileAsset saved = fileAssetRepository.save(fileAsset);
+        FileAsset saved = fileAssetRepository.saveAndFlush(fileAsset);
         return new UploadedFileResponse(saved.getId(), saved.getStoredKey(), storedMedia.publicId(), saved.getMimeType(), saved.getSizeBytes());
     }
 

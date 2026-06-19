@@ -152,6 +152,7 @@ public class BoardingCareLogService {
         if (value == null || value.isBlank()) {
             return fallback;
         }
-        return LocalDate.parse(value);
+        String dateOnly = value.contains("T") ? value.substring(0, value.indexOf('T')) : value;
+        return LocalDate.parse(dateOnly);
     }
 }
